@@ -17,9 +17,9 @@ layout: default
 					<h1 class="display-4 mb-4 article-headline">{{ page.title }}</h1>
 					<div class="d-flex align-items-center">
                         {% if author.avatar %}
-                        <img class="rounded-circle" src="{{site.baseurl}}/{{author.avatar}}" alt="{{author.name}}" width="70"/>
+                        <img style="display:none" class="rounded-circle" src="{{site.baseurl}}/{{author.avatar}}" alt="{{author.name}}" width="70"/>
                         {% endif %}
-						<small class="ml-3"> {{ author.name }} <span><a target="_blank" href="{{ author.twitter }}" class="btn btn-outline-success btn-sm btn-round ml-1">Follow</a></span>
+						<small  class="ml-3"> 
                             <span class="text-muted d-block mt-1">{{ page.date | date: '%b %d, %Y' }} · {% include meta-read-time.html %}</span>
 						</small>
 					</div>
@@ -43,7 +43,7 @@ layout: default
         
         
         <!-- Share -->
-		<div class="col-lg-2 pr-4 mb-4 col-md-12">
+		<div style="display:none" class="col-lg-2 pr-4 mb-4 col-md-12">
 			<div class="sticky-top sticky-top-offset text-center">
 				<div class="text-muted">
 					Share this
@@ -66,7 +66,7 @@ layout: default
             
             <!-- Article -->
 			<article class="article-post">                
-			{{ content }}                
+			{{ content }}
 			</article>
 			
 			<!-- Tags -->
@@ -107,7 +107,7 @@ layout: default
             
              <!-- Author Box -->
                 {% if page.author %}				
-				<div class="row mt-5">
+				<div style="display:none" class="row mt-5">
 					<div class="col-md-2 align-self-center">
                          {% if author.avatar %}
                         <img class="rounded-circle" src="{{site.baseurl}}/{{author.avatar}}" alt="{{author.name}}" width="90"/>
