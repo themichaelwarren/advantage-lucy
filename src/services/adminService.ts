@@ -44,7 +44,7 @@ export async function getHeaders(tab: string): Promise<string[]> {
   return data.headers;
 }
 
-/** Upload a file to Google Drive. Returns the public image URL. */
+/** Upload a file to R2 (prod) or local (dev). Returns the image URL. */
 export async function uploadFile(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
@@ -60,7 +60,7 @@ export async function uploadFile(file: File): Promise<string> {
   }
 
   const data = await res.json();
-  return data.url; // lh3.googleusercontent.com direct link
+  return data.url; // /api/images/<key> (R2) or /uploads/<key> (dev)
 }
 
 /** Invalidate client-side cache so re-fetches pick up changes. */

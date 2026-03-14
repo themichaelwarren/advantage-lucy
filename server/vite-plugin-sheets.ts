@@ -5,7 +5,7 @@
 import type { Plugin } from 'vite';
 import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchSetlists, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, fetchHeaders } from './sheets';
 import { fetchDocText } from './docs';
-import { uploadToDrive } from './drive';
+
 
 export default function sheetsPlugin(): Plugin {
   return {
@@ -161,22 +161,11 @@ export default function sheetsPlugin(): Plugin {
           res.end(JSON.stringify({ error: String(err) }));
         }
       });
-      // Upload route: POST /api/upload → upload file to Google Drive
+      // Upload route: POST /api/upload → save file locally (dev) or R2 (prod)
       server.middlewares.use(async (req, res, next) => {
         if (req.url !== '/api/upload' || req.method !== 'POST') return next();
 
-        const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-        const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-
-        if (!email || !privateKey || !folderId) {
-          res.statusCode = 500;
-          res.end(JSON.stringify({ error: 'Missing Drive env vars (GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_DRIVE_FOLDER_ID)' }));
-          return;
-        }
-
         try {
-          // Parse multipart form data manually (single file field)
           const contentType = req.headers['content-type'] || '';
           const boundaryMatch = contentType.match(/boundary=(.+)/);
           if (!boundaryMatch) {
@@ -190,7 +179,7 @@ export default function sheetsPlugin(): Plugin {
           const rawBody = Buffer.concat(chunks);
 
           const boundary = boundaryMatch[1];
-          const { fileName, mimeType, fileBuffer } = parseMultipart(rawBody, boundary);
+          const { fileName, fileBuffer } = parseMultipart(rawBody, boundary);
 
           if (!fileBuffer || !fileName) {
             res.statusCode = 400;
@@ -198,14 +187,39 @@ export default function sheetsPlugin(): Plugin {
             return;
           }
 
-          const result = await uploadToDrive(fileBuffer, fileName, mimeType, folderId, email, privateKey);
+          // Save to public/uploads/ for local dev
+          const fs = await import('fs');
+          const path = await import('path');
+          const uploadsDir = path.resolve('public/uploads');
+          if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+          const key = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+          fs.writeFileSync(path.join(uploadsDir, key), fileBuffer);
+
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify(result));
+          res.end(JSON.stringify({ url: `/uploads/${key}`, key }));
         } catch (err) {
           console.error('[upload-api]', err);
           res.statusCode = 500;
           res.end(JSON.stringify({ error: String(err) }));
         }
+      });
+
+      // Serve uploaded images in dev: GET /api/images/:key
+      server.middlewares.use(async (req, res, next) => {
+        const match = req.url?.match(/^\/api\/images\/(.+)/);
+        if (!match) return next();
+
+        const fs = await import('fs');
+        const path = await import('path');
+        const filePath = path.resolve('public/uploads', match[1]);
+        if (!fs.existsSync(filePath)) {
+          res.statusCode = 404;
+          res.end('Not found');
+          return;
+        }
+        const data = fs.readFileSync(filePath);
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        res.end(data);
       });
     },
   };
