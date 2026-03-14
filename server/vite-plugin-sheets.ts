@@ -203,7 +203,7 @@ export default function sheetsPlugin(): Plugin {
         }
       });
 
-      // Upload route: POST /api/upload → save file locally (dev) or R2 (prod)
+      // Upload route: POST /api/upload → proxy to production R2 + save locally for dev serving
       server.middlewares.use(async (req, res, next) => {
         if (req.url !== '/api/upload' || req.method !== 'POST') return next();
 
@@ -221,7 +221,7 @@ export default function sheetsPlugin(): Plugin {
           const rawBody = Buffer.concat(chunks);
 
           const boundary = boundaryMatch[1];
-          const { fileName, fileBuffer } = parseMultipart(rawBody, boundary);
+          const { fileName, mimeType, fileBuffer } = parseMultipart(rawBody, boundary);
 
           if (!fileBuffer || !fileName) {
             res.statusCode = 400;
@@ -229,16 +229,30 @@ export default function sheetsPlugin(): Plugin {
             return;
           }
 
-          // Save to public/uploads/ for local dev
+          // Proxy upload to production R2 via the Cloudflare Pages function
+          const formData = new FormData();
+          formData.append('file', new Blob([fileBuffer], { type: mimeType }), fileName);
+          const prodRes = await fetch('https://new.advantagelucy.com/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!prodRes.ok) {
+            const err = await prodRes.text();
+            throw new Error(`Production upload failed: ${prodRes.status} ${err}`);
+          }
+
+          const prodData = await prodRes.json() as { url: string; key: string };
+
+          // Also save locally so dev image serving works without proxying
           const fs = await import('fs');
           const path = await import('path');
           const uploadsDir = path.resolve('public/uploads');
           if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-          const key = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-          fs.writeFileSync(path.join(uploadsDir, key), fileBuffer);
+          fs.writeFileSync(path.join(uploadsDir, prodData.key), fileBuffer);
 
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ url: `/api/images/${key}`, key }));
+          res.end(JSON.stringify(prodData));
         } catch (err) {
           console.error('[upload-api]', err);
           res.statusCode = 500;
