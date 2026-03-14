@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person } from '../types';
-import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getVenues, getAreas, getPeople } from '../services/sheetsService';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost } from '../types';
+import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getNews, getAllNews, getVenues, getAreas, getPeople } from '../services/sheetsService';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -93,6 +93,32 @@ export function useVenues() {
   }, [tick]);
 
   return { venues, loading, refresh: () => setTick(t => t + 1) };
+}
+
+export function useNews() {
+  const [news, setNews] = useState<NewsPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getNews()
+      .then(setNews)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { news, loading };
+}
+
+export function useAllNews() {
+  const [news, setNews] = useState<NewsPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAllNews()
+      .then(setNews)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { news, loading };
 }
 
 export function usePeople() {

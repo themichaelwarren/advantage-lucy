@@ -20,6 +20,7 @@ export default function AdminLayout() {
     { to: `${prefix}/venues`, label: 'Venues' },
     { to: `${prefix}/releases`, label: 'Releases' },
     { to: `${prefix}/songs`, label: 'Songs' },
+    { to: `${prefix}/news`, label: 'News' },
   ];
 
   return (

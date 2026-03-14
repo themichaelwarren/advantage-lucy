@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
-import { useEvents } from '../hooks/useSheetData';
+import { useEvents, useNews } from '../hooks/useSheetData';
 import EventCard from '../components/EventCard';
 
 const GREETINGS = [
@@ -18,10 +18,47 @@ interface Props {
   locale: Locale;
 }
 
+function HomeNews({ news, locale, prefix, s }: { news: import('../types').NewsPost[]; locale: Locale; prefix: string; s: ReturnType<typeof t> }) {
+  if (news.length === 0) return null;
+  const latestNews = [...news].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+  return (
+    <section className="mb-2">
+      <h2 className="section-label">{s.home.latestNews}</h2>
+      {latestNews.map(post => {
+        const title = locale === 'ja' ? post.title_ja : post.title_en;
+        const body = locale === 'ja' ? post.body_ja : post.body_en;
+        return (
+          <article key={post.id} className="news-card">
+            {post.image_url && (
+              <div className="news-card-image">
+                <img src={post.image_url} alt={title} />
+              </div>
+            )}
+            <div className="news-card-content">
+              <time className="news-card-date">{post.date}</time>
+              <h3 className="news-card-title">
+                <Link to={`${prefix}/news/${post.id}`}>{title}</Link>
+              </h3>
+              {body && <p className="news-card-body">{body}</p>}
+            </div>
+          </article>
+        );
+      })}
+      <div className="text-center mt-1">
+        <Link to={`${prefix}/news`} className="tag">
+          <span>{s.home.viewAllNews}</span>
+          <span>→</span>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export default function Home({ locale }: Props) {
   const s = t(locale);
   const prefix = `/${locale}`;
   const { events, loading: eventsLoading } = useEvents();
+  const { news } = useNews();
   const now = new Date().toISOString().slice(0, 10);
 
   const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
@@ -44,6 +81,9 @@ export default function Home({ locale }: Props) {
         <h1><span>{greeting}</span></h1>
         <p className="home-subtitle">this is advantagelucy.com</p>
       </div>
+
+      {/* Latest news */}
+      <HomeNews news={news} locale={locale} prefix={prefix} s={s} />
 
       {/* Next show */}
       {nextShow && (

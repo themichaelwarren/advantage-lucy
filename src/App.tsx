@@ -9,6 +9,8 @@ import About from './pages/About';
 import AlbumDetail from './pages/AlbumDetail';
 import SongDetail from './pages/SongDetail';
 import Contact from './pages/Contact';
+import News from './pages/News';
+import NewsDetail from './pages/NewsDetail';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminEvents from './pages/admin/AdminEvents';
@@ -19,6 +21,8 @@ import AdminMusic from './pages/admin/AdminMusic';
 import AdminAlbumForm from './pages/admin/AdminAlbumForm';
 import AdminSongs from './pages/admin/AdminSongs';
 import AdminSongForm from './pages/admin/AdminSongForm';
+import AdminNews from './pages/admin/AdminNews';
+import AdminNewsForm from './pages/admin/AdminNewsForm';
 import RequireAuth from './components/RequireAuth';
 
 // Soft indie pop palette
@@ -92,6 +96,8 @@ export default function App() {
         <Route path="releases" element={<Music locale="en" />} />
         <Route path="releases/:id" element={<AlbumDetail locale="en" />} />
         <Route path="songs/:id" element={<SongDetail locale="en" />} />
+        <Route path="news" element={<News locale="en" />} />
+        <Route path="news/:id" element={<NewsDetail locale="en" />} />
         <Route path="about" element={<About locale="en" />} />
         <Route path="contact" element={<Contact locale="en" />} />
       </Route>
@@ -104,6 +110,8 @@ export default function App() {
         <Route path="releases" element={<Music locale="ja" />} />
         <Route path="releases/:id" element={<AlbumDetail locale="ja" />} />
         <Route path="songs/:id" element={<SongDetail locale="ja" />} />
+        <Route path="news" element={<News locale="ja" />} />
+        <Route path="news/:id" element={<NewsDetail locale="ja" />} />
         <Route path="about" element={<About locale="ja" />} />
         <Route path="contact" element={<Contact locale="ja" />} />
       </Route>
@@ -120,6 +128,8 @@ export default function App() {
           <Route path="releases/:id" element={<AdminAlbumForm />} />
           <Route path="songs" element={<AdminSongs />} />
           <Route path="songs/:id" element={<AdminSongForm />} />
+          <Route path="news" element={<AdminNews />} />
+          <Route path="news/:id" element={<AdminNewsForm />} />
         </Route>
       </Route>
 

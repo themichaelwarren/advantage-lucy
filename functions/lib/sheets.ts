@@ -156,6 +156,15 @@ export async function fetchSetlists(sheetId: string, email: string, key: string)
   }));
 }
 
+export async function fetchNews(sheetId: string, email: string, key: string) {
+  const rows = await fetchSheet(sheetId, 'News!A:H', email, key);
+  return rowsToObjects(rows).map(r => ({
+    id: r.id, date: r.date, title_en: r.title_en || '', title_ja: r.title_ja || '',
+    body_en: r.body_en || undefined, body_ja: r.body_ja || undefined,
+    image_url: r.image_url || undefined, status: r.status || 'published',
+  }));
+}
+
 // ========== WRITE OPERATIONS ==========
 
 function colLetter(n: number): string {

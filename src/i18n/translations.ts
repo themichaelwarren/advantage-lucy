@@ -13,10 +13,16 @@ export const translations = {
     home: {
       tagline: 'Indie pop from Tokyo since 1995',
       nextShow: 'Next Show',
+      latestNews: 'News',
       recentEvents: 'Recent Events',
       viewAllEvents: 'View all events',
+      viewAllNews: 'View all news',
       latestRelease: 'Latest Release',
       viewDiscography: 'View discography',
+    },
+    news: {
+      title: 'News',
+      noNews: 'No news yet.',
     },
     events: {
       title: 'Events',
@@ -90,10 +96,16 @@ export const translations = {
     home: {
       tagline: '1995年から東京のインディーポップ',
       nextShow: '次のライブ',
+      latestNews: 'ニュース',
       recentEvents: '最近のイベント',
       viewAllEvents: 'イベント一覧',
+      viewAllNews: 'ニュース一覧',
       latestRelease: '最新リリース',
       viewDiscography: 'ディスコグラフィーを見る',
+    },
+    news: {
+      title: 'ニュース',
+      noNews: 'ニュースはありません。',
     },
     events: {
       title: 'イベント',

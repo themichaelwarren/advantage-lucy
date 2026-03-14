@@ -2,7 +2,7 @@
  * Server-side Google Sheets fetcher.
  * Used by the Vite dev server plugin and can be adapted for Cloudflare Workers in production.
  */
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person } from '../src/types';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person, NewsPost } from '../src/types';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -306,6 +306,24 @@ export async function fetchSetlists(
     set: row.set || '1',
     order: parseInt(row.order, 10) || 0,
     notes: row.notes || undefined,
+    status: row.status || 'published',
+  }));
+}
+
+export async function fetchNews(
+  sheetId: string,
+  email: string,
+  privateKey: string
+): Promise<NewsPost[]> {
+  const rows = await fetchSheet(sheetId, 'News!A:H', email, privateKey);
+  return rowsToObjects(rows).map(row => ({
+    id: row.id,
+    date: row.date,
+    title_en: row.title_en || '',
+    title_ja: row.title_ja || '',
+    body_en: row.body_en || undefined,
+    body_ja: row.body_ja || undefined,
+    image_url: row.image_url || undefined,
     status: row.status || 'published',
   }));
 }

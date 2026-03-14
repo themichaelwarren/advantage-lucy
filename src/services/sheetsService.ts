@@ -1,4 +1,4 @@
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person } from '../types';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost } from '../types';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -100,6 +100,22 @@ export async function getAreas(): Promise<Area[]> {
     console.warn('Failed to fetch areas from API:', err);
     return [];
   }
+}
+
+/** All news posts (including drafts). */
+export async function getAllNews(): Promise<NewsPost[]> {
+  try {
+    return await fetchWithCache('news', () => fetchJson<NewsPost[]>('/api/sheets/news'));
+  } catch (err) {
+    console.warn('Failed to fetch news from API:', err);
+    return [];
+  }
+}
+
+/** Published news only. */
+export async function getNews(): Promise<NewsPost[]> {
+  const all = await getAllNews();
+  return all.filter(n => n.status !== 'private');
 }
 
 export async function getPeople(): Promise<Person[]> {

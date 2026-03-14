@@ -91,6 +91,17 @@ export interface SetlistEntry {
   status?: string;    // 'published' | 'private'
 }
 
+export interface NewsPost {
+  id: string;
+  date: string;           // YYYY-MM-DD
+  title_en: string;
+  title_ja: string;
+  body_en?: string;
+  body_ja?: string;
+  image_url?: string;
+  status?: string;        // 'published' | 'private'
+}
+
 export interface Album {
   id: string;
   title: string;
