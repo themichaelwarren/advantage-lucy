@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAllEvents, useVenues, useAreas } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, uploadFile } from '../../services/adminService';
+import { useAllEvents, useVenues, useAreas, useSetlists, useSongs } from '../../hooks/useSheetData';
+import { createRow, updateRow, deleteRow, uploadFile, replaceRows } from '../../services/adminService';
 
 /** Pad time like "9:30" → "09:30" for HTML time inputs. */
 function padTime(t: string | undefined): string {
@@ -66,8 +66,13 @@ export default function AdminEventForm() {
   const { events, loading } = useAllEvents();
   const { venues, refresh: refreshVenues } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
+  const { setlists: allSetlists } = useSetlists();
+  const { songs } = useSongs();
 
   const [form, setForm] = useState<Record<EventField, string>>(emptyForm);
+  type SetlistRow = { song: string; set: string; order: string; notes: string; status: string };
+  const [setlistRows, setSetlistRows] = useState<SetlistRow[]>([]);
+  const [savingSetlist, setSavingSetlist] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -108,6 +113,25 @@ export default function AdminEventForm() {
       status: event.status || 'published',
     });
   }, [isNew, id, events, loading]);
+
+  // Populate setlist for existing event
+  useEffect(() => {
+    if (isNew || !form.id) return;
+    const entries = allSetlists
+      .filter(s => s.event === form.id)
+      .sort((a, b) => {
+        if (a.set !== b.set) return a.set.localeCompare(b.set);
+        return a.order - b.order;
+      })
+      .map(s => ({
+        song: s.song,
+        set: s.set,
+        order: String(s.order),
+        notes: s.notes || '',
+        status: s.status || 'published',
+      }));
+    if (entries.length > 0) setSetlistRows(entries);
+  }, [isNew, form.id, allSetlists]);
 
   function handleChange(field: EventField, value: string) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -350,6 +374,119 @@ export default function AdminEventForm() {
           </button>
         </div>
       </form>
+
+      {/* Setlist editor — only for existing events */}
+      {!isNew && (
+        <section className="admin-related-section">
+          <h2>Setlist</h2>
+          <div className="admin-tracklist">
+            {setlistRows.map((row, i) => (
+              <div key={i} className="admin-tracklist-row">
+                <select
+                  className="admin-setlist-set"
+                  value={row.set}
+                  onChange={e => {
+                    const copy = [...setlistRows];
+                    copy[i] = { ...copy[i], set: e.target.value };
+                    setSetlistRows(copy);
+                  }}
+                >
+                  <option value="1">Set 1</option>
+                  <option value="2">Set 2</option>
+                  <option value="3">Set 3</option>
+                  <option value="e">Encore</option>
+                  <option value="e2">Encore 2</option>
+                </select>
+                <input
+                  type="number"
+                  className="admin-tracklist-num"
+                  value={row.order}
+                  onChange={e => {
+                    const copy = [...setlistRows];
+                    copy[i] = { ...copy[i], order: e.target.value };
+                    setSetlistRows(copy);
+                  }}
+                  min={1}
+                  placeholder="#"
+                />
+                <input
+                  type="text"
+                  className="admin-tracklist-title"
+                  value={row.song}
+                  onChange={e => {
+                    const copy = [...setlistRows];
+                    copy[i] = { ...copy[i], song: e.target.value };
+                    setSetlistRows(copy);
+                  }}
+                  list="song-titles-setlist"
+                  placeholder="Song title"
+                />
+                <input
+                  type="text"
+                  className="admin-setlist-notes"
+                  value={row.notes}
+                  onChange={e => {
+                    const copy = [...setlistRows];
+                    copy[i] = { ...copy[i], notes: e.target.value };
+                    setSetlistRows(copy);
+                  }}
+                  placeholder="Notes"
+                />
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-sm admin-btn-danger"
+                  onClick={() => setSetlistRows(setlistRows.filter((_, j) => j !== i))}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            <datalist id="song-titles-setlist">
+              {songs.map(s => <option key={s.id} value={s.title} />)}
+            </datalist>
+            <button
+              type="button"
+              className="admin-btn admin-btn-sm"
+              onClick={() => {
+                const lastSet = setlistRows.length > 0 ? setlistRows[setlistRows.length - 1].set : '1';
+                const lastOrder = setlistRows.filter(r => r.set === lastSet).length + 1;
+                setSetlistRows([...setlistRows, { song: '', set: lastSet, order: String(lastOrder), notes: '', status: 'published' }]);
+              }}
+            >
+              + Add Song
+            </button>
+            <button
+              type="button"
+              className="admin-btn admin-btn-primary admin-btn-sm"
+              style={{ marginLeft: '0.5rem' }}
+              disabled={savingSetlist}
+              onClick={async () => {
+                setSavingSetlist(true);
+                setError('');
+                try {
+                  const rows = setlistRows
+                    .filter(r => r.song.trim())
+                    .map(r => ({
+                      event: form.id,
+                      song: r.song,
+                      set: r.set,
+                      order: r.order,
+                      notes: r.notes,
+                      status: r.status,
+                    }));
+                  await replaceRows('Setlists', form.id, rows);
+                } catch (err) {
+                  setError(`Setlist save failed: ${err}`);
+                } finally {
+                  setSavingSetlist(false);
+                }
+              }}
+            >
+              {savingSetlist ? 'Saving...' : 'Save Setlist'}
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Danger zone — only for existing events */}
       {!isNew && (

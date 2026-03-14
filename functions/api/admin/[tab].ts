@@ -7,7 +7,7 @@
  */
 import {
   type Env, getCredentials,
-  fetchHeaders, appendRow, updateRow, deleteRow,
+  fetchHeaders, appendRow, updateRow, deleteRow, replaceRows,
 } from '../../lib/sheets';
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, params, env }) => {
@@ -39,6 +39,18 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, params, env })
     const tab = params.tab as string;
     const body: any = await request.json();
     await updateRow(sheetId, tab, body.id, body.fields, email, privateKey);
+    return Response.json({ ok: true });
+  } catch (err) {
+    return Response.json({ error: String(err) }, { status: 500 });
+  }
+};
+
+export const onRequestPatch: PagesFunction<Env> = async ({ request, params, env }) => {
+  try {
+    const { sheetId, email, privateKey } = getCredentials(env);
+    const tab = params.tab as string;
+    const body: any = await request.json();
+    await replaceRows(sheetId, tab, body.key, body.rows, email, privateKey);
     return Response.json({ ok: true });
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 });

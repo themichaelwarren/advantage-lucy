@@ -1,8 +1,18 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents } from '../hooks/useSheetData';
 import EventCard from '../components/EventCard';
+
+const GREETINGS = [
+  'hi',
+  'hey',
+  'hey there',
+  'hello',
+  'hello again',
+  'hello mate!',
+];
 
 interface Props {
   locale: Locale;
@@ -13,6 +23,8 @@ export default function Home({ locale }: Props) {
   const prefix = `/${locale}`;
   const { events, loading: eventsLoading } = useEvents();
   const now = new Date().toISOString().slice(0, 10);
+
+  const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
 
   const upcoming = events
     .filter(e => e.date >= now)
@@ -28,11 +40,9 @@ export default function Home({ locale }: Props) {
   return (
     <>
       {/* Hero */}
-      <div className="page-title band-name">
-        <h1>
-          <span style={{ transform: 'rotate(-2deg)' }}>advantage</span>{' '}
-          <span style={{ transform: 'rotate(3deg)' }}>Lucy</span>
-        </h1>
+      <div className="page-title home-hero">
+        <h1><span>{greeting}</span></h1>
+        <p className="home-subtitle">this is advantagelucy.com</p>
       </div>
 
       {/* Next show */}

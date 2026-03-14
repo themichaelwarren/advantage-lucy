@@ -13,6 +13,13 @@ import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminEvents from './pages/admin/AdminEvents';
 import AdminEventForm from './pages/admin/AdminEventForm';
+import AdminVenues from './pages/admin/AdminVenues';
+import AdminVenueForm from './pages/admin/AdminVenueForm';
+import AdminMusic from './pages/admin/AdminMusic';
+import AdminAlbumForm from './pages/admin/AdminAlbumForm';
+import AdminSongs from './pages/admin/AdminSongs';
+import AdminSongForm from './pages/admin/AdminSongForm';
+import RequireAuth from './components/RequireAuth';
 
 // Soft indie pop palette
 const BG_COLORS = [
@@ -32,8 +39,36 @@ function pickRandomBg(current?: string) {
   return choices[Math.floor(Math.random() * choices.length)];
 }
 
+function setFavicon(color: string) {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.head.appendChild(link);
+  }
+  link.type = 'image/png';
+  link.href = canvas.toDataURL('image/png');
+}
+
+function applyBg(current?: string) {
+  const color = pickRandomBg(current);
+  document.documentElement.style.setProperty('--bg', color);
+  setFavicon(color);
+  return color;
+}
+
 // Set initial color before first paint
-document.documentElement.style.setProperty('--bg', pickRandomBg());
+applyBg();
 
 export default function App() {
   const location = useLocation();
@@ -41,13 +76,13 @@ export default function App() {
   useEffect(() => {
     if (location.pathname.includes('/admin')) return;
     const current = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-    document.documentElement.style.setProperty('--bg', pickRandomBg(current));
+    applyBg(current);
   }, [location.pathname]);
 
   return (
     <Routes>
-      {/* Redirect root to /en/ */}
-      <Route path="/" element={<Navigate to="/en/" replace />} />
+      {/* Redirect root to browser language */}
+      <Route path="/" element={<Navigate to={navigator.language.startsWith('ja') ? '/ja/' : '/en/'} replace />} />
 
       {/* English routes */}
       <Route path="/en" element={<Layout locale="en" />}>
@@ -73,11 +108,19 @@ export default function App() {
         <Route path="contact" element={<Contact locale="ja" />} />
       </Route>
 
-      {/* Admin routes (under locale) */}
-      <Route path="/:locale/admin" element={<AdminLayout />}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="events" element={<AdminEvents />} />
-        <Route path="events/:id" element={<AdminEventForm />} />
+      {/* Admin routes (under locale, auth-protected) */}
+      <Route path="/:locale/admin" element={<RequireAuth />}>
+        <Route element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="events" element={<AdminEvents />} />
+          <Route path="events/:id" element={<AdminEventForm />} />
+          <Route path="venues" element={<AdminVenues />} />
+          <Route path="venues/:id" element={<AdminVenueForm />} />
+          <Route path="releases" element={<AdminMusic />} />
+          <Route path="releases/:id" element={<AdminAlbumForm />} />
+          <Route path="songs" element={<AdminSongs />} />
+          <Route path="songs/:id" element={<AdminSongForm />} />
+        </Route>
       </Route>
 
       {/* Fallback */}

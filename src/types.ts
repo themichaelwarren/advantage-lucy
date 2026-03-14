@@ -66,11 +66,19 @@ export interface TracklistEntry {
   title: string;         // song title (joins to Songs tab)
 }
 
+export interface Person {
+  id: string;
+  name_family_en: string;
+  name_given_en: string;
+  name_family_ja: string;
+  name_given_ja: string;
+}
+
 export interface Song {
   id: string;
   title: string;
-  music_by?: string;
-  lyrics_by?: string;
+  music_by?: string;     // People ID
+  lyrics_by?: string;    // People ID
   lyrics_doc_id?: string;
 }
 

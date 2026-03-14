@@ -66,14 +66,68 @@
   color: #fff;
 }
 
+.admin-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+.admin-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--admin-muted);
+}
+.admin-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+.admin-user-email {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .admin-back {
   font-size: 0.82rem;
   color: var(--admin-muted);
   text-decoration: none;
-  margin-left: auto;
 }
 .admin-back:hover {
   color: var(--admin-text);
+}
+
+/* ---------- LOGIN ---------- */
+.admin-login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 60dvh;
+  padding: 2rem;
+  text-align: center;
+}
+.admin-login h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.admin-login p {
+  color: var(--admin-muted);
+}
+.admin-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--admin-text);
+  cursor: pointer;
+  padding: 0.25rem;
+  margin-left: auto;
+}
+.admin-nav-site {
+  display: none;
 }
 
 /* ---------- MAIN ---------- */
@@ -207,6 +261,34 @@
   margin-left: 0.4rem;
 }
 
+.admin-td-id {
+  font-size: 0.78rem;
+  color: var(--admin-muted);
+  font-family: monospace;
+}
+.admin-td-thumb {
+  width: 2.5rem;
+  padding: 0.3rem !important;
+}
+.admin-thumb {
+  width: 2.2rem;
+  height: 2.2rem;
+  object-fit: cover;
+  border-radius: 2px;
+  display: block;
+}
+.admin-thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  background: var(--admin-border);
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+  border-radius: 2px;
+}
+
 /* ---------- BUTTONS ---------- */
 .admin-btn {
   display: inline-block;
@@ -298,6 +380,47 @@
 }
 
 /* ---------- UPLOAD FIELD ---------- */
+.admin-lyrics-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.admin-lyrics-field a {
+  align-self: flex-start;
+}
+
+.admin-people-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.admin-people-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.admin-people-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.4rem;
+  background: #e8e8e8;
+  border-radius: 3px;
+  font-size: 0.85rem;
+}
+.admin-people-tag button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 0.1rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: #888;
+}
+.admin-people-tag button:hover {
+  color: #c00;
+}
+
 .admin-upload-field {
   display: flex;
   flex-direction: column;
@@ -525,6 +648,84 @@
   background: var(--admin-surface);
 }
 
+/* ---------- RELATED SECTIONS (Tracklist, Setlist) ---------- */
+.admin-related-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--admin-border);
+}
+.admin-related-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+.admin-tracklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.admin-tracklist-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.admin-tracklist-num {
+  width: 3.5rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.82rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  text-align: center;
+}
+.admin-lyrics-icon {
+  display: flex;
+  align-items: center;
+  color: var(--admin-muted);
+  opacity: 0.4;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.admin-lyrics-icon.has-doc {
+  color: var(--admin-primary);
+  opacity: 1;
+}
+.admin-lyrics-icon:hover {
+  opacity: 1;
+}
+.admin-tracklist-title {
+  flex: 1;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.82rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+}
+.admin-setlist-set {
+  width: 5.5rem;
+  padding: 0.4rem 0.3rem;
+  font-size: 0.82rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+}
+.admin-setlist-notes {
+  width: 8rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.82rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+}
+.admin-tracklist-num:focus,
+.admin-tracklist-title:focus,
+.admin-setlist-set:focus,
+.admin-setlist-notes:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
 /* ---------- EMPTY ---------- */
 .admin-empty {
   text-align: center;
@@ -541,14 +742,51 @@
   .admin-desktop-only { display: none; }
 
   .admin-header {
-    flex-wrap: wrap;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
   }
+  .admin-menu-toggle {
+    display: flex;
+    align-items: center;
+  }
+  .admin-user-email {
+    display: none;
+  }
+  .admin-back {
+    display: none;
+  }
   .admin-nav {
-    order: 3;
-    width: 100%;
-    overflow-x: auto;
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    background: var(--admin-surface);
+    border-bottom: 1px solid var(--admin-border);
+    padding: 0.5rem 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    z-index: 99;
+  }
+  .admin-nav.open {
+    display: flex;
+  }
+  .admin-nav a {
+    padding: 0.6rem 1.25rem;
+    border-radius: 0;
+    font-size: 0.9rem;
+  }
+  .admin-nav a.active {
+    border-radius: 0;
+  }
+  .admin-nav-site {
+    display: block;
+    border-top: 1px solid var(--admin-border);
+    margin-top: 0.25rem;
+    padding-top: 0.6rem;
+    color: var(--admin-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
   }
   .admin-main {
     padding: 1rem;
@@ -564,5 +802,21 @@
   }
   .admin-form-actions .admin-btn {
     text-align: center;
+  }
+
+  /* Tracklist/setlist rows: stack on mobile */
+  .admin-tracklist-row {
+    flex-wrap: wrap;
+  }
+  .admin-tracklist-title {
+    min-width: 0;
+    flex-basis: 100%;
+    order: -1;
+  }
+  .admin-setlist-notes {
+    width: 100%;
+  }
+  .admin-setlist-set {
+    flex: 1;
   }
 }

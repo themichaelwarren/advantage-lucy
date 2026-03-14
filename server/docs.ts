@@ -3,7 +3,7 @@
  * Reuses the same JWT auth as the Sheets fetcher.
  */
 
-const SCOPES = 'https://www.googleapis.com/auth/documents.readonly https://www.googleapis.com/auth/drive.readonly';
+const SCOPES = 'https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 function base64url(input: string | Uint8Array): string {
@@ -102,6 +102,41 @@ export async function fetchDocText(
 
   const doc = await res.json();
   return extractText(doc);
+}
+
+/**
+ * Create a blank Google Doc in the specified folder.
+ * Returns the new document ID.
+ */
+export async function createDoc(
+  title: string,
+  folderId: string,
+  email: string,
+  privateKey: string
+): Promise<string> {
+  const token = await getAccessToken(email, privateKey);
+
+  // Create a Google Doc directly in the target folder via Drive API
+  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: title,
+      mimeType: 'application/vnd.google-apps.document',
+      parents: [folderId],
+    }),
+  });
+
+  if (!createRes.ok) {
+    const err = await createRes.text();
+    throw new Error(`Drive create error: ${createRes.status} ${err}`);
+  }
+
+  const file = await createRes.json();
+  return file.id;
 }
 
 interface DocElement {

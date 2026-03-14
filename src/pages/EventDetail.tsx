@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useSetlists, useSongs } from '../hooks/useSheetData';
-import { formatDate, getEventTitle } from '../utils/format';
+import { formatDate, formatPrice, getEventTitle } from '../utils/format';
 
 interface Props {
   locale: Locale;
@@ -115,18 +115,18 @@ export default function EventDetail({ locale }: Props) {
           </>
         )}
 
-        {(event.adv_price || event.door_price) && (
+        {(event.adv_price != null && event.adv_price !== '' || event.door_price != null && event.door_price !== '') && (
           <>
-            {event.adv_price && (
+            {event.adv_price != null && event.adv_price !== '' && (
               <>
                 <dt>{s.events.advPrice}</dt>
-                <dd>{event.adv_price}</dd>
+                <dd>{formatPrice(event.adv_price, locale, event.country_en)}</dd>
               </>
             )}
-            {event.door_price && (
+            {event.door_price != null && event.door_price !== '' && (
               <>
                 <dt>{s.events.doorPrice}</dt>
-                <dd>{event.door_price}</dd>
+                <dd>{formatPrice(event.door_price, locale, event.country_en)}</dd>
               </>
             )}
           </>

@@ -203,6 +203,16 @@ main {
   margin-top: 0.5rem;
 }
 
+.home-hero h1 {
+  font-size: clamp(1rem, 5vw, 1.8rem);
+}
+.home-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  letter-spacing: 0.02em;
+}
+
 /* ---------- SECTION LABEL ---------- */
 .section-header {
   display: flex;
@@ -603,6 +613,7 @@ main {
 .view-toggle {
   display: flex;
   gap: 0.3rem;
+  margin-left: auto;
 }
 .view-toggle button {
   display: inline-flex;

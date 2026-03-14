@@ -31,6 +31,35 @@ export function formatDate(
   });
 }
 
+/** Country → currency symbol map */
+const CURRENCY: Record<string, string> = {
+  Japan: '¥',
+  'United States': '$',
+  'United Kingdom': '£',
+  Canada: 'CA$',
+  Australia: 'A$',
+  China: '¥',
+  'South Korea': '₩',
+  Taiwan: 'NT$',
+};
+
+/**
+ * Format a price string for display.
+ * "0" → FREE / 入場無料, otherwise add currency symbol + comma separators.
+ */
+export function formatPrice(
+  price: string,
+  locale: Locale,
+  country?: string,
+): string {
+  const n = Number(price);
+  if (isNaN(n)) return price; // non-numeric, return as-is
+  if (n === 0) return locale === 'ja' ? '入場無料' : 'FREE';
+
+  const symbol = (country && CURRENCY[country]) || '¥';
+  return `${symbol}${n.toLocaleString()}`;
+}
+
 /**
  * Get event display title, falling back to "date @ venue" if no title exists.
  */

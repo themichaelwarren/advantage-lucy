@@ -65,7 +65,9 @@ export default function Layout({ locale }: Props) {
               key={link.to}
               to={link.to}
               aria-current={
-                location.pathname.startsWith(link.to) ? 'page' : undefined
+                location.pathname.startsWith(link.to)
+                || (link.to.endsWith('/releases') && location.pathname.startsWith(`${prefix}/songs`))
+                  ? 'page' : undefined
               }
             >
               {link.label}

@@ -4,3 +4,5 @@ dist/
 *.env
 *.local
 public/uploads/
+tsconfig.tsbuildinfo
+.vscode/

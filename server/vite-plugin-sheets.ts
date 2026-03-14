@@ -3,8 +3,8 @@
  * Keeps the service account key server-side.
  */
 import type { Plugin } from 'vite';
-import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchSetlists, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, fetchHeaders } from './sheets';
-import { fetchDocText } from './docs';
+import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, replaceRows, fetchHeaders } from './sheets';
+import { fetchDocText, createDoc } from './docs';
 
 
 export default function sheetsPlugin(): Plugin {
@@ -36,6 +36,8 @@ export default function sheetsPlugin(): Plugin {
             data = await fetchTracklists(sheetId, email, privateKey);
           } else if (req.url.startsWith('/api/sheets/songs')) {
             data = await fetchSongs(sheetId, email, privateKey);
+          } else if (req.url.startsWith('/api/sheets/people')) {
+            data = await fetchPeople(sheetId, email, privateKey);
           } else if (req.url.startsWith('/api/sheets/setlists')) {
             data = await fetchSetlists(sheetId, email, privateKey);
           } else if (req.url.startsWith('/api/sheets/venues')) {
@@ -79,7 +81,7 @@ export default function sheetsPlugin(): Plugin {
 
         // Parse JSON body for POST/PUT
         let body: Record<string, unknown> = {};
-        if (req.method === 'POST' || req.method === 'PUT') {
+        if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
           const chunks: Buffer[] = [];
           for await (const chunk of req) chunks.push(chunk as Buffer);
           body = JSON.parse(Buffer.concat(chunks).toString());
@@ -128,6 +130,16 @@ export default function sheetsPlugin(): Plugin {
             return;
           }
 
+          if (req.method === 'PATCH') {
+            // Bulk replace: delete all rows where col A = key, then append new rows
+            const key = body.key as string;
+            const rows = body.rows as Record<string, string>[];
+            await replaceRows(sheetId, tab, key, rows, email, privateKey);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ ok: true }));
+            return;
+          }
+
           res.statusCode = 405;
           res.end(JSON.stringify({ error: 'Method not allowed' }));
         } catch (err) {
@@ -161,6 +173,34 @@ export default function sheetsPlugin(): Plugin {
           res.end(JSON.stringify({ error: String(err) }));
         }
       });
+      // Create Doc route: POST /api/docs → create a blank Google Doc in lyrics folder
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url !== '/api/docs' || req.method !== 'POST') return next();
+
+        const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+        const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+        const folderId = process.env.VITE_LYRICS_FOLDER_ID;
+
+        if (!email || !privateKey || !folderId) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: 'Missing Google auth or folder env vars' }));
+          return;
+        }
+
+        try {
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) chunks.push(chunk as Buffer);
+          const body = JSON.parse(Buffer.concat(chunks).toString());
+          const docId = await createDoc(body.title, folderId, email, privateKey);
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ docId }));
+        } catch (err) {
+          console.error('[docs-create]', err);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: String(err) }));
+        }
+      });
+
       // Upload route: POST /api/upload → save file locally (dev) or R2 (prod)
       server.middlewares.use(async (req, res, next) => {
         if (req.url !== '/api/upload' || req.method !== 'POST') return next();

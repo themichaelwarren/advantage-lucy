@@ -3,7 +3,7 @@
  */
 import { getAccessToken } from './auth';
 
-const SCOPE = 'https://www.googleapis.com/auth/documents.readonly https://www.googleapis.com/auth/drive.readonly';
+const SCOPE = 'https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive';
 
 export async function fetchDocText(docId: string, email: string, privateKey: string): Promise<string> {
   const token = await getAccessToken(email, privateKey, SCOPE);
@@ -18,6 +18,37 @@ export async function fetchDocText(docId: string, email: string, privateKey: str
 
   const doc: any = await res.json();
   return extractText(doc);
+}
+
+export async function createDoc(
+  title: string,
+  folderId: string,
+  email: string,
+  privateKey: string
+): Promise<string> {
+  const token = await getAccessToken(email, privateKey, SCOPE);
+
+  // Create a Google Doc directly in the target folder via Drive API
+  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: title,
+      mimeType: 'application/vnd.google-apps.document',
+      parents: [folderId],
+    }),
+  });
+
+  if (!createRes.ok) {
+    const err = await createRes.text();
+    throw new Error(`Drive create error: ${createRes.status} ${err}`);
+  }
+
+  const file: any = await createRes.json();
+  return file.id;
 }
 
 function extractText(doc: any): string {

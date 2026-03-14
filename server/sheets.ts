@@ -2,7 +2,7 @@
  * Server-side Google Sheets fetcher.
  * Used by the Vite dev server plugin and can be adapted for Cloudflare Workers in production.
  */
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country } from '../src/types';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person } from '../src/types';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -279,6 +279,21 @@ export async function fetchSongs(
   }));
 }
 
+export async function fetchPeople(
+  sheetId: string,
+  email: string,
+  privateKey: string
+): Promise<Person[]> {
+  const rows = await fetchSheet(sheetId, 'People!A:E', email, privateKey);
+  return rowsToObjects(rows).map(row => ({
+    id: row.id,
+    name_family_en: row.name_family_en || '',
+    name_given_en: row.name_given_en || '',
+    name_family_ja: row.name_family_ja || '',
+    name_given_ja: row.name_given_ja || '',
+  }));
+}
+
 export async function fetchSetlists(
   sheetId: string,
   email: string,
@@ -446,6 +461,82 @@ export async function deleteRow(
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Sheets delete error: ${res.status} ${err}`);
+  }
+}
+
+/**
+ * Replace all rows where column A matches `key` with new rows.
+ * Used for bulk-managing Tracklists (by release) and Setlists (by event).
+ */
+export async function replaceRows(
+  sheetId: string,
+  tab: string,
+  key: string,
+  rows: Record<string, string>[],
+  email: string,
+  privateKey: string
+): Promise<void> {
+  const token = await getAccessToken(email, privateKey);
+
+  // Get sheet metadata for numeric ID
+  const metaRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!metaRes.ok) throw new Error(`Failed to get sheet metadata: ${metaRes.status}`);
+  const meta = await metaRes.json();
+  const sheet = meta.sheets?.find((s: { properties: { title: string } }) => s.properties.title === tab);
+  if (!sheet) throw new Error(`Tab "${tab}" not found`);
+  const numericSheetId = sheet.properties.sheetId;
+
+  // Find all matching row indices (1-based), collect in reverse order for safe deletion
+  const allRows = await fetchSheet(sheetId, `${tab}!A:A`, email, privateKey);
+  const indices: number[] = [];
+  for (let i = 1; i < allRows.length; i++) {
+    if (allRows[i][0]?.trim() === key) indices.push(i); // 0-based data index = i, 1-based sheet row = i+1
+  }
+
+  // Delete in reverse order to preserve row indices
+  if (indices.length > 0) {
+    const requests = indices.reverse().map(i => ({
+      deleteDimension: {
+        range: {
+          sheetId: numericSheetId,
+          dimension: 'ROWS',
+          startIndex: i, // 0-based (header is row 0)
+          endIndex: i + 1,
+        },
+      },
+    }));
+    const delRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests }),
+      }
+    );
+    if (!delRes.ok) {
+      const err = await delRes.text();
+      throw new Error(`Sheets batch delete error: ${delRes.status} ${err}`);
+    }
+  }
+
+  // Append new rows
+  if (rows.length > 0) {
+    const headers = await fetchHeaders(sheetId, tab, email, privateKey);
+    const values = rows.map(r => headers.map(h => r[h] ?? ''));
+    const range = encodeURIComponent(`${tab}!A:A`);
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+    const appRes = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values }),
+    });
+    if (!appRes.ok) {
+      const err = await appRes.text();
+      throw new Error(`Sheets append error: ${appRes.status} ${err}`);
+    }
   }
 }
 

@@ -139,6 +139,14 @@ export async function fetchSongs(sheetId: string, email: string, key: string) {
   }));
 }
 
+export async function fetchPeople(sheetId: string, email: string, key: string) {
+  const rows = await fetchSheet(sheetId, 'People!A:E', email, key);
+  return rowsToObjects(rows).map(r => ({
+    id: r.id, name_family_en: r.name_family_en || '', name_given_en: r.name_given_en || '',
+    name_family_ja: r.name_family_ja || '', name_given_ja: r.name_given_ja || '',
+  }));
+}
+
 export async function fetchSetlists(sheetId: string, email: string, key: string) {
   const rows = await fetchSheet(sheetId, 'Setlists!A:F', email, key);
   return rowsToObjects(rows).map(r => ({
@@ -229,4 +237,51 @@ export async function deleteRow(sheetId: string, tab: string, id: string, email:
     }),
   });
   if (!res.ok) { const err = await res.text(); throw new Error(`Sheets delete error: ${res.status} ${err}`); }
+}
+
+export async function replaceRows(
+  sheetId: string, tab: string, key: string, rows: Record<string, string>[], email: string, privateKey: string
+): Promise<void> {
+  const token = await getToken(email, privateKey);
+
+  const metaRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!metaRes.ok) throw new Error(`Failed to get sheet metadata: ${metaRes.status}`);
+  const meta: any = await metaRes.json();
+  const sheet = meta.sheets?.find((s: any) => s.properties.title === tab);
+  if (!sheet) throw new Error(`Tab "${tab}" not found`);
+  const numericSheetId = sheet.properties.sheetId;
+
+  const allRows = await fetchSheet(sheetId, `${tab}!A:A`, email, privateKey);
+  const indices: number[] = [];
+  for (let i = 1; i < allRows.length; i++) {
+    if (allRows[i][0]?.trim() === key) indices.push(i);
+  }
+
+  if (indices.length > 0) {
+    const requests = indices.reverse().map(i => ({
+      deleteDimension: { range: { sheetId: numericSheetId, dimension: 'ROWS', startIndex: i, endIndex: i + 1 } },
+    }));
+    const delRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests }),
+    });
+    if (!delRes.ok) { const err = await delRes.text(); throw new Error(`Sheets batch delete error: ${delRes.status} ${err}`); }
+  }
+
+  if (rows.length > 0) {
+    const headers = await fetchHeaders(sheetId, tab, email, privateKey);
+    const values = rows.map(r => headers.map(h => r[h] ?? ''));
+    const range = encodeURIComponent(`${tab}!A:A`);
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+    const appRes = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values }),
+    });
+    if (!appRes.ok) { const err = await appRes.text(); throw new Error(`Sheets append error: ${appRes.status} ${err}`); }
+  }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area } from '../types';
-import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getVenues, getAreas } from '../services/sheetsService';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person } from '../types';
+import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getVenues, getAreas, getPeople } from '../services/sheetsService';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -93,6 +93,19 @@ export function useVenues() {
   }, [tick]);
 
   return { venues, loading, refresh: () => setTick(t => t + 1) };
+}
+
+export function usePeople() {
+  const [people, setPeople] = useState<Person[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getPeople()
+      .then(setPeople)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { people, loading };
 }
 
 export function useAreas() {

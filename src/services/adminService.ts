@@ -39,6 +39,17 @@ export async function deleteRow(tab: string, id: string) {
   return result;
 }
 
+/** Bulk replace: delete all rows where col A = key, then append new rows. */
+export async function replaceRows(tab: string, key: string, rows: Record<string, string>[]) {
+  const result = await adminFetch(`/api/admin/${tab}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, rows }),
+  });
+  invalidateCache(tab);
+  return result;
+}
+
 export async function getHeaders(tab: string): Promise<string[]> {
   const data = await adminFetch(`/api/admin/${tab}/headers`);
   return data.headers;
