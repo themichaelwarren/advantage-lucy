@@ -1,5 +1,4 @@
 import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area } from '../types';
-import { mockEvents, mockAlbums } from './mockData';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -31,8 +30,8 @@ export async function getAllEvents(): Promise<Event[]> {
   try {
     return await fetchWithCache('events', () => fetchJson<Event[]>('/api/sheets/events'));
   } catch (err) {
-    console.warn('Failed to fetch events from API, using mock data:', err);
-    return mockEvents;
+    console.error('Failed to fetch events:', err);
+    return [];
   }
 }
 
@@ -46,8 +45,8 @@ export async function getAlbums(): Promise<Album[]> {
   try {
     return await fetchWithCache('albums', () => fetchJson<Album[]>('/api/sheets/albums'));
   } catch (err) {
-    console.warn('Failed to fetch albums from API, using mock data:', err);
-    return mockAlbums;
+    console.error('Failed to fetch albums:', err);
+    return [];
   }
 }
 
