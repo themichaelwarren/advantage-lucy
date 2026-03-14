@@ -238,7 +238,7 @@ export default function sheetsPlugin(): Plugin {
           fs.writeFileSync(path.join(uploadsDir, key), fileBuffer);
 
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ url: `/uploads/${key}`, key }));
+          res.end(JSON.stringify({ url: `/api/images/${key}`, key }));
         } catch (err) {
           console.error('[upload-api]', err);
           res.statusCode = 500;
