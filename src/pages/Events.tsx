@@ -2,9 +2,9 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
-import { useEvents } from '../hooks/useSheetData';
-import { formatDate, getEventTitle } from '../utils/format';
-import EventCard from '../components/EventCard';
+import { useEvents, useSetlists } from '../hooks/useSheetData';
+import { formatDate } from '../utils/format';
+import EventCard, { SetlistIcon } from '../components/EventCard';
 
 interface Props {
   locale: Locale;
@@ -14,10 +14,12 @@ export default function Events({ locale }: Props) {
   const s = t(locale);
   const prefix = `/${locale}`;
   const { events, loading } = useEvents();
+  const { setlists } = useSetlists();
   const [yearFilter, setYearFilter] = useState('');
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'list' | 'card'>('card');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const now = new Date().toISOString().slice(0, 10);
 
@@ -51,6 +53,13 @@ export default function Events({ locale }: Props) {
   // For display: upcoming always shows soonest-first regardless of sort
   const upcomingDisplay = sortOrder === 'desc' ? [...upcoming].reverse() : upcoming;
 
+  const hasActiveFilters = !!yearFilter || !!search;
+
+  const eventsWithSetlist = useMemo(
+    () => new Set(setlists.map(s => s.event)),
+    [setlists]
+  );
+
   if (loading) return null;
 
   return (
@@ -59,37 +68,17 @@ export default function Events({ locale }: Props) {
         <h1>
           <span>{s.events.title}</span>
         </h1>
-        <p className="show-count">
-          <span style={{ background: 'var(--surface)', padding: '0.1em 0.4em' }}>
-            {filtered.length} {locale === 'en' ? 'shows' : '公演'}
-          </span>
-        </p>
       </div>
 
-      <div className="filters">
-        <select
-          value={yearFilter}
-          onChange={e => setYearFilter(e.target.value)}
-          aria-label={s.events.allYears}
+      <div className="filters-bar">
+        <button
+          className={`filters-toggle${hasActiveFilters ? ' has-filters' : ''}`}
+          onClick={() => setFiltersOpen(o => !o)}
+          aria-expanded={filtersOpen}
         >
-          <option value="">{s.events.allYears}</option>
-          {years.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-        <select
-          value={sortOrder}
-          onChange={e => setSortOrder(e.target.value as 'desc' | 'asc')}
-          aria-label="Sort order"
-        >
-          <option value="desc">{s.events.newestFirst}</option>
-          <option value="asc">{s.events.oldestFirst}</option>
-        </select>
-        <input
-          type="search"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={s.events.search}
-          aria-label={s.events.search}
-        />
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .39.812L9.5 7.606V13.5a.5.5 0 0 1-.724.447l-2.5-1.25A.5.5 0 0 1 6 12.25V7.606L1.11 1.812A.5.5 0 0 1 1.5 1.5z"/></svg>
+          {hasActiveFilters && <span className="filters-dot" />}
+        </button>
         <div className="view-toggle">
           <button
             className={view === 'card' ? 'active' : ''}
@@ -108,23 +97,55 @@ export default function Events({ locale }: Props) {
         </div>
       </div>
 
+      {filtersOpen && (
+        <div className="filters">
+          <select
+            value={yearFilter}
+            onChange={e => setYearFilter(e.target.value)}
+            aria-label={s.events.allYears}
+          >
+            <option value="">{s.events.allYears}</option>
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <select
+            value={sortOrder}
+            onChange={e => setSortOrder(e.target.value as 'desc' | 'asc')}
+            aria-label="Sort order"
+          >
+            <option value="desc">{s.events.newestFirst}</option>
+            <option value="asc">{s.events.oldestFirst}</option>
+          </select>
+          <input
+            type="search"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={s.events.search}
+            aria-label={s.events.search}
+          />
+        </div>
+      )}
+
       {/* Upcoming */}
       {upcomingDisplay.length > 0 && (
         <section className="mb-2">
-          <h2 className="section-label">{s.events.upcoming}</h2>
+          <div className="section-header">
+            <h2 className="section-label">{s.events.upcoming}</h2>
+            <span className="section-count">{upcomingDisplay.length}{locale === 'ja' ? '件' : ''}</span>
+          </div>
           {view === 'card' ? (
             upcomingDisplay.map(event => (
-              <EventCard key={event.id} event={event} locale={locale} featured />
+              <EventCard key={event.id} event={event} locale={locale} featured hasSetlist={eventsWithSetlist.has(event.id)} />
             ))
           ) : (
             <div className="event-list">
               {upcomingDisplay.map(event => {
                 const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
+                const area = locale === 'ja' ? event.city_ja : event.city_en;
                 return (
                   <Link to={`${prefix}/events/${event.id}`} className="event-list-row featured" key={event.id}>
                     <span className="event-list-date">{formatDate(event.date, locale)}</span>
-                    <span className="event-list-title">{getEventTitle(event, locale)}</span>
-                    <span className="event-list-venue">{venue}</span>
+                    <span className="event-list-venue">{venue}{eventsWithSetlist.has(event.id) && <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>}</span>
+                    <span className="event-list-area">{area}</span>
                   </Link>
                 );
               })}
@@ -133,32 +154,36 @@ export default function Events({ locale }: Props) {
         </section>
       )}
       {upcomingDisplay.length === 0 && !yearFilter && !search && (
-        <p className="mb-2" style={{ background: 'var(--surface)', padding: '1rem', textAlign: 'center' }}>
+        <p className="events-empty-note">
           {s.events.noUpcoming}
         </p>
       )}
 
       {/* Past */}
       <section>
-        <h2 className="section-label">{s.events.past}</h2>
+        <div className="section-header">
+          <h2 className="section-label">{s.events.past}</h2>
+          <span className="section-count">{past.length}{locale === 'ja' ? '件' : ''}</span>
+        </div>
         {past.length === 0 && (
-          <p style={{ background: 'var(--surface)', padding: '1rem', textAlign: 'center' }}>
+          <p className="events-empty-note">
             {search || yearFilter ? s.events.noResults : s.events.noPast}
           </p>
         )}
         {view === 'card' ? (
           past.map(event => (
-            <EventCard key={event.id} event={event} locale={locale} />
+            <EventCard key={event.id} event={event} locale={locale} hasSetlist={eventsWithSetlist.has(event.id)} />
           ))
         ) : (
           <div className="event-list">
             {past.map(event => {
               const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
+              const area = locale === 'ja' ? event.city_ja : event.city_en;
               return (
                 <Link to={`${prefix}/events/${event.id}`} className="event-list-row" key={event.id}>
                   <span className="event-list-date">{formatDate(event.date, locale)}</span>
-                  <span className="event-list-title">{getEventTitle(event, locale)}</span>
-                  <span className="event-list-venue">{venue}</span>
+                  <span className="event-list-venue">{venue}{eventsWithSetlist.has(event.id) && <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>}</span>
+                  <span className="event-list-area">{area}</span>
                 </Link>
               );
             })}
