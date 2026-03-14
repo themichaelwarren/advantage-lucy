@@ -1,5 +1,5 @@
-_site
-.sass-cache
-.jekyll-metadata
-node_modules
-Gemfile.lock
+node_modules/
+dist/
+.DS_Store
+*.env
+*.local

@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const allPosts = await getCollection('blog', ({ data }) => !data.draft);
+const sorted = allPosts.sort((a, b) => b.data.date.localeCompare(a.data.date));
+
+const allTags = [...new Set(sorted.flatMap(p => p.data.tags))].sort();
+---
+<BaseLayout title="Blog" description="News, tour diaries, and updates from Advantage Lucy.">
+  <div class="page-header">
+    <h1>Blog</h1>
+    <p>News, tour stories, and studio updates.</p>
+  </div>
+
+  <div class="filters">
+    <select id="tag-filter" aria-label="Filter by tag">
+      <option value="">All tags</option>
+      {allTags.map(t => <option value={t}>{t}</option>)}
+    </select>
+    <input type="search" id="blog-search" placeholder="Search posts..." aria-label="Search posts" />
+  </div>
+
+  <div class="card-grid" id="blog-grid">
+    {sorted.map(post => (
+      <div class="card" data-tags={post.data.tags.join(',')} data-search={`${post.data.title} ${post.data.tags.join(' ')}`.toLowerCase()}>
+        {post.data.heroImage && <img src={post.data.heroImage} alt={post.data.title} />}
+        <div class="card-body">
+          <h3><a href={`/blog/${post.id}`}>{post.data.title}</a></h3>
+          <p class="card-meta">
+            {new Date(post.data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+          <div class="tag-list">
+            {post.data.tags.map(tag => <span class="tag">{tag}</span>)}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <script is:inline>
+    (function() {
+      const tagFilter = document.getElementById('tag-filter');
+      const searchInput = document.getElementById('blog-search');
+      const allCards = document.querySelectorAll('#blog-grid .card');
+
+      function filterCards() {
+        const tag = tagFilter?.value || '';
+        const query = searchInput?.value.toLowerCase().trim() || '';
+        allCards.forEach(card => {
+          const cardTags = card.getAttribute('data-tags') || '';
+          const cardSearch = card.getAttribute('data-search') || '';
+          const matchTag = !tag || cardTags.split(',').includes(tag);
+          const matchSearch = !query || cardSearch.includes(query);
+          card.style.display = matchTag && matchSearch ? '' : 'none';
+        });
+      }
+
+      tagFilter?.addEventListener('change', filterCards);
+      searchInput?.addEventListener('input', filterCards);
+    })();
+  </script>
+</BaseLayout>

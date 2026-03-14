@@ -1,0 +1,40 @@
+import type { Locale } from '../i18n/translations';
+import { t } from '../i18n/translations';
+
+interface Props {
+  locale: Locale;
+}
+
+export default function About({ locale }: Props) {
+  const s = t(locale);
+
+  return (
+    <>
+      <div className="page-title">
+        <h1><span>{s.about.title}</span></h1>
+      </div>
+
+      {locale === 'ja' ? <AboutJa /> : <AboutEn />}
+    </>
+  );
+}
+
+function AboutJa() {
+  return (
+    <div className="prose">
+      <p>'95年に Lucy Van Pelt として結成。後'98年に現在のバンド名にチェンジ。現在までにシングル5枚、アルバム4枚、ミニアルバム4枚をリリース。</p>
+      <p>pop songの裏側にダークかつどこまでも広がるエバーグリーンな世界を併せ持つその魅力は老若男女問わず国内外にも広いファンを持つ。韓国や台湾の野外フェスティバルにも参加、CD販売に大行列が出来るなど大成功を収めた。2005年リリースのアルバム"Echo ParK"は日本、韓国、台湾、アメリカで販売中。2007年にはNHKにてLucy Cousinsの絵本「Hooray for Fish」(邦題"スイスイフィジー")のオープニングソングを制作。ＣＭソングや、ナレーション、映画、劇団キャラメルボックスへの楽曲提供など活動は多岐に渡る。</p>
+    </div>
+  );
+}
+
+function AboutEn() {
+  return (
+    <div className="prose">
+      <p>It would be disingenuous to describe Japan's advantage Lucy without deploying the convenient descriptors so often applied to lighter indie pop fare: bubbly, gummy, jangly, Swedish. Worse would be to overlook obvious points of reference. Lucy's members frequently name-drop the Smiths, the Cardigans, Ivy; their sound evokes Rocketship, the Concretes, Camera Obscura; their spirit if not their aesthetic recalls that of the folks at Sarah and K Records. But one of the most inexplicable things about pop music is how little of it actually sounds the same. For a genre highly formulaic by definition, pop includes a huge number of otherwise derivative groups with enough flair to distinguish them thoroughly from the pack. The distinct, spacy flavor of advantage Lucy's substantial output locates the group firmly in this category. Building directly on the sounds and success of the Shibuya-Kei scene ignited by Flipper's Guitar and Pizzicato Five, advantage Lucy dilute the sharper bite of these first-wave Japanese indie bands into a confectionary blend less wholly than particularly their own.</p>
+      <p>The story of Lucy's origin is nearly as precious as the group's music. In the winter of 1995, Takayuki Fukumura (guitar) put out a pair of ads in the Tokyo-based zine Rockin' On. Seeking a bassist and vocalist, he received responses from two aspiring guitarists: Yoshiharu Ishizaka, who became the band's second guitar player, and Aiko, who agreed to sing. The trio played its first gig as Lucy Van Pelt in March of 1996. After seeing the show, Fukumura's friend Kaname Banba enlisted to play drums. This lineup recorded a cassette for Clover Records and contributed a song to a compilation put out on God's Pop Records. God's Pop subsequently released Lucy Van Pelt's first LP, In Harmony, in 1997 after Sakamoto had joined the group on bass. The following year saw a copyright-induced name change, a move to a major label (Toshiba-EMI), the departure of Sakamoto, and the release of the polished Citrus EP. The group's full-length major-label debut, Fanfare, dropped in May 1999. Station, a less convincing LP, followed in 2000.</p>
+      <p>Founding member Fukumura amicably parted ways with Lucy shortly after Fanfare, going on to develop the influential Vasallo Crab 75. His death from heart trouble on November 26, 2003, at the age of 28 hit the members of advantage Lucy hard. The loss inspired both the group's new material and an annual tribute concert dubbed Mune-Kyun Arpeggio (a reference to Fukumura's initial ads in Rockin' On). On the brighter side, 2001 saw the fruition of Solaris Records, the independent label formed by the band back in 1999. Solaris released a pair of Lucy EPs in March and April of 2001: Oolt Cloud and Anzu No Kisetsu. A best-of compilation — entitled Have a Good Journey and covering 1996 through 2000 — followed on Toshiba in May. After the departure of Banba due to leg trouble, Lucy scaled back for a while. In late 2004, the core duo of Ishizaka and Aiko and supporting musicians traveled to South Korea for their first performance abroad. They went on in 2005 to release both the Hello Again EP and Echo Park, their most accomplished album to date. advantage Lucy remain active and popular in Japan, Korea, and Taiwan.</p>
+      <p style={{ marginTop: '2rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>-Jeremy A. Schmidt, Rovi</p>
+    </div>
+  );
+}
