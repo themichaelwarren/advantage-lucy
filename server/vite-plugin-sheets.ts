@@ -213,6 +213,17 @@ export default function sheetsPlugin(): Plugin {
         const path = await import('path');
         const filePath = path.resolve('public/uploads', match[1]);
         if (!fs.existsSync(filePath)) {
+          // Proxy to production R2 if not found locally
+          try {
+            const prodRes = await fetch(`https://new.advantagelucy.com/api/images/${match[1]}`);
+            if (prodRes.ok) {
+              res.setHeader('Content-Type', prodRes.headers.get('content-type') || 'image/jpeg');
+              res.setHeader('Cache-Control', 'public, max-age=31536000');
+              const buffer = Buffer.from(await prodRes.arrayBuffer());
+              res.end(buffer);
+              return;
+            }
+          } catch {}
           res.statusCode = 404;
           res.end('Not found');
           return;

@@ -492,6 +492,39 @@
   text-overflow: ellipsis;
 }
 
+/* ---------- INLINE CREATE ---------- */
+.admin-inline-create {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--admin-bg);
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.admin-inline-create input,
+.admin-inline-create select {
+  padding: 0.4rem 0.55rem;
+  font-size: 0.82rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  font-family: inherit;
+  width: 100%;
+}
+.admin-inline-create input:focus,
+.admin-inline-create select:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+.admin-inline-create .admin-inline-create {
+  margin-top: 0.4rem;
+  border-color: #ccc;
+  background: var(--admin-surface);
+}
+
 /* ---------- EMPTY ---------- */
 .admin-empty {
   text-align: center;

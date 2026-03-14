@@ -84,25 +84,27 @@ export function useSetlists() {
 export function useVenues() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     getVenues()
       .then(setVenues)
       .finally(() => setLoading(false));
-  }, []);
+  }, [tick]);
 
-  return { venues, loading };
+  return { venues, loading, refresh: () => setTick(t => t + 1) };
 }
 
 export function useAreas() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     getAreas()
       .then(setAreas)
       .finally(() => setLoading(false));
-  }, []);
+  }, [tick]);
 
-  return { areas, loading };
+  return { areas, loading, refresh: () => setTick(t => t + 1) };
 }

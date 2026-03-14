@@ -67,6 +67,12 @@ export default function EventDetail({ locale }: Props) {
         <h1><span>{title}</span></h1>
       </div>
 
+      {event.posterUrl && (
+        <div className="event-poster">
+          <img src={event.posterUrl} alt={title} />
+        </div>
+      )}
+
       <dl className="event-meta">
         <dt>{s.events.date}</dt>
         <dd>{dateStr}</dd>

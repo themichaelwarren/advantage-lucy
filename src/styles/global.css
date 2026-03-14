@@ -112,6 +112,7 @@ main {
   display: inline-block;
   transform: rotate(-2deg);
   transition: transform 60ms ease;
+  white-space: nowrap;
 }
 .site-logo:hover {
   transform: rotate(-4deg);
@@ -164,9 +165,8 @@ main {
               0 -0.15em 0 0.2em var(--accent), 0 0.05em 0 0.2em var(--accent);
 }
 .nav-main a[aria-current="page"] {
-  text-decoration: underline;
-  text-decoration-thickness: 0.12em;
-  text-underline-offset: 0.15em;
+  background: var(--text);
+  color: #fff;
 }
 
 /* Language toggle */
@@ -445,22 +445,51 @@ main {
 
 /* ---------- EVENT DETAIL ---------- */
 .event-detail { margin-bottom: 2rem; }
+.event-poster {
+  background: var(--surface);
+  padding: 0.6rem 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  display: block;
+  transform: rotate(-1.2deg);
+  margin: 0 auto 1.5rem;
+  max-width: 24rem;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+.event-poster:hover {
+  transform: rotate(0deg);
+  box-shadow: 4px 4px 0 var(--text);
+}
+.event-poster img {
+  width: 100%;
+  display: block;
+}
 .event-meta {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 1.5rem;
+  align-items: baseline;
   margin-bottom: 2rem;
-  padding: 1rem;
+  padding: 1rem 1.2rem;
   background: var(--surface);
   border: 1px solid var(--border);
 }
 .event-meta dt {
   font-family: var(--font-display);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0.35rem 0;
 }
 .event-meta dd {
-  font-weight: 600;
-  margin-bottom: 0.75rem;
+  font-size: 1.05rem;
+  padding: 0.35rem 0;
   text-transform: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+}
+.event-meta dd:last-of-type {
+  border-bottom: none;
 }
 
 .ticket-btn {
@@ -649,6 +678,9 @@ main {
   padding: 0;
   background: none;
   border: none;
+}
+.album-info .event-meta dd {
+  border-bottom-color: color-mix(in srgb, var(--border) 25%, transparent);
 }
 @media (max-width: 560px) {
   .album-info {
