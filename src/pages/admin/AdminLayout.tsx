@@ -21,6 +21,7 @@ export default function AdminLayout() {
     { to: `${prefix}/releases`, label: 'Releases' },
     { to: `${prefix}/songs`, label: 'Songs' },
     { to: `${prefix}/news`, label: 'News' },
+    { to: `${prefix}/blog`, label: 'Blog' },
   ];
 
   return (

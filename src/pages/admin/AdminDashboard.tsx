@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { useAllEvents, useAlbums, useVenues, useSongs, useAllNews } from '../../hooks/useSheetData';
+import { useAllEvents, useAlbums, useVenues, useSongs, useAllNews, useAllBlog } from '../../hooks/useSheetData';
 
 export default function AdminDashboard() {
   const { locale = 'en' } = useParams<{ locale: string }>();
@@ -9,6 +9,7 @@ export default function AdminDashboard() {
   const { venues } = useVenues();
   const { songs } = useSongs();
   const { news } = useAllNews();
+  const { blog } = useAllBlog();
   const now = new Date().toISOString().slice(0, 10);
   const upcoming = events.filter(e => e.date >= now).length;
 
@@ -36,6 +37,10 @@ export default function AdminDashboard() {
         <Link to={`${prefix}/news`} className="admin-stat-card">
           <span className="admin-stat-number">{news.length}</span>
           <span className="admin-stat-label">News</span>
+        </Link>
+        <Link to={`${prefix}/blog`} className="admin-stat-card">
+          <span className="admin-stat-number">{blog.length}</span>
+          <span className="admin-stat-label">Blog</span>
         </Link>
       </div>
     </>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
-import { useEvents, useNews } from '../hooks/useSheetData';
+import { useEvents, useNews, useBlog } from '../hooks/useSheetData';
 import EventCard from '../components/EventCard';
 
 const GREETINGS = [
@@ -59,6 +59,7 @@ export default function Home({ locale }: Props) {
   const prefix = `/${locale}`;
   const { events, loading: eventsLoading } = useEvents();
   const { news } = useNews();
+  const { blog } = useBlog();
   const now = new Date().toISOString().slice(0, 10);
 
   const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
@@ -84,6 +85,31 @@ export default function Home({ locale }: Props) {
 
       {/* Latest news */}
       <HomeNews news={news} locale={locale} prefix={prefix} s={s} />
+
+      {/* Latest blog */}
+      {blog.length > 0 && (() => {
+        const latest = [...blog].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+        return (
+          <section className="mb-2">
+            <h2 className="section-label">{s.home.latestBlog}</h2>
+            {latest.map(post => {
+              const title = locale === 'ja' ? post.title_ja : post.title_en;
+              return (
+                <div key={post.id} className="home-blog-item">
+                  <time>{post.date}</time>
+                  <Link to={`${prefix}/blog/${post.id}`}>{title || post.instagram_url}</Link>
+                </div>
+              );
+            })}
+            <div className="text-center mt-1">
+              <Link to={`${prefix}/blog`} className="tag">
+                <span>{s.home.viewAllBlog}</span>
+                <span>→</span>
+              </Link>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Next show */}
       {nextShow && (

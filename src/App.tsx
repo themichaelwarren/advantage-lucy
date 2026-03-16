@@ -23,6 +23,10 @@ import AdminSongs from './pages/admin/AdminSongs';
 import AdminSongForm from './pages/admin/AdminSongForm';
 import AdminNews from './pages/admin/AdminNews';
 import AdminNewsForm from './pages/admin/AdminNewsForm';
+import AdminBlog from './pages/admin/AdminBlog';
+import AdminBlogForm from './pages/admin/AdminBlogForm';
+import Blog from './pages/Blog';
+import BlogDetail from './pages/BlogDetail';
 import RequireAuth from './components/RequireAuth';
 
 // Soft indie pop palette
@@ -98,6 +102,8 @@ export default function App() {
         <Route path="songs/:id" element={<SongDetail locale="en" />} />
         <Route path="news" element={<News locale="en" />} />
         <Route path="news/:id" element={<NewsDetail locale="en" />} />
+        <Route path="blog" element={<Blog locale="en" />} />
+        <Route path="blog/:id" element={<BlogDetail locale="en" />} />
         <Route path="about" element={<About locale="en" />} />
         <Route path="contact" element={<Contact locale="en" />} />
       </Route>
@@ -112,6 +118,8 @@ export default function App() {
         <Route path="songs/:id" element={<SongDetail locale="ja" />} />
         <Route path="news" element={<News locale="ja" />} />
         <Route path="news/:id" element={<NewsDetail locale="ja" />} />
+        <Route path="blog" element={<Blog locale="ja" />} />
+        <Route path="blog/:id" element={<BlogDetail locale="ja" />} />
         <Route path="about" element={<About locale="ja" />} />
         <Route path="contact" element={<Contact locale="ja" />} />
       </Route>
@@ -130,6 +138,8 @@ export default function App() {
           <Route path="songs/:id" element={<AdminSongForm />} />
           <Route path="news" element={<AdminNews />} />
           <Route path="news/:id" element={<AdminNewsForm />} />
+          <Route path="blog" element={<AdminBlog />} />
+          <Route path="blog/:id" element={<AdminBlogForm />} />
         </Route>
       </Route>
 

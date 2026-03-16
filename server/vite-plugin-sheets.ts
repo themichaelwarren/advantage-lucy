@@ -3,7 +3,7 @@
  * Keeps the service account key server-side.
  */
 import type { Plugin } from 'vite';
-import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, replaceRows, fetchHeaders } from './sheets';
+import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews, fetchBlog, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, replaceRows, fetchHeaders } from './sheets';
 import { fetchDocText, createDoc } from './docs';
 
 
@@ -42,6 +42,8 @@ export default function sheetsPlugin(): Plugin {
             data = await fetchSetlists(sheetId, email, privateKey);
           } else if (req.url.startsWith('/api/sheets/news')) {
             data = await fetchNews(sheetId, email, privateKey);
+          } else if (req.url.startsWith('/api/sheets/blog')) {
+            data = await fetchBlog(sheetId, email, privateKey);
           } else if (req.url.startsWith('/api/sheets/venues')) {
             data = await fetchVenues(sheetId, email, privateKey);
           } else if (req.url.startsWith('/api/sheets/areas')) {

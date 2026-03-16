@@ -3,7 +3,7 @@
  */
 import {
   type Env, getCredentials,
-  fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews,
+  fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews, fetchBlog,
   fetchVenues, fetchAreas, fetchPrefectures, fetchCountries,
 } from '../../lib/sheets';
 
@@ -15,6 +15,7 @@ const fetchers: Record<string, (id: string, e: string, k: string) => Promise<unk
   people: fetchPeople,
   setlists: fetchSetlists,
   news: fetchNews,
+  blog: fetchBlog,
   venues: fetchVenues,
   areas: fetchAreas,
   prefectures: fetchPrefectures,

@@ -17,12 +17,18 @@ export const translations = {
       recentEvents: 'Recent Events',
       viewAllEvents: 'View all events',
       viewAllNews: 'View all news',
+      latestBlog: 'Blog',
+      viewAllBlog: 'View all posts',
       latestRelease: 'Latest Release',
       viewDiscography: 'View discography',
     },
     news: {
       title: 'News',
       noNews: 'No news yet.',
+    },
+    blog: {
+      title: 'Blog',
+      noPosts: 'No posts yet.',
     },
     events: {
       title: 'Events',
@@ -100,12 +106,18 @@ export const translations = {
       recentEvents: '最近のイベント',
       viewAllEvents: 'イベント一覧',
       viewAllNews: 'ニュース一覧',
+      latestBlog: 'ブログ',
+      viewAllBlog: '投稿一覧',
       latestRelease: '最新リリース',
       viewDiscography: 'ディスコグラフィーを見る',
     },
     news: {
       title: 'ニュース',
       noNews: 'ニュースはありません。',
+    },
+    blog: {
+      title: 'ブログ',
+      noPosts: 'まだ投稿がありません。',
     },
     events: {
       title: 'イベント',

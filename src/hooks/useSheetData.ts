@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost } from '../types';
-import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getNews, getAllNews, getVenues, getAreas, getPeople } from '../services/sheetsService';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost, BlogPost } from '../types';
+import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getNews, getAllNews, getBlog, getAllBlog, getVenues, getAreas, getPeople } from '../services/sheetsService';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -119,6 +119,32 @@ export function useAllNews() {
   }, []);
 
   return { news, loading };
+}
+
+export function useBlog() {
+  const [blog, setBlog] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getBlog()
+      .then(setBlog)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { blog, loading };
+}
+
+export function useAllBlog() {
+  const [blog, setBlog] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAllBlog()
+      .then(setBlog)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { blog, loading };
 }
 
 export function usePeople() {

@@ -102,6 +102,15 @@ export interface NewsPost {
   status?: string;        // 'published' | 'private'
 }
 
+export interface BlogPost {
+  id: string;
+  instagram_url: string;
+  date: string;
+  title_en: string;
+  title_ja: string;
+  status?: string;        // 'published' | 'private'
+}
+
 export interface Album {
   id: string;
   title: string;
