@@ -117,6 +117,7 @@ main {
 .site-logo:hover {
   transform: rotate(-4deg);
   text-decoration: none;
+  background: var(--hover-bg, var(--surface));
 }
 
 .nav-main {
@@ -158,6 +159,7 @@ main {
 .nav-main a:nth-child(5):hover { transform: rotate(5deg); }
 .nav-main a:hover, .nav-main button:hover {
   scale: 1.05;
+  background: var(--hover-bg, var(--surface));
 }
 .nav-main a:focus-visible, .nav-main button:focus-visible {
   outline: none;
@@ -167,6 +169,9 @@ main {
 .nav-main a[aria-current="page"] {
   background: var(--text);
   color: #fff;
+}
+.nav-main a[aria-current="page"]:hover {
+  background: var(--text);
 }
 
 /* Language toggle */
@@ -235,6 +240,44 @@ main {
   margin-bottom: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: var(--dot-color, var(--bg));
+  flex-shrink: 0;
+}
+/* Cycle through palette colors for section dots (set by JS, never matches --bg) */
+section:nth-of-type(8n+1) .section-label::before { --dot-color: var(--dot-1); }
+section:nth-of-type(8n+2) .section-label::before { --dot-color: var(--dot-2); }
+section:nth-of-type(8n+3) .section-label::before { --dot-color: var(--dot-3); }
+section:nth-of-type(8n+4) .section-label::before { --dot-color: var(--dot-4); }
+section:nth-of-type(8n+5) .section-label::before { --dot-color: var(--dot-5); }
+section:nth-of-type(8n+6) .section-label::before { --dot-color: var(--dot-6); }
+section:nth-of-type(8n+7) .section-label::before { --dot-color: var(--dot-7); }
+section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
+.section-header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.section-header-row .section-label {
+  margin-bottom: 0.75rem;
+}
+.section-view-all {
+  font-size: 0.82rem;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+.section-view-all:hover {
+  color: var(--text);
 }
 
 /* ---------- EVENT CARD ---------- */
@@ -1053,6 +1096,6 @@ main {
 }
 .text-center { text-align: center; }
 .mb-1 { margin-bottom: 1rem; }
-.mb-2 { margin-bottom: 2rem; }
+.mb-2 { margin-bottom: 3rem; }
 .mt-1 { margin-top: 1rem; }
 .mt-2 { margin-top: 2rem; }

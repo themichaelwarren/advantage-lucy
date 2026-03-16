@@ -95,16 +95,25 @@ async function appendRow(
 
 // ---------- Instagram URL extraction ----------
 
-const INSTAGRAM_RE = /https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)\/[A-Za-z0-9_-]+\/?/g;
+const INSTAGRAM_RE = /https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)\/?/g;
 
-function extractInstagramUrls(text: string): string[] {
-  const matches = text.match(INSTAGRAM_RE) || [];
-  // Deduplicate
-  return [...new Set(matches)];
+interface InstaPost {
+  url: string;
+  shortcode: string;
 }
 
-function generateId(): string {
-  return `blog-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+function extractInstagramPosts(text: string): InstaPost[] {
+  const seen = new Set<string>();
+  const posts: InstaPost[] = [];
+  let match;
+  while ((match = INSTAGRAM_RE.exec(text)) !== null) {
+    const shortcode = match[1];
+    if (!seen.has(shortcode)) {
+      seen.add(shortcode);
+      posts.push({ url: match[0], shortcode });
+    }
+  }
+  return posts;
 }
 
 // ---------- Email handler ----------
@@ -132,8 +141,8 @@ export default {
           })
       );
 
-      const urls = extractInstagramUrls(rawEmail);
-      if (urls.length === 0) {
+      const posts = extractInstagramPosts(rawEmail);
+      if (posts.length === 0) {
         console.log(`No Instagram URLs found in email from ${message.from}`);
         return;
       }
@@ -142,14 +151,13 @@ export default {
       const token = await getAccessToken(env.GOOGLE_SERVICE_ACCOUNT_EMAIL, privateKey);
       const today = new Date().toISOString().slice(0, 10);
 
-      // Append each URL as a separate draft post
-      for (const url of urls) {
-        const id = generateId();
+      // Append each URL as a separate draft post (shortcode as ID)
+      for (const post of posts) {
         // Columns: id, instagram_url, date, title_en, title_ja, status
         await appendRow(env.VITE_GOOGLE_SHEET_ID, token, [
-          id, url, today, '', '', 'private',
+          post.shortcode, post.url, today, '', '', 'private',
         ]);
-        console.log(`Added draft blog post: ${id} → ${url}`);
+        console.log(`Added draft blog post: ${post.shortcode} → ${post.url}`);
       }
     } catch (err) {
       console.error('Blog ingest error:', err);

@@ -68,10 +68,23 @@ function setFavicon(color: string) {
   link.href = canvas.toDataURL('image/png');
 }
 
+function shuffleDotColors(exclude: string) {
+  const pool = BG_COLORS.filter(c => c !== exclude);
+  // Fisher-Yates shuffle
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  for (let i = 0; i < 8; i++) {
+    document.documentElement.style.setProperty(`--dot-${i + 1}`, pool[i % pool.length]);
+  }
+}
+
 function applyBg(current?: string) {
   const color = pickRandomBg(current);
   document.documentElement.style.setProperty('--bg', color);
   setFavicon(color);
+  shuffleDotColors(color);
   return color;
 }
 

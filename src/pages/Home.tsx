@@ -23,33 +23,19 @@ function HomeNews({ news, locale, prefix, s }: { news: import('../types').NewsPo
   const latestNews = [...news].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
   return (
     <section className="mb-2">
-      <h2 className="section-label">{s.home.latestNews}</h2>
+      <div className="section-header-row">
+        <h2 className="section-label">{s.home.latestNews}</h2>
+        <Link to={`${prefix}/news`} className="section-view-all">{s.home.viewAllNews} →</Link>
+      </div>
       {latestNews.map(post => {
         const title = locale === 'ja' ? post.title_ja : post.title_en;
-        const body = locale === 'ja' ? post.body_ja : post.body_en;
         return (
-          <article key={post.id} className="news-card">
-            {post.image_url && (
-              <div className="news-card-image">
-                <img src={post.image_url} alt={title} />
-              </div>
-            )}
-            <div className="news-card-content">
-              <time className="news-card-date">{post.date}</time>
-              <h3 className="news-card-title">
-                <Link to={`${prefix}/news/${post.id}`}>{title}</Link>
-              </h3>
-              {body && <p className="news-card-body">{body}</p>}
-            </div>
-          </article>
+          <div key={post.id} className="home-blog-item">
+            <time>{post.date}</time>
+            <Link to={`${prefix}/news/${post.id}`}>{title}</Link>
+          </div>
         );
       })}
-      <div className="text-center mt-1">
-        <Link to={`${prefix}/news`} className="tag">
-          <span>{s.home.viewAllNews}</span>
-          <span>→</span>
-        </Link>
-      </div>
     </section>
   );
 }
@@ -91,7 +77,10 @@ export default function Home({ locale }: Props) {
         const latest = [...blog].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
         return (
           <section className="mb-2">
-            <h2 className="section-label">{s.home.latestBlog}</h2>
+            <div className="section-header-row">
+              <h2 className="section-label">{s.home.latestBlog}</h2>
+              <Link to={`${prefix}/blog`} className="section-view-all">{s.home.viewAllBlog} →</Link>
+            </div>
             {latest.map(post => {
               const title = locale === 'ja' ? post.title_ja : post.title_en;
               return (
@@ -101,12 +90,6 @@ export default function Home({ locale }: Props) {
                 </div>
               );
             })}
-            <div className="text-center mt-1">
-              <Link to={`${prefix}/blog`} className="tag">
-                <span>{s.home.viewAllBlog}</span>
-                <span>→</span>
-              </Link>
-            </div>
           </section>
         );
       })()}
@@ -122,16 +105,13 @@ export default function Home({ locale }: Props) {
       {/* Recent events */}
       {recentPast.length > 0 && (
         <section className="mb-2">
-          <h2 className="section-label">{s.home.recentEvents}</h2>
+          <div className="section-header-row">
+            <h2 className="section-label">{s.home.recentEvents}</h2>
+            <Link to={`${prefix}/events`} className="section-view-all">{s.home.viewAllEvents} →</Link>
+          </div>
           {recentPast.map(event => (
             <EventCard key={event.id} event={event} locale={locale} />
           ))}
-          <div className="text-center mt-1">
-            <Link to={`${prefix}/events`} className="tag">
-              <span>{s.home.viewAllEvents}</span>
-              <span>→</span>
-            </Link>
-          </div>
         </section>
       )}
 

@@ -1,6 +1,12 @@
+import { useCallback } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
+
+const HOVER_COLORS = [
+  '#ffe8a3', '#fcc8b2', '#b8e0d2', '#c7ceea',
+  '#f6d5e3', '#d4e4bc', '#eddcd2', '#bcd4e6',
+];
 
 interface Props {
   locale: Locale;
@@ -50,12 +56,23 @@ export default function Layout({ locale }: Props) {
     { to: `${prefix}/contact`, label: s.nav.contact },
   ];
 
+  const randomHover = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    const currentBg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    const choices = HOVER_COLORS.filter(c => c !== currentBg);
+    const color = choices[Math.floor(Math.random() * choices.length)];
+    e.currentTarget.style.setProperty('--hover-bg', color);
+  }, []);
+
+  const clearHover = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    e.currentTarget.style.removeProperty('--hover-bg');
+  }, []);
+
   return (
     <>
       <a href="#main" className="skip-link">Skip to content</a>
 
       <header className="site-header">
-        <Link to={prefix} className="site-logo band-name">
+        <Link to={prefix} className="site-logo band-name" onMouseEnter={randomHover} onMouseLeave={clearHover}>
           advantage Lucy
         </Link>
 
@@ -64,6 +81,8 @@ export default function Layout({ locale }: Props) {
             <Link
               key={link.to}
               to={link.to}
+              onMouseEnter={randomHover}
+              onMouseLeave={clearHover}
               aria-current={
                 location.pathname.startsWith(link.to)
                 || (link.to.endsWith('/releases') && location.pathname.startsWith(`${prefix}/songs`))
@@ -73,7 +92,7 @@ export default function Layout({ locale }: Props) {
               {link.label}
             </Link>
           ))}
-          <Link to={otherPath} className="lang-toggle" aria-label={`Switch to ${otherLocale === 'en' ? 'English' : '日本語'}`}>
+          <Link to={otherPath} className="lang-toggle" onMouseEnter={randomHover} onMouseLeave={clearHover} aria-label={`Switch to ${otherLocale === 'en' ? 'English' : '日本語'}`}>
             {s.language}
           </Link>
         </nav>
