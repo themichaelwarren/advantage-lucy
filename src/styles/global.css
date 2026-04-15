@@ -402,6 +402,22 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
     text-align: left;
     font-size: 0.8rem;
   }
+  /* Compact variant: stay tight on mobile, hide area */
+  .event-list-compact .event-list-row {
+    flex-wrap: nowrap;
+    gap: 1rem;
+  }
+  .event-list-compact .event-list-date {
+    width: auto;
+  }
+  .event-list-compact .event-list-area {
+    display: none;
+  }
+  .event-list-compact .event-list-venue {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 /* ---------- EMPTY NOTE ---------- */

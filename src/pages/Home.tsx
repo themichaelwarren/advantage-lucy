@@ -110,7 +110,7 @@ export default function Home({ locale }: Props) {
             <h2 className="section-label">{s.nav.events}</h2>
             <Link to={`${prefix}/events`} className="section-view-all">{s.home.viewAllEvents} →</Link>
           </div>
-          <div className="event-list">
+          <div className="event-list event-list-compact">
             {recentPast.map(event => {
               const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
               const area = locale === 'ja' ? event.city_ja : event.city_en;
