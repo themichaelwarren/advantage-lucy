@@ -111,6 +111,14 @@ export interface BlogPost {
   status?: string;        // 'published' | 'private'
 }
 
+export interface SplashPhoto {
+  id: string;
+  image_url: string;
+  caption_en?: string;
+  caption_ja?: string;
+  status?: string;        // 'published' | 'private'
+}
+
 export interface Album {
   id: string;
   title: string;

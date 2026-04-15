@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useSongs, usePeople } from '../../hooks/useSheetData';
 import type { Person } from '../../types';
+import { t, type Locale } from '../../i18n/translations';
 
 function personLabel(ids: string | undefined, peopleMap: Map<string, Person>): string {
   if (!ids) return '—';
@@ -13,7 +14,9 @@ function personLabel(ids: string | undefined, peopleMap: Map<string, Person>): s
 }
 
 export default function AdminSongs() {
-  const { locale = 'en' } = useParams<{ locale: string }>();
+  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
+  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
+  const s = t(locale).admin;
   const prefix = `/${locale}/admin`;
   const { songs, loading } = useSongs();
   const { people } = usePeople();
@@ -32,14 +35,14 @@ export default function AdminSongs() {
       return hay.includes(search.toLowerCase());
     });
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p>{s.loading}</p>;
 
   return (
     <>
       <div className="admin-page-header">
-        <h1>Songs ({songs.length})</h1>
+        <h1>{s.songs} ({songs.length})</h1>
         <Link to={`${prefix}/songs/new`} className="admin-btn admin-btn-primary">
-          + New Song
+          {s.newSong}
         </Link>
       </div>
 

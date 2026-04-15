@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAllEvents } from '../../hooks/useSheetData';
+import { t, type Locale } from '../../i18n/translations';
 
 export default function AdminEvents() {
-  const { locale = 'en' } = useParams<{ locale: string }>();
+  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
+  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
+  const s = t(locale).admin;
   const prefix = `/${locale}/admin`;
   const { events, loading } = useAllEvents();
   const [search, setSearch] = useState('');
@@ -16,14 +19,14 @@ export default function AdminEvents() {
       return hay.includes(search.toLowerCase());
     });
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p>{s.loading}</p>;
 
   return (
     <>
       <div className="admin-page-header">
-        <h1>Events ({events.length})</h1>
+        <h1>{s.events} ({events.length})</h1>
         <Link to={`${prefix}/events/new`} className="admin-btn admin-btn-primary">
-          + New Event
+          {s.newEvent}
         </Link>
       </div>
 
@@ -60,7 +63,7 @@ export default function AdminEvents() {
               <td>{event.city_en}</td>
               <td>
                 <span className={`admin-status ${event.status === 'private' ? 'admin-status-draft' : 'admin-status-live'}`}>
-                  {event.status === 'private' ? 'Draft' : 'Live'}
+                  {event.status === 'private' ? s.draft : s.live}
                 </span>
               </td>
               <td className="admin-td-actions">
@@ -84,7 +87,7 @@ export default function AdminEvents() {
             <div className="admin-event-card-header">
               <span className="admin-event-card-date">{event.date}</span>
               <span className={`admin-status ${event.status === 'private' ? 'admin-status-draft' : 'admin-status-live'}`}>
-                {event.status === 'private' ? 'Draft' : 'Live'}
+                {event.status === 'private' ? s.draft : s.live}
               </span>
             </div>
             <div className="admin-event-card-title">

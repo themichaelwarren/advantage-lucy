@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useVenues, useAreas } from '../../hooks/useSheetData';
+import { t, type Locale } from '../../i18n/translations';
 
 export default function AdminVenues() {
-  const { locale = 'en' } = useParams<{ locale: string }>();
+  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
+  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
+  const s = t(locale).admin;
   const prefix = `/${locale}/admin`;
   const { venues, loading } = useVenues();
   const { areas } = useAreas();
@@ -20,14 +23,14 @@ export default function AdminVenues() {
       return hay.includes(search.toLowerCase());
     });
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p>{s.loading}</p>;
 
   return (
     <>
       <div className="admin-page-header">
-        <h1>Venues ({venues.length})</h1>
+        <h1>{s.venues} ({venues.length})</h1>
         <Link to={`${prefix}/venues/new`} className="admin-btn admin-btn-primary">
-          + New Venue
+          {s.newVenue}
         </Link>
       </div>
 

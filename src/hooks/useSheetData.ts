@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost, BlogPost } from '../types';
-import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getNews, getAllNews, getBlog, getAllBlog, getVenues, getAreas, getPeople } from '../services/sheetsService';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
+import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPeople } from '../services/sheetsService';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -145,6 +145,32 @@ export function useAllBlog() {
   }, []);
 
   return { blog, loading };
+}
+
+export function usePhotos() {
+  const [photos, setPhotos] = useState<SplashPhoto[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getPhotos()
+      .then(setPhotos)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { photos, loading };
+}
+
+export function useAllPhotos() {
+  const [photos, setPhotos] = useState<SplashPhoto[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAllPhotos()
+      .then(setPhotos)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { photos, loading };
 }
 
 export function usePeople() {

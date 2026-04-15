@@ -4,6 +4,7 @@ import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useNews, useBlog } from '../hooks/useSheetData';
 import EventCard from '../components/EventCard';
+import { formatDate } from '../utils/format';
 
 const GREETINGS = [
   'hi',
@@ -106,12 +107,22 @@ export default function Home({ locale }: Props) {
       {recentPast.length > 0 && (
         <section className="mb-2">
           <div className="section-header-row">
-            <h2 className="section-label">{s.home.recentEvents}</h2>
+            <h2 className="section-label">{s.nav.events}</h2>
             <Link to={`${prefix}/events`} className="section-view-all">{s.home.viewAllEvents} →</Link>
           </div>
-          {recentPast.map(event => (
-            <EventCard key={event.id} event={event} locale={locale} />
-          ))}
+          <div className="event-list">
+            {recentPast.map(event => {
+              const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
+              const area = locale === 'ja' ? event.city_ja : event.city_en;
+              return (
+                <Link to={`${prefix}/events/${event.id}`} className="event-list-row" key={event.id}>
+                  <span className="event-list-date">{formatDate(event.date, locale)}</span>
+                  <span className="event-list-venue">{venue}</span>
+                  <span className="event-list-area">{area}</span>
+                </Link>
+              );
+            })}
+          </div>
         </section>
       )}
 

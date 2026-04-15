@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { t, type Locale } from '../../i18n/translations';
 
 export default function AdminLayout() {
   const location = useLocation();
-  const { locale = 'en' } = useParams<{ locale: string }>();
+  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
+  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
+  const s = t(locale).admin;
   const prefix = `/${locale}/admin`;
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -15,13 +18,14 @@ export default function AdminLayout() {
   }, [location.pathname]);
 
   const navLinks = [
-    { to: prefix, label: 'Dashboard', end: true },
-    { to: `${prefix}/events`, label: 'Events' },
-    { to: `${prefix}/venues`, label: 'Venues' },
-    { to: `${prefix}/releases`, label: 'Releases' },
-    { to: `${prefix}/songs`, label: 'Songs' },
-    { to: `${prefix}/news`, label: 'News' },
-    { to: `${prefix}/blog`, label: 'Blog' },
+    { to: prefix, label: s.dashboard, end: true },
+    { to: `${prefix}/events`, label: s.events },
+    { to: `${prefix}/venues`, label: s.venues },
+    { to: `${prefix}/releases`, label: s.releases },
+    { to: `${prefix}/songs`, label: s.songs },
+    { to: `${prefix}/news`, label: s.news },
+    { to: `${prefix}/blog`, label: s.blog },
+    { to: `${prefix}/photos`, label: s.photos },
   ];
 
   return (
@@ -45,7 +49,7 @@ export default function AdminLayout() {
             </Link>
           ))}
           <Link to={`/${locale}`} className="admin-nav-site">
-            ← Site
+            {s.backToSite}
           </Link>
         </nav>
         <div className="admin-header-right">
@@ -53,11 +57,11 @@ export default function AdminLayout() {
             <span className="admin-user">
               {user.picture && <img src={user.picture} alt="" className="admin-avatar" />}
               <span className="admin-user-email">{user.email}</span>
-              <button className="admin-btn admin-btn-sm" onClick={logout}>Sign out</button>
+              <button className="admin-btn admin-btn-sm" onClick={logout}>{s.signOut}</button>
             </span>
           )}
           <Link to={`/${locale}`} className="admin-back">
-            ← Site
+            {s.backToSite}
           </Link>
         </div>
         <button

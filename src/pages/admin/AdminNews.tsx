@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAllNews } from '../../hooks/useSheetData';
+import { t, type Locale } from '../../i18n/translations';
 
 export default function AdminNews() {
-  const { locale = 'en' } = useParams<{ locale: string }>();
+  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
+  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
+  const s = t(locale).admin;
   const prefix = `/${locale}/admin`;
   const { news, loading } = useAllNews();
   const [search, setSearch] = useState('');
@@ -16,14 +19,14 @@ export default function AdminNews() {
       return hay.includes(search.toLowerCase());
     });
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p>{s.loading}</p>;
 
   return (
     <>
       <div className="admin-page-header">
-        <h1>News ({news.length})</h1>
+        <h1>{s.news} ({news.length})</h1>
         <Link to={`${prefix}/news/new`} className="admin-btn admin-btn-primary">
-          + New Post
+          {s.newPost}
         </Link>
       </div>
 
@@ -56,7 +59,7 @@ export default function AdminNews() {
               </td>
               <td>
                 <span className={`admin-status ${post.status === 'private' ? 'admin-status-draft' : 'admin-status-live'}`}>
-                  {post.status === 'private' ? 'Draft' : 'Live'}
+                  {post.status === 'private' ? s.draft : s.live}
                 </span>
               </td>
               <td className="admin-td-actions">
@@ -80,7 +83,7 @@ export default function AdminNews() {
             <div className="admin-event-card-header">
               <span className="admin-event-card-date">{post.date}</span>
               <span className={`admin-status ${post.status === 'private' ? 'admin-status-draft' : 'admin-status-live'}`}>
-                {post.status === 'private' ? 'Draft' : 'Live'}
+                {post.status === 'private' ? s.draft : s.live}
               </span>
             </div>
             <div className="admin-event-card-title">

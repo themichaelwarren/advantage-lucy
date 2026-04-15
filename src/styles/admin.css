@@ -726,6 +726,57 @@
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
+/* ---------- PHOTO GRID ---------- */
+.admin-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.admin-photo-card {
+  display: block;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--admin-text);
+  transition: box-shadow 80ms;
+}
+.admin-photo-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.admin-photo-thumb {
+  aspect-ratio: 16 / 10;
+  background: #eee;
+  overflow: hidden;
+}
+.admin-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.admin-photo-thumb span {
+  display: grid;
+  place-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.75rem;
+  color: var(--admin-muted);
+}
+.admin-photo-info {
+  padding: 0.5rem 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.admin-photo-caption {
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---------- EMPTY ---------- */
 .admin-empty {
   text-align: center;

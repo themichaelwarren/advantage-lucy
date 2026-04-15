@@ -27,6 +27,9 @@ import AdminBlog from './pages/admin/AdminBlog';
 import AdminBlogForm from './pages/admin/AdminBlogForm';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
+import Splash from './pages/Splash';
+import AdminPhotos from './pages/admin/AdminPhotos';
+import AdminPhotoForm from './pages/admin/AdminPhotoForm';
 import RequireAuth from './components/RequireAuth';
 
 // Soft indie pop palette
@@ -95,15 +98,15 @@ export default function App() {
   const location = useLocation();
 
   useEffect(() => {
-    if (location.pathname.includes('/admin')) return;
+    if (location.pathname.includes('/admin') || location.pathname === '/') return;
     const current = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
     applyBg(current);
   }, [location.pathname]);
 
   return (
     <Routes>
-      {/* Redirect root to browser language */}
-      <Route path="/" element={<Navigate to={navigator.language.startsWith('ja') ? '/ja/' : '/en/'} replace />} />
+      {/* Splash entrance page */}
+      <Route path="/" element={<Splash />} />
 
       {/* English routes */}
       <Route path="/en" element={<Layout locale="en" />}>
@@ -153,6 +156,8 @@ export default function App() {
           <Route path="news/:id" element={<AdminNewsForm />} />
           <Route path="blog" element={<AdminBlog />} />
           <Route path="blog/:id" element={<AdminBlogForm />} />
+          <Route path="photos" element={<AdminPhotos />} />
+          <Route path="photos/:id" element={<AdminPhotoForm />} />
         </Route>
       </Route>
 

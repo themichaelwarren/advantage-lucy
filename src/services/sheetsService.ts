@@ -1,4 +1,4 @@
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost, BlogPost } from '../types';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -132,6 +132,22 @@ export async function getAllBlog(): Promise<BlogPost[]> {
 export async function getBlog(): Promise<BlogPost[]> {
   const all = await getAllBlog();
   return all.filter(b => b.status !== 'private');
+}
+
+/** All splash photos (including drafts). */
+export async function getAllPhotos(): Promise<SplashPhoto[]> {
+  try {
+    return await fetchWithCache('photos', () => fetchJson<SplashPhoto[]>('/api/sheets/photos'));
+  } catch (err) {
+    console.warn('Failed to fetch photos from API:', err);
+    return [];
+  }
+}
+
+/** Published splash photos only. */
+export async function getPhotos(): Promise<SplashPhoto[]> {
+  const all = await getAllPhotos();
+  return all.filter(p => p.status !== 'private');
 }
 
 export async function getPeople(): Promise<Person[]> {

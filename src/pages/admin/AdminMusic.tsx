@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAlbums } from '../../hooks/useSheetData';
+import { t, type Locale } from '../../i18n/translations';
 
 export default function AdminMusic() {
-  const { locale = 'en' } = useParams<{ locale: string }>();
+  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
+  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
+  const s = t(locale).admin;
   const prefix = `/${locale}/admin`;
   const { albums, loading } = useAlbums();
   const [search, setSearch] = useState('');
@@ -16,14 +19,14 @@ export default function AdminMusic() {
       return hay.includes(search.toLowerCase());
     });
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p>{s.loading}</p>;
 
   return (
     <>
       <div className="admin-page-header">
-        <h1>Releases ({albums.length})</h1>
+        <h1>{s.releases} ({albums.length})</h1>
         <Link to={`${prefix}/releases/new`} className="admin-btn admin-btn-primary">
-          + New Release
+          {s.newRelease}
         </Link>
       </div>
 
