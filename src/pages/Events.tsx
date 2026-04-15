@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useSetlists } from '../hooks/useSheetData';
-import { formatDate } from '../utils/format';
 import EventCard, { SetlistIcon } from '../components/EventCard';
 
 interface Props {
@@ -17,7 +16,7 @@ export default function Events({ locale }: Props) {
   const { setlists } = useSetlists();
   const [yearFilter, setYearFilter] = useState('');
   const [search, setSearch] = useState('');
-  const [view, setView] = useState<'list' | 'card'>('card');
+  const [view, setView] = useState<'list' | 'card'>('list');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -137,15 +136,22 @@ export default function Events({ locale }: Props) {
               <EventCard key={event.id} event={event} locale={locale} featured hasSetlist={eventsWithSetlist.has(event.id)} />
             ))
           ) : (
-            <div className="event-list">
+            <div className="home-event-list">
               {upcomingDisplay.map(event => {
                 const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
                 const area = locale === 'ja' ? event.city_ja : event.city_en;
                 return (
-                  <Link to={`${prefix}/events/${event.id}`} className="event-list-row featured" key={event.id}>
-                    <span className="event-list-date">{formatDate(event.date, locale)}</span>
-                    <span className="event-list-venue">{venue}{eventsWithSetlist.has(event.id) && <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>}</span>
-                    <span className="event-list-area">{area}</span>
+                  <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
+                    <time>{event.date}</time>
+                    <div className="home-event-body">
+                      <span className="home-event-venue">
+                        {venue}
+                        {eventsWithSetlist.has(event.id) && (
+                          <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>
+                        )}
+                      </span>
+                      {area && <span className="home-event-area">{area}</span>}
+                    </div>
                   </Link>
                 );
               })}
@@ -175,15 +181,22 @@ export default function Events({ locale }: Props) {
             <EventCard key={event.id} event={event} locale={locale} hasSetlist={eventsWithSetlist.has(event.id)} />
           ))
         ) : (
-          <div className="event-list">
+          <div className="home-event-list">
             {past.map(event => {
               const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
               const area = locale === 'ja' ? event.city_ja : event.city_en;
               return (
-                <Link to={`${prefix}/events/${event.id}`} className="event-list-row" key={event.id}>
-                  <span className="event-list-date">{formatDate(event.date, locale)}</span>
-                  <span className="event-list-venue">{venue}{eventsWithSetlist.has(event.id) && <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>}</span>
-                  <span className="event-list-area">{area}</span>
+                <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
+                  <time>{event.date}</time>
+                  <div className="home-event-body">
+                    <span className="home-event-venue">
+                      {venue}
+                      {eventsWithSetlist.has(event.id) && (
+                        <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>
+                      )}
+                    </span>
+                    {area && <span className="home-event-area">{area}</span>}
+                  </div>
                 </Link>
               );
             })}
