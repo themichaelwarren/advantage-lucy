@@ -1130,7 +1130,7 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   flex-shrink: 0;
-  width: 6.5rem;
+  width: 8rem;
   letter-spacing: 0.02em;
 }
 .home-event-body {
@@ -1154,9 +1154,12 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
 }
 
 @media (max-width: 500px) {
-  .home-blog-item time,
-  .home-event-item time {
+  .home-blog-item time {
     width: 5rem;
+    font-size: 0.72rem;
+  }
+  .home-event-item time {
+    width: 6.5rem;
     font-size: 0.72rem;
   }
   .home-blog-item a,

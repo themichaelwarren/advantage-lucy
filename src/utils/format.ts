@@ -2,6 +2,14 @@ import type { Locale } from '../i18n/translations';
 import type { Event } from '../types';
 
 const JA_DAYS = ['日', '月', '火', '水', '木', '金', '土'];
+const EN_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** YYYY-MM-DD with short weekday, e.g. "2026-03-14 (Sat)" / "2026-03-14 （土）" */
+export function formatDateWithDay(date: string, locale: Locale): string {
+  const d = new Date(date + 'T00:00:00');
+  if (locale === 'ja') return `${date} （${JA_DAYS[d.getDay()]}）`;
+  return `${date} (${EN_DAYS[d.getDay()]})`;
+}
 
 /**
  * Format a date string (YYYY-MM-DD) for display.

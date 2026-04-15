@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useSetlists } from '../hooks/useSheetData';
+import { formatDateWithDay } from '../utils/format';
 import EventCard, { SetlistIcon } from '../components/EventCard';
 
 interface Props {
@@ -142,7 +143,7 @@ export default function Events({ locale }: Props) {
                 const area = locale === 'ja' ? event.city_ja : event.city_en;
                 return (
                   <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
-                    <time>{event.date}</time>
+                    <time>{formatDateWithDay(event.date, locale)}</time>
                     <div className="home-event-body">
                       <span className="home-event-venue">
                         {venue}
