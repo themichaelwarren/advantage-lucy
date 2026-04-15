@@ -4,6 +4,7 @@ import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useNews, useBlog } from '../hooks/useSheetData';
 import EventCard from '../components/EventCard';
+import { formatDateWithDay } from '../utils/format';
 
 const GREETINGS = [
   'hi',
@@ -115,7 +116,7 @@ export default function Home({ locale }: Props) {
               const area = locale === 'ja' ? event.city_ja : event.city_en;
               return (
                 <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
-                  <time>{event.date}</time>
+                  <time>{formatDateWithDay(event.date, locale)}</time>
                   <div className="home-event-body">
                     <span className="home-event-venue">{venue}</span>
                     {area && <span className="home-event-area">{area}</span>}

@@ -137,7 +137,7 @@ export default function Events({ locale }: Props) {
               <EventCard key={event.id} event={event} locale={locale} featured hasSetlist={eventsWithSetlist.has(event.id)} />
             ))
           ) : (
-            <div className="home-event-list home-event-list--with-day">
+            <div className="home-event-list">
               {upcomingDisplay.map(event => {
                 const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
                 const area = locale === 'ja' ? event.city_ja : event.city_en;
@@ -188,7 +188,7 @@ export default function Events({ locale }: Props) {
               const area = locale === 'ja' ? event.city_ja : event.city_en;
               return (
                 <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
-                  <time>{event.date}</time>
+                  <time>{formatDateWithDay(event.date, locale)}</time>
                   <div className="home-event-body">
                     <span className="home-event-venue">
                       {venue}
