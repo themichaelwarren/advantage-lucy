@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAllPhotos } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, uploadFile } from '../../services/adminService';
 
-const PHOTO_COLUMNS = ['id', 'image_url', 'caption_en', 'caption_ja', 'status'] as const;
+const PHOTO_COLUMNS = ['id', 'image_url', 'caption_en', 'caption_ja', 'status', 'profile_photo'] as const;
 type PhotoField = typeof PHOTO_COLUMNS[number];
 
 const FIELD_LABELS: Record<PhotoField, string> = {
@@ -12,6 +12,7 @@ const FIELD_LABELS: Record<PhotoField, string> = {
   caption_en: 'Caption (EN)',
   caption_ja: 'Caption (JA)',
   status: 'Status',
+  profile_photo: 'Profile Photo',
 };
 
 function emptyForm(): Record<PhotoField, string> {
@@ -47,6 +48,7 @@ export default function AdminPhotoForm() {
       caption_en: photo.caption_en || '',
       caption_ja: photo.caption_ja || '',
       status: photo.status || 'published',
+      profile_photo: photo.profile_photo || '',
     });
   }, [isNew, id, photos, loading]);
 
@@ -100,7 +102,16 @@ export default function AdminPhotoForm() {
         {PHOTO_COLUMNS.map(col => (
           <div className="admin-field" key={col}>
             <label htmlFor={`field-${col}`}>{FIELD_LABELS[col]}</label>
-            {col === 'status' ? (
+            {col === 'profile_photo' ? (
+              <label className="admin-checkbox">
+                <input
+                  type="checkbox"
+                  checked={form[col] === 'yes'}
+                  onChange={e => handleChange(col, e.target.checked ? 'yes' : '')}
+                />
+                Use as profile photo on About page
+              </label>
+            ) : col === 'status' ? (
               <select
                 id={`field-${col}`}
                 value={form[col]}

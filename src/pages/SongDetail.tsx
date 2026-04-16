@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useSongs, useTracklists, useSetlists, useEvents, useAlbums, usePeople } from '../hooks/useSheetData';
-import { formatDate } from '../utils/format';
-import EventCard, { SetlistIcon } from '../components/EventCard';
+import { formatDateWithDay } from '../utils/format';
+import { SetlistIcon } from '../components/EventCard';
 
 interface Props {
   locale: Locale;
@@ -37,8 +37,6 @@ export default function SongDetail({ locale }: Props) {
              [p.name_given_ja, p.name_family_ja].filter(Boolean).join(' ');
     }).join(', ');
   };
-  const [eventView, setEventView] = useState<'list' | 'card'>('card');
-
   const eventsWithSetlist = useMemo(
     () => new Set(setlists.map(s => s.event)),
     [setlists]
@@ -98,13 +96,13 @@ export default function SongDetail({ locale }: Props) {
 
   return (
     <article className="song-detail">
-      <div className="page-title">
-        <h1><span>{song.title}</span></h1>
-      </div>
+      <header className="song-detail-header">
+        <h1 className="song-detail-title">{song.title}</h1>
+      </header>
 
-      {lyrics && (
-        <section className="mb-2">
-          <h2 className="section-label">{s.songs.lyrics}</h2>
+      <section className="mb-2">
+        <h2 className="section-label">{s.songs.lyrics}</h2>
+        {lyrics ? (
           <div className="lyrics-block">
             {lyrics.split('\n\n').map((verse, vi) => (
               <p key={vi} className="lyrics-verse">
@@ -114,8 +112,10 @@ export default function SongDetail({ locale }: Props) {
               </p>
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <p className="lyrics-placeholder">{s.songs.noLyrics}</p>
+        )}
+      </section>
 
       {(song.music_by || song.lyrics_by) && (
         <dl className="event-meta">
@@ -137,22 +137,26 @@ export default function SongDetail({ locale }: Props) {
       {albumAppearances.length > 0 && (
         <section className="mb-2">
           <h2 className="section-label">{s.songs.appearsOn}</h2>
-          {albumAppearances.map(({ album, track }) => (
-            <div className="disco-item" key={album.id}>
-              <Link to={`${prefix}/releases/${album.id}`} className="disco-cover">
-                {album.coverUrl
-                  ? <img src={album.coverUrl} alt={album.title} />
-                  : <span>{album.title.slice(0, 2)}</span>
-                }
+          <div className="song-album-list">
+            {albumAppearances.map(({ album, track }) => (
+              <Link to={`${prefix}/releases/${album.id}`} className="song-album-item" key={album.id}>
+                <div className="song-album-cover">
+                  {album.coverUrl
+                    ? <img src={album.coverUrl} alt={album.title} />
+                    : <span>{album.title.slice(0, 2)}</span>
+                  }
+                </div>
+                <div className="song-album-body">
+                  <span className="song-album-title">{album.title}</span>
+                  <span className="song-album-meta">
+                    <span>{album.year}</span>
+                    <span className="event-detail-sep">·</span>
+                    <span>Track {track}</span>
+                  </span>
+                </div>
               </Link>
-              <div>
-                <h3><Link to={`${prefix}/releases/${album.id}`}>{album.title}</Link></h3>
-                <span className="year-label">{album.year}</span>
-                {' '}
-                <span className="format-label">Track {track}</span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
       )}
 
@@ -162,43 +166,26 @@ export default function SongDetail({ locale }: Props) {
             <h2 className="section-label">{s.songs.performedAt}</h2>
             <span className="section-count">{eventAppearances.length}{locale === 'ja' ? '件' : ''}</span>
           </div>
-          <div className="filters-bar">
-            <div className="view-toggle">
-              <button
-                className={eventView === 'card' ? 'active' : ''}
-                onClick={() => setEventView('card')}
-                aria-pressed={eventView === 'card'}
-              >
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-              </button>
-              <button
-                className={eventView === 'list' ? 'active' : ''}
-                onClick={() => setEventView('list')}
-                aria-pressed={eventView === 'list'}
-              >
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path fillRule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>
-              </button>
-            </div>
+          <div className="home-event-list">
+            {eventAppearances.map(({ event }) => {
+              const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
+              const area = locale === 'ja' ? event.city_ja : event.city_en;
+              return (
+                <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
+                  <time>{formatDateWithDay(event.date, locale)}</time>
+                  <div className="home-event-body">
+                    <span className="home-event-venue">
+                      {venue}
+                      {eventsWithSetlist.has(event.id) && (
+                        <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>
+                      )}
+                    </span>
+                    {area && <span className="home-event-area">{area}</span>}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-          {eventView === 'card' ? (
-            eventAppearances.map(({ event }) => (
-              <EventCard key={event.id} event={event} locale={locale} hasSetlist={eventsWithSetlist.has(event.id)} />
-            ))
-          ) : (
-            <div className="event-list">
-              {eventAppearances.map(({ event }) => {
-                const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
-                const area = locale === 'ja' ? event.city_ja : event.city_en;
-                return (
-                  <Link to={`${prefix}/events/${event.id}`} className="event-list-row" key={event.id}>
-                    <span className="event-list-date">{formatDate(event.date, locale)}</span>
-                    <span className="event-list-venue">{venue}{eventsWithSetlist.has(event.id) && <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>}</span>
-                    <span className="event-list-area">{area}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
         </section>
       )}
 

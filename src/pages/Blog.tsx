@@ -20,9 +20,9 @@ export default function Blog({ locale }: Props) {
 
   return (
     <>
-      <div className="page-title">
-        <h1><span>{s.blog.title}</span></h1>
-      </div>
+      <header className="news-detail-header">
+        <h1 className="news-detail-title">{s.blog.title}</h1>
+      </header>
 
       {sorted.length === 0 && (
         <p className="text-center" style={{ background: 'var(--surface)', padding: '2rem' }}>

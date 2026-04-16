@@ -39,9 +39,9 @@ export default function BlogDetail({ locale }: Props) {
   return (
     <article className="blog-detail">
       {title && (
-        <div className="page-title">
-          <h1><span>{title}</span></h1>
-        </div>
+        <header className="news-detail-header">
+          <h1 className="news-detail-title">{title}</h1>
+        </header>
       )}
 
       <time className="blog-detail-date">{formatDate(post.date, locale)}</time>

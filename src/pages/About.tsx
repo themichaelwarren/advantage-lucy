@@ -1,5 +1,6 @@
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
+import { usePhotos } from '../hooks/useSheetData';
 
 interface Props {
   locale: Locale;
@@ -7,12 +8,20 @@ interface Props {
 
 export default function About({ locale }: Props) {
   const s = t(locale);
+  const { photos } = usePhotos();
+  const profilePhoto = photos.find(p => p.profile_photo === 'yes');
 
   return (
     <>
-      <div className="page-title">
-        <h1><span>{s.about.title}</span></h1>
-      </div>
+      <header className="news-detail-header">
+        <h1 className="news-detail-title">{s.about.title}</h1>
+      </header>
+
+      {profilePhoto && (
+        <div className="about-photo">
+          <img src={profilePhoto.image_url} alt={locale === 'ja' ? profilePhoto.caption_ja || '' : profilePhoto.caption_en || ''} />
+        </div>
+      )}
 
       {locale === 'ja' ? <AboutJa /> : <AboutEn />}
     </>

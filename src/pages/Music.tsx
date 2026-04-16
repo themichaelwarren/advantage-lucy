@@ -18,9 +18,9 @@ export default function Music({ locale }: Props) {
 
   return (
     <>
-      <div className="page-title">
-        <h1><span>{s.music.subtitle}</span></h1>
-      </div>
+      <header className="news-detail-header">
+        <h1 className="news-detail-title">{s.music.subtitle}</h1>
+      </header>
 
       <div className="filters-bar">
         <div className="view-toggle">
@@ -44,27 +44,21 @@ export default function Music({ locale }: Props) {
       {view === 'list' ? (
         <>
           {albums.map(album => (
-            <div className="disco-item" key={album.id}>
-              <Link to={`${prefix}/releases/${album.id}`} className="disco-cover">
+            <Link to={`${prefix}/releases/${album.id}`} className="disco-item" key={album.id}>
+              <div className="disco-cover">
                 {album.coverUrl
                   ? <img src={album.coverUrl} alt={album.title} />
                   : <span>{album.title.slice(0, 2)}</span>
                 }
-              </Link>
+              </div>
               <div>
-                <h3><Link to={`${prefix}/releases/${album.id}`}>{album.title}</Link></h3>
+                <h3>{album.title}</h3>
                 <span className="year-label">{album.year}</span>
-                {' '}
+                {' · '}
                 <span className="format-label">{album.type}</span>
                 {album.label && <span className="year-label"> · {album.label}</span>}
-                <p>{locale === 'ja' ? album.description_ja : album.description_en}</p>
-                {album.listenUrl && (
-                  <a href={album.listenUrl} target="_blank" rel="noopener noreferrer" className="listen-link">
-                    {s.music.listen} →
-                  </a>
-                )}
               </div>
-            </div>
+            </Link>
           ))}
         </>
       ) : (

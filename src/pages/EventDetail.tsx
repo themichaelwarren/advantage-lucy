@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useSetlists, useSongs } from '../hooks/useSheetData';
-import { formatDate, formatPrice, getEventTitle } from '../utils/format';
+import { formatDateWithDay, formatPrice, getEventTitle } from '../utils/format';
 
 interface Props {
   locale: Locale;
@@ -39,7 +39,7 @@ export default function EventDetail({ locale }: Props) {
   const city = locale === 'ja' ? event.city_ja : event.city_en;
   const body = locale === 'ja' ? event.body_ja : event.body_en;
 
-  const dateStr = formatDate(event.date, locale, 'long');
+  const dateStr = formatDateWithDay(event.date, locale);
 
   // Group setlist entries by set
   const eventSetlist = !setlistsLoading
@@ -63,9 +63,18 @@ export default function EventDetail({ locale }: Props) {
 
   return (
     <article className="event-detail">
-      <div className="page-title">
-        <h1><span>{title}</span></h1>
-      </div>
+      <header className="event-detail-header">
+        <h1 className="event-detail-title">{title}</h1>
+        {city && (
+          <p className="event-detail-subtitle">
+            {[
+              city,
+              event.prefecture_en && (locale === 'ja' ? event.prefecture_ja : event.prefecture_en),
+              event.country_en && (locale === 'ja' ? event.country_ja : event.country_en),
+            ].filter(Boolean).join(', ')}
+          </p>
+        )}
+      </header>
 
       {event.posterUrl && (
         <div className="event-poster">

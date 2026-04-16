@@ -15,5 +15,13 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    server: {
+      proxy: {
+        '/api/images': {
+          target: 'https://advantagelucy.com',
+          changeOrigin: true,
+        },
+      },
+    },
   };
 });

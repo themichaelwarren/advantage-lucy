@@ -1,19 +1,9 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useNews, useBlog } from '../hooks/useSheetData';
 import EventCard from '../components/EventCard';
 import { formatDateWithDay } from '../utils/format';
-
-const GREETINGS = [
-  'hi',
-  'hey',
-  'hey there',
-  'hello',
-  'hello again',
-  'hello mate!',
-];
 
 interface Props {
   locale: Locale;
@@ -49,8 +39,6 @@ export default function Home({ locale }: Props) {
   const { blog } = useBlog();
   const now = new Date().toISOString().slice(0, 10);
 
-  const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
-
   const upcoming = events
     .filter(e => e.date >= now)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -64,12 +52,6 @@ export default function Home({ locale }: Props) {
 
   return (
     <>
-      {/* Hero */}
-      <div className="page-title home-hero">
-        <h1><span>{greeting}</span></h1>
-        <p className="home-subtitle">this is advantagelucy.com</p>
-      </div>
-
       {/* Latest news */}
       <HomeNews news={news} locale={locale} prefix={prefix} s={s} />
 

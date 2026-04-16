@@ -175,11 +175,12 @@ export async function fetchBlog(sheetId: string, email: string, key: string) {
 }
 
 export async function fetchPhotos(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'Photos!A:E', email, key);
+  const rows = await fetchSheet(sheetId, 'Photos!A:F', email, key);
   return rowsToObjects(rows).map(r => ({
     id: r.id, image_url: r.image_url || '',
     caption_en: r.caption_en || undefined, caption_ja: r.caption_ja || undefined,
     status: r.status || 'published',
+    profile_photo: r.profile_photo || undefined,
   }));
 }
 

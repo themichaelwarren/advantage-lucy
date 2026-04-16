@@ -69,6 +69,7 @@ export const translations = {
       musicBy: 'Music',
       lyricsBy: 'Lyrics',
       lyrics: 'Lyrics',
+      noLyrics: '♪ la la la...',
       appearsOn: 'Appears on',
       performedAt: 'Performed at',
       noSong: 'Song not found.',
@@ -181,6 +182,7 @@ export const translations = {
       musicBy: '作曲',
       lyricsBy: '作詞',
       lyrics: '歌詞',
+      noLyrics: '♪ らららー...',
       appearsOn: '収録作品',
       performedAt: '演奏イベント',
       noSong: '楽曲が見つかりません。',
@@ -191,11 +193,11 @@ export const translations = {
       encore: 'アンコール',
     },
     about: {
-      title: 'アバウト',
+      title: 'プロフィール',
     },
     contact: {
       title: 'お問い合わせ',
-      subtitle: 'ブッキング、ファンレター、その他お気軽にどうぞ。',
+      subtitle: 'ブッキングやファンレターなど、お気軽にどうぞ。',
     },
     footer: {
       copyright: '© advantage Lucy',

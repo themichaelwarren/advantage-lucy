@@ -64,11 +64,9 @@ export default function Events({ locale }: Props) {
 
   return (
     <>
-      <div className="page-title">
-        <h1>
-          <span>{s.events.title}</span>
-        </h1>
-      </div>
+      <header className="news-detail-header">
+        <h1 className="news-detail-title">{s.events.title}</h1>
+      </header>
 
       <div className="filters-bar">
         <button

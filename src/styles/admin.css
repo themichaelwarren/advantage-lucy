@@ -347,6 +347,22 @@
   color: var(--admin-muted);
   margin-bottom: 0.3rem;
 }
+.admin-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--admin-text);
+  cursor: pointer;
+}
+.admin-checkbox input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
 .admin-field input,
 .admin-field select,
 .admin-field textarea {

@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useNews } from '../hooks/useSheetData';
-import { formatDate } from '../utils/format';
 
 function renderBody(text: string): ReactNode[] {
   return text.split('\n').map((line, i) => {
@@ -70,11 +69,10 @@ export default function NewsDetail({ locale }: Props) {
 
   return (
     <article className="news-detail">
-      <div className="page-title">
-        <h1><span>{title}</span></h1>
-      </div>
-
-      <time className="news-detail-date">{formatDate(post.date, locale)}</time>
+      <header className="news-detail-header">
+        <h1 className="news-detail-title">{title}</h1>
+        <time className="news-detail-date">{post.date}</time>
+      </header>
 
       {post.image_url && (
         <div className="news-detail-image">

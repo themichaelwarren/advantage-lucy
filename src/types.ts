@@ -117,6 +117,7 @@ export interface SplashPhoto {
   caption_en?: string;
   caption_ja?: string;
   status?: string;        // 'published' | 'private'
+  profile_photo?: string; // 'yes' to use on About page
 }
 
 export interface Album {

@@ -41,9 +41,12 @@ export default function AlbumDetail({ locale }: Props) {
 
   return (
     <article className="album-detail">
-      <div className="page-title">
-        <h1><span>{album.title}</span></h1>
-      </div>
+      <header className="album-detail-header">
+        <h1 className="album-detail-title">{album.title}</h1>
+        <p className="album-detail-subtitle">
+          {[album.date || album.year, album.type, album.label].filter(Boolean).join(' · ')}
+        </p>
+      </header>
 
       <div className="album-info">
         {album.coverUrl && (
