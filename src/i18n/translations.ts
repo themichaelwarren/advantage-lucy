@@ -120,7 +120,7 @@ export const translations = {
       home: 'ホーム',
       events: 'イベント',
       music: '音楽',
-      about: 'アバウト',
+      about: 'プロフィール',
       contact: 'お問い合わせ',
     },
     home: {
