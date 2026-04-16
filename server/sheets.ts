@@ -349,13 +349,14 @@ export async function fetchPhotos(
   email: string,
   privateKey: string
 ): Promise<SplashPhoto[]> {
-  const rows = await fetchSheet(sheetId, 'Photos!A:E', email, privateKey);
+  const rows = await fetchSheet(sheetId, 'Photos!A:F', email, privateKey);
   return rowsToObjects(rows).map(row => ({
     id: row.id,
     image_url: row.image_url || '',
     caption_en: row.caption_en || undefined,
     caption_ja: row.caption_ja || undefined,
     status: row.status || 'published',
+    profile_photo: row.profile_photo || undefined,
   }));
 }
 
