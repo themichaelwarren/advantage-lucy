@@ -1378,23 +1378,16 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
 .splash-polaroid {
   position: absolute;
   background: var(--surface);
-  padding: 0.5rem 0.5rem 1.2rem;
+  padding: 0.4rem 0.4rem 1rem;
   border: 1px solid var(--border);
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.15);
-  width: 82%;
-  max-width: 340px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.12);
+  width: 68%;
+  max-width: 320px;
 }
 .splash-polaroid img {
   width: 100%;
   height: auto;
   display: block;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-}
-.splash-polaroid-1 {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-2.5deg);
 }
 .splash-enter {
   position: absolute;
@@ -1402,16 +1395,12 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
   left: 50%;
   transform: translateX(-50%);
   z-index: 1;
-  color: rgba(255, 255, 255, 0.85);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  color: var(--text);
   font-family: var(--font-main);
   font-size: 0.8rem;
   letter-spacing: 0.1em;
-  animation: splash-pulse 2s ease-in-out infinite;
-}
-@keyframes splash-pulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+  background: #fff;
+  padding: 0.3em 0.8em;
 }
 
 /* Mobile: solid bg + polaroid pile instead of full-bleed image */
@@ -1428,11 +1417,20 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
     position: absolute;
     inset: 0;
     pointer-events: none;
+    overflow: hidden;
+  }
+  .splash-logo {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-2deg);
+    z-index: 20;
+    font-size: clamp(1.4rem, 7vw, 2.2rem);
+    padding: 0.2em 0.4em;
+    text-align: center;
+    white-space: nowrap;
   }
   .splash-enter {
-    color: var(--text);
-    text-shadow: none;
-    opacity: 0.6;
+    z-index: 20;
   }
 }
 
