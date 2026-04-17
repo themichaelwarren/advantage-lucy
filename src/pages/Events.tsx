@@ -143,9 +143,17 @@ export default function Events({ locale }: Props) {
                   <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
                     <time>{formatDateWithDay(event.date, locale)}</time>
                     <div className="home-event-body">
+                      {(locale === 'ja' ? event.title_ja : event.title_en) && (
+                        <span className="home-event-title">
+                          {locale === 'ja' ? event.title_ja : event.title_en}
+                          {eventsWithSetlist.has(event.id) && (
+                            <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>
+                          )}
+                        </span>
+                      )}
                       <span className="home-event-venue">
                         {venue}
-                        {eventsWithSetlist.has(event.id) && (
+                        {!(locale === 'ja' ? event.title_ja : event.title_en) && eventsWithSetlist.has(event.id) && (
                           <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>
                         )}
                       </span>
@@ -182,15 +190,24 @@ export default function Events({ locale }: Props) {
         ) : (
           <div className="home-event-list">
             {past.map(event => {
+              const title = locale === 'ja' ? event.title_ja : event.title_en;
               const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
               const area = locale === 'ja' ? event.city_ja : event.city_en;
               return (
                 <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
                   <time>{formatDateWithDay(event.date, locale)}</time>
                   <div className="home-event-body">
+                    {title && (
+                      <span className="home-event-title">
+                        {title}
+                        {eventsWithSetlist.has(event.id) && (
+                          <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>
+                        )}
+                      </span>
+                    )}
                     <span className="home-event-venue">
                       {venue}
-                      {eventsWithSetlist.has(event.id) && (
+                      {!title && eventsWithSetlist.has(event.id) && (
                         <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>
                       )}
                     </span>

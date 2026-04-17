@@ -2,7 +2,9 @@ import { useParams, Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useSetlists, useSongs } from '../hooks/useSheetData';
-import { formatDateWithDay, formatPrice, getEventTitle } from '../utils/format';
+import { formatDateWithDay, formatPrice } from '../utils/format';
+
+const MONTHS_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 interface Props {
   locale: Locale;
@@ -34,12 +36,18 @@ export default function EventDetail({ locale }: Props) {
     );
   }
 
-  const title = getEventTitle(event, locale);
+  const title = locale === 'ja' ? event.title_ja : event.title_en;
   const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
   const city = locale === 'ja' ? event.city_ja : event.city_en;
   const body = locale === 'ja' ? event.body_ja : event.body_en;
 
   const dateStr = formatDateWithDay(event.date, locale);
+  const d = new Date(event.date + 'T00:00:00');
+  const area = [
+    city,
+    event.prefecture_en && (locale === 'ja' ? event.prefecture_ja : event.prefecture_en),
+    event.country_en && (locale === 'ja' ? event.country_ja : event.country_en),
+  ].filter(Boolean).join(', ');
 
   // Group setlist entries by set
   const eventSetlist = !setlistsLoading
@@ -63,18 +71,34 @@ export default function EventDetail({ locale }: Props) {
 
   return (
     <article className="event-detail">
-      <header className="event-detail-header">
-        <h1 className="event-detail-title">{title}</h1>
-        {city && (
-          <p className="event-detail-subtitle">
-            {[
-              city,
-              event.prefecture_en && (locale === 'ja' ? event.prefecture_ja : event.prefecture_en),
-              event.country_en && (locale === 'ja' ? event.country_ja : event.country_en),
-            ].filter(Boolean).join(', ')}
-          </p>
+      <div className="next-show-hero next-show-hero-static">
+        {locale === 'ja' ? (
+          <div className="next-show-date next-show-date-ja">
+            <span className="next-show-year">{d.getFullYear()}</span>
+            <span className="next-show-monthday">{d.getMonth() + 1}.{d.getDate()}</span>
+          </div>
+        ) : (
+          <div className="next-show-date">
+            <span className="next-show-month">{MONTHS_EN[d.getMonth()]}</span>
+            <span className="next-show-day">{d.getDate()}</span>
+            <span className="next-show-year">{d.getFullYear()}</span>
+          </div>
         )}
-      </header>
+        <div className="next-show-body">
+          {title ? (
+            <>
+              <h1 className="next-show-title">{title}</h1>
+              <div className="next-show-venue">{venue}</div>
+              {area && <div className="next-show-area">{area}</div>}
+            </>
+          ) : (
+            <>
+              <h1 className="next-show-venue">{venue}</h1>
+              {area && <div className="next-show-area">{area}</div>}
+            </>
+          )}
+        </div>
+      </div>
 
       {event.posterUrl && (
         <div className="event-poster">

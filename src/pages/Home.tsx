@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useNews, useBlog } from '../hooks/useSheetData';
-import EventCard from '../components/EventCard';
-import { formatDateWithDay } from '../utils/format';
+
+const MONTHS_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 interface Props {
   locale: Locale;
@@ -13,18 +13,19 @@ function HomeNews({ news, locale, prefix, s }: { news: import('../types').NewsPo
   if (news.length === 0) return null;
   const latestNews = [...news].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
   return (
-    <section className="mb-2">
+    <section className="home-section">
       <div className="section-header-row">
         <h2 className="section-label">{s.home.latestNews}</h2>
         <Link to={`${prefix}/news`} className="section-view-all">{s.home.viewAllNews} →</Link>
       </div>
+
       {latestNews.map(post => {
         const title = locale === 'ja' ? post.title_ja : post.title_en;
         return (
-          <div key={post.id} className="home-blog-item">
+          <Link key={post.id} to={`${prefix}/news/${post.id}`} className="home-blog-item">
             <time>{post.date}</time>
-            <Link to={`${prefix}/news/${post.id}`}>{title}</Link>
-          </div>
+            <span className="home-blog-item-title">{title}</span>
+          </Link>
         );
       })}
     </section>
@@ -43,15 +44,55 @@ export default function Home({ locale }: Props) {
     .filter(e => e.date >= now)
     .sort((a, b) => a.date.localeCompare(b.date));
   const nextShow = upcoming[0];
-  const recentPast = events
-    .filter(e => e.date < now)
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 3);
 
   if (eventsLoading) return null;
 
   return (
     <>
+      {/* Next show — hero */}
+      {nextShow && (() => {
+        const d = new Date(nextShow.date + 'T00:00:00');
+        const title = locale === 'ja' ? nextShow.title_ja : nextShow.title_en;
+        const venue = locale === 'ja' ? nextShow.venue_ja : nextShow.venue_en;
+        const area = locale === 'ja' ? nextShow.city_ja : nextShow.city_en;
+        return (
+          <section className="home-section">
+            <div className="section-header-row">
+              <h2 className="section-label">{s.home.nextShow}</h2>
+              <Link to={`${prefix}/events`} className="section-view-all">{s.home.viewAllEvents} →</Link>
+            </div>
+            <Link to={`${prefix}/events/${nextShow.id}`} className="next-show-hero">
+              {locale === 'ja' ? (
+                <div className="next-show-date next-show-date-ja">
+                  <span className="next-show-year">{d.getFullYear()}</span>
+                  <span className="next-show-monthday">{d.getMonth() + 1}.{d.getDate()}</span>
+                </div>
+              ) : (
+                <div className="next-show-date">
+                  <span className="next-show-month">{MONTHS_EN[d.getMonth()]}</span>
+                  <span className="next-show-day">{d.getDate()}</span>
+                  <span className="next-show-year">{d.getFullYear()}</span>
+                </div>
+              )}
+              <div className="next-show-body">
+                {title ? (
+                  <>
+                    <h3 className="next-show-title">{title}</h3>
+                    <div className="next-show-venue">{venue}</div>
+                    {area && <div className="next-show-area">{area}</div>}
+                  </>
+                ) : (
+                  <>
+                    <h3 className="next-show-venue">{venue}</h3>
+                    {area && <div className="next-show-area">{area}</div>}
+                  </>
+                )}
+              </div>
+            </Link>
+          </section>
+        );
+      })()}
+
       {/* Latest news */}
       <HomeNews news={news} locale={locale} prefix={prefix} s={s} />
 
@@ -59,7 +100,7 @@ export default function Home({ locale }: Props) {
       {blog.length > 0 && (() => {
         const latest = [...blog].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
         return (
-          <section className="mb-2">
+          <section className="home-section">
             <div className="section-header-row">
               <h2 className="section-label">{s.home.latestBlog}</h2>
               <Link to={`${prefix}/blog`} className="section-view-all">{s.home.viewAllBlog} →</Link>
@@ -67,48 +108,15 @@ export default function Home({ locale }: Props) {
             {latest.map(post => {
               const title = locale === 'ja' ? post.title_ja : post.title_en;
               return (
-                <div key={post.id} className="home-blog-item">
+                <Link key={post.id} to={`${prefix}/blog/${post.id}`} className="home-blog-item">
                   <time>{post.date}</time>
-                  <Link to={`${prefix}/blog/${post.id}`}>{title || post.instagram_url}</Link>
-                </div>
+                  <span className="home-blog-item-title">{title || post.instagram_url}</span>
+                </Link>
               );
             })}
           </section>
         );
       })()}
-
-      {/* Next show */}
-      {nextShow && (
-        <section className="mb-2">
-          <h2 className="section-label">{s.home.nextShow}</h2>
-          <EventCard event={nextShow} locale={locale} featured />
-        </section>
-      )}
-
-      {/* Recent events */}
-      {recentPast.length > 0 && (
-        <section className="mb-2">
-          <div className="section-header-row">
-            <h2 className="section-label">{s.nav.events}</h2>
-            <Link to={`${prefix}/events`} className="section-view-all">{s.home.viewAllEvents} →</Link>
-          </div>
-          <div className="home-event-list">
-            {recentPast.map(event => {
-              const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
-              const area = locale === 'ja' ? event.city_ja : event.city_en;
-              return (
-                <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
-                  <time>{formatDateWithDay(event.date, locale)}</time>
-                  <div className="home-event-body">
-                    <span className="home-event-venue">{venue}</span>
-                    {area && <span className="home-event-area">{area}</span>}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
     </>
   );

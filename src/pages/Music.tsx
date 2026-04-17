@@ -12,7 +12,7 @@ export default function Music({ locale }: Props) {
   const s = t(locale);
   const prefix = `/${locale}`;
   const { albums, loading } = useAlbums();
-  const [view, setView] = useState<'list' | 'card'>('card');
+  const [view, setView] = useState<'list' | 'card'>('list');
 
   if (loading) return null;
 
