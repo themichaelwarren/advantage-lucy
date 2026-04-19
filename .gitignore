@@ -6,3 +6,4 @@ dist/
 public/uploads/
 tsconfig.tsbuildinfo
 .vscode/
+.claude/settings.local.json
