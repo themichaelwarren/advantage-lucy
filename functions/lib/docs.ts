@@ -62,8 +62,11 @@ function extractText(doc: any): string {
       lines.push(line);
     }
   }
+  // Treat single hard returns the same as soft returns (tight break); only an
+  // empty paragraph between content (two returns in a row) becomes a stanza break.
   return lines
     .map((l: string) => l.replace(/\n$/, '').replace(/\v/g, '\n'))
-    .join('\n\n')
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }

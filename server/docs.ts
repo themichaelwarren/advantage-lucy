@@ -161,10 +161,12 @@ function extractText(doc: { body?: { content?: DocElement[] } }): string {
   }
 
   // Google Docs uses \v (\x0b) for soft line breaks (Shift+Enter within a paragraph).
-  // \n appears at the end of each paragraph.
-  // Strategy: join paragraphs with \n\n (stanza break), convert \v to \n (line break).
+  // \n appears at the end of each paragraph (hard return).
+  // Treat single hard returns the same as soft returns (tight break); only an
+  // *empty* paragraph between content (two returns in a row) becomes a stanza break.
   return lines
     .map(l => l.replace(/\n$/, '').replace(/\v/g, '\n'))
-    .join('\n\n')
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
