@@ -95,7 +95,7 @@ export default function AdminEventForm() {
     if (!form.venue) problems.venue = s.venueMissing;
     setErrors(problems);
     if (Object.keys(problems).length) {
-      document.querySelector('.ad-field.has-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.querySelector('.lu-field.has-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -129,21 +129,21 @@ export default function AdminEventForm() {
     }
   }
 
-  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
+  if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   const heading = isNew ? s.newShow : (locale === 'ja' ? form.title_ja || form.title_en : form.title_en || form.title_ja) || form.date;
 
   return (
-    <form className="ad-form" onSubmit={handleSubmit} noValidate>
-      <div className="ad-page-head">
+    <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      <div className="lu-page-head">
         <div>
-          <p className="ad-eyebrow">{isNew ? s.shows : s.editShow}</p>
+          <p className="lu-eyebrow">{isNew ? s.shows : s.editShow}</p>
           <h1>{heading}</h1>
         </div>
       </div>
 
       <Section title={s.secWhenWhere}>
-        <div className="ad-grid-2">
+        <div className="lu-grid-2">
           <Field label={s.date} error={errors.date}>
             {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
           </Field>
@@ -163,7 +163,7 @@ export default function AdminEventForm() {
             />
           )}
         </Field>
-        <div className="ad-grid-3">
+        <div className="lu-grid-3">
           <Field label={s.doors} optional s={s}>
             {fid => <input id={fid} type="time" value={form.doors} onChange={e => set('doors', e.target.value)} />}
           </Field>
@@ -177,7 +177,7 @@ export default function AdminEventForm() {
       </Section>
 
       <Section title={s.secAbout}>
-        <p className="ad-hint">{s.bothLanguagesHint}</p>
+        <p className="lu-hint">{s.bothLanguagesHint}</p>
         <BilingualRow>
           <Field label={`${s.showTitle} · ${s.english}`} hint={s.showTitleHint} optional s={s}>
             {fid => <input id={fid} value={form.title_en} onChange={e => set('title_en', e.target.value)} />}
@@ -191,22 +191,22 @@ export default function AdminEventForm() {
         </Field>
         {/* Notes can be long (times, ticket details…): full width, growing with the text */}
         <Field label={`${s.description} · ${s.english}`} hint={s.notesHint} optional s={s}>
-          {fid => <textarea id={fid} className="ad-textarea-long" rows={6} value={form.body_en} onChange={e => set('body_en', e.target.value)} />}
+          {fid => <textarea id={fid} className="lu-textarea-long" rows={6} value={form.body_en} onChange={e => set('body_en', e.target.value)} />}
         </Field>
         <Field label={`${s.description} · ${s.japanese}`} optional s={s}>
-          {fid => <textarea id={fid} className="ad-textarea-long" rows={6} lang="ja" value={form.body_ja} onChange={e => set('body_ja', e.target.value)} />}
+          {fid => <textarea id={fid} className="lu-textarea-long" rows={6} lang="ja" value={form.body_ja} onChange={e => set('body_ja', e.target.value)} />}
         </Field>
       </Section>
 
       <Section title={s.secSetlist} id="setlist">
         {form.date && !setlistIsPublic({ date: form.date, end_date: form.end_date }) && (
-          <p className="ad-note">🔒 {s.setlistAfterShow}</p>
+          <p className="lu-note">🔒 {s.setlistAfterShow}</p>
         )}
         <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} />
       </Section>
 
       <Section title={s.secTickets}>
-        <div className="ad-grid-2">
+        <div className="lu-grid-2">
           <Field label={s.advPrice} optional s={s}>
             {fid => <input id={fid} value={form.adv_price} placeholder={s.pricePlaceholder} onChange={e => set('adv_price', e.target.value)} />}
           </Field>
@@ -227,7 +227,7 @@ export default function AdminEventForm() {
         <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
         <Switch checked={form.featured === 'TRUE'} onChange={v => set('featured', v ? 'TRUE' : '')} label={s.featured} hint={s.featuredHint} />
         {!isNew && (
-          <div className="ad-danger-row">
+          <div className="lu-danger-row">
             <DeleteButton s={s} onConfirm={async () => {
               try {
                 if (setlists.some(x => x.event === form.id)) await replaceRows('Setlists', form.id, []);

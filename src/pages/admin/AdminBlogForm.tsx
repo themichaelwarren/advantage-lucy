@@ -78,13 +78,13 @@ export default function AdminBlogForm() {
     }
   }
 
-  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
+  if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   return (
-    <form className="ad-form" onSubmit={handleSubmit} noValidate>
-      <div className="ad-page-head">
+    <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      <div className="lu-page-head">
         <div>
-          <p className="ad-eyebrow">{isNew ? s.blogTitle : s.editBlog}</p>
+          <p className="lu-eyebrow">{isNew ? s.blogTitle : s.editBlog}</p>
           <h1>{isNew ? s.newBlog : (locale === 'ja' ? form.title_ja || form.title_en : form.title_en || form.title_ja) || form.id}</h1>
         </div>
       </div>
@@ -94,15 +94,15 @@ export default function AdminBlogForm() {
           {fid => <input id={fid} type="url" inputMode="url" placeholder="https://www.instagram.com/p/…" value={form.instagram_url} onChange={e => set('instagram_url', e.target.value)} />}
         </Field>
         {code && (
-          <div className="ad-preview">
-            <p className="ad-eyebrow">{s.preview}</p>
+          <div className="lu-preview">
+            <p className="lu-eyebrow">{s.preview}</p>
             <InstagramEmbed url={form.instagram_url.split('?')[0]} />
           </div>
         )}
       </Section>
 
       <Section title={s.secDetails}>
-        <p className="ad-hint">{s.bothLanguagesHint}</p>
+        <p className="lu-hint">{s.bothLanguagesHint}</p>
         <Field label={s.date}>
           {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
         </Field>
@@ -119,7 +119,7 @@ export default function AdminBlogForm() {
       <Section title={s.visible}>
         <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
         {!isNew && (
-          <div className="ad-danger-row">
+          <div className="lu-danger-row">
             <DeleteButton s={s} onConfirm={async () => {
               try { await deleteRow('Blog', form.id); navigate(`${prefix}/blog`); }
               catch (err) { setError(errorText(err)); }

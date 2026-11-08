@@ -26,9 +26,9 @@ export default function PeoplePicker({ s, locale, id, value, onChange, people }:
     .sort((a, b) => personName(a, locale).localeCompare(personName(b, locale)));
 
   return (
-    <div className="ad-people">
+    <div className="lu-people">
       {chosen.map(pid => (
-        <span key={pid} className="ad-chip">
+        <span key={pid} className="lu-chip">
           {byId.get(pid) ? personName(byId.get(pid)!, locale) : pid}
           <button type="button" aria-label={s.remove} onClick={() => onChange(chosen.filter(x => x !== pid).join(','))}>✕</button>
         </span>

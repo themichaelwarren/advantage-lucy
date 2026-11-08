@@ -27,13 +27,13 @@ export default function AdminMusic() {
         : ui.sort === 'oldest' ? when(a).localeCompare(when(b)) : when(b).localeCompare(when(a)));
   }, [albums, ui.query, ui.filter, ui.sort]);
 
-  if (loading) return <p className="ad-loading">{s.loading}</p>;
+  if (loading) return <p className="lu-loading">{s.loading}</p>;
 
   return (
     <>
-      <div className="ad-page-head">
-        <h1>{s.releasesTitle} <span className="ad-count">{albums.length}</span></h1>
-        <Link to={`${prefix}/releases/new`} className="ad-btn ad-btn-primary ad-btn-lg">+ {s.addRelease}</Link>
+      <div className="lu-page-head">
+        <h1>{s.releasesTitle} <span className="lu-count">{albums.length}</span></h1>
+        <Link to={`${prefix}/releases/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addRelease}</Link>
       </div>
       <ListToolbar
         s={s}
@@ -44,13 +44,13 @@ export default function AdminMusic() {
         sort={ui.sort} onSort={v => ui.setSort(v as Sort)}
         shown={list.length} total={albums.length}
       />
-      {list.length === 0 ? <p className="ad-empty">{s.noResults}</p> : (
-        <ul className="ad-list">
+      {list.length === 0 ? <p className="lu-empty">{s.noResults}</p> : (
+        <ul className="lu-list">
           {list.map(a => (
             <li key={a.id}>
-              <Link to={`${prefix}/releases/${a.id}`} className="ad-list-row">
-                {a.coverUrl ? <img className="ad-thumb" src={a.coverUrl} alt="" loading="lazy" /> : <span className="ad-thumb" />}
-                <span className="ad-list-main">
+              <Link to={`${prefix}/releases/${a.id}`} className="lu-list-row">
+                {a.coverUrl ? <img className="lu-thumb" src={a.coverUrl} alt="" loading="lazy" /> : <span className="lu-thumb" />}
+                <span className="lu-list-main">
                   <strong>{a.title}</strong>
                   <span>{[when(a), typeLabel[a.type?.toLowerCase()] || a.type, a.label].filter(Boolean).join(' · ')}</span>
                 </span>

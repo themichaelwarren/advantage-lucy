@@ -93,13 +93,13 @@ export default function AdminSongForm() {
     }
   }
 
-  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
+  if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   return (
-    <form className="ad-form" onSubmit={e => { e.preventDefault(); save(form); }} noValidate>
-      <div className="ad-page-head">
+    <form className="lu-form" onSubmit={e => { e.preventDefault(); save(form); }} noValidate>
+      <div className="lu-page-head">
         <div>
-          <p className="ad-eyebrow">{isNew ? s.songsTitle : s.editSongItem}</p>
+          <p className="lu-eyebrow">{isNew ? s.songsTitle : s.editSongItem}</p>
           <h1>{isNew ? s.newSongItem : form.title}</h1>
         </div>
       </div>
@@ -108,7 +108,7 @@ export default function AdminSongForm() {
         <Field label={s.songTitle} error={titleError}>
           {fid => <input id={fid} value={form.title} onChange={e => set('title', e.target.value)} />}
         </Field>
-        <div className="ad-grid-2">
+        <div className="lu-grid-2">
           <Field label={s.musicBy} optional s={s}>
             {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.music_by} onChange={v => set('music_by', v)} people={people} />}
           </Field>
@@ -129,19 +129,19 @@ export default function AdminSongForm() {
             />
           )}
         </Field>
-        <div className="ad-row">
+        <div className="lu-row">
           {form.lyrics_doc_id ? (
-            <a className="ad-btn" href={`https://docs.google.com/document/d/${form.lyrics_doc_id}/edit`} target="_blank" rel="noopener noreferrer">
+            <a className="lu-btn" href={`https://docs.google.com/document/d/${form.lyrics_doc_id}/edit`} target="_blank" rel="noopener noreferrer">
               {s.lyricsDocOpen}
             </a>
           ) : (
-            <button type="button" className="ad-btn" onClick={createDoc} disabled={creatingDoc || saving}>
+            <button type="button" className="lu-btn" onClick={createDoc} disabled={creatingDoc || saving}>
               {creatingDoc ? s.lyricsDocCreating : `+ ${s.lyricsDocCreate}`}
             </button>
           )}
         </div>
         {!isNew && (
-          <div className="ad-danger-row">
+          <div className="lu-danger-row">
             <DeleteButton s={s} onConfirm={async () => {
               try { await deleteRow('Songs', form.id); navigate(`${prefix}/songs`); }
               catch (err) { setError(errorText(err)); }

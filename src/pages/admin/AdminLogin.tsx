@@ -6,13 +6,13 @@ export default function AdminLogin() {
   const { s } = useAdminT();
 
   return (
-    <div className="admin-shell ad-shell">
-      <div className="ad-login">
-        <span className="ad-brand band-name">{s.brand}</span>
+    <div className="admin-shell lu-shell">
+      <div className="lu-login">
+        <span className="lu-brand band-name">{s.brand}</span>
         <h1>{s.signInTitle}</h1>
         <p>{s.signInBody}</p>
-        {authError && <div className="ad-alert">{authError}</div>}
-        <button className="ad-btn ad-btn-primary ad-btn-lg" onClick={login} disabled={isLoading}>
+        {authError && <div className="lu-alert">{authError}</div>}
+        <button className="lu-btn lu-btn-primary lu-btn-lg" onClick={login} disabled={isLoading}>
           {isLoading ? s.loading : s.signIn}
         </button>
       </div>

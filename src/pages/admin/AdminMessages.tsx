@@ -19,10 +19,10 @@ function Attachments({ names }: { names: string[] }) {
     return () => { alive = false; made.forEach(u => URL.revokeObjectURL(u)); };
   }, [names.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className="ad-attachments">
+    <div className="lu-attachments">
       {names.map((n, i) => urls[i]
         ? <a key={n} href={urls[i]!} target="_blank" rel="noopener noreferrer"><img src={urls[i]!} alt="" /></a>
-        : <span key={n} className="ad-attachment-loading">📎</span>)}
+        : <span key={n} className="lu-attachment-loading">📎</span>)}
     </div>
   );
 }
@@ -57,14 +57,14 @@ export default function AdminMessages() {
 
   return (
     <>
-      <div className="ad-page-head">
+      <div className="lu-page-head">
         <div>
-          <h1>{s.messagesTitle} {messages && <span className="ad-count">{messages.length}</span>}</h1>
-          <p className="ad-hint">{s.messagesHint}</p>
+          <h1>{s.messagesTitle} {messages && <span className="lu-count">{messages.length}</span>}</h1>
+          <p className="lu-hint">{s.messagesHint}</p>
         </div>
       </div>
-      {error && <div className="ad-alert">{error}</div>}
-      {!messages && !error && <p className="ad-loading">{s.loading}</p>}
+      {error && <div className="lu-alert">{error}</div>}
+      {!messages && !error && <p className="lu-loading">{s.loading}</p>}
       {messages && messages.length > 0 && (
         <ListToolbar
           s={s}
@@ -76,47 +76,47 @@ export default function AdminMessages() {
           shown={shown.length} total={messages.length}
         />
       )}
-      {messages && messages.length === 0 && <p className="ad-empty">{s.messagesEmpty}</p>}
-      {messages && messages.length > 0 && shown.length === 0 && <p className="ad-empty">{s.noResults}</p>}
+      {messages && messages.length === 0 && <p className="lu-empty">{s.messagesEmpty}</p>}
+      {messages && messages.length > 0 && shown.length === 0 && <p className="lu-empty">{s.noResults}</p>}
       {shown.length > 0 && (
-        <ul className="ad-list ad-messages">
+        <ul className="lu-list lu-messages">
           {shown.map(m => {
             const name = `${m.name_family} ${m.name_given}`.trim() || s.anonymous;
             const isSetlist = m.topic === 'setlist';
             const isOpen = open === m.id;
             return (
               <li key={m.id} id={`msg-${m.id}`} className={isOpen ? 'is-open' : ''}>
-                <button type="button" className="ad-list-row ad-message-head" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : m.id)}>
+                <button type="button" className="lu-list-row lu-message-head" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : m.id)}>
                   <time>{when(m.received_at)}</time>
-                  <span className="ad-list-main">
-                    <strong>{name} {!isSetlist && <span className="ad-message-greeting">“{m.greeting}”</span>}</strong>
+                  <span className="lu-list-main">
+                    <strong>{name} {!isSetlist && <span className="lu-message-greeting">“{m.greeting}”</span>}</strong>
                     <span>{m.message}</span>
                   </span>
-                  <span className="ad-list-tags">
-                    {isSetlist && <span className="ad-tag is-ok">♪ {s.setlistInfo}</span>}
-                    {m.attachments && <span className="ad-tag">📎 {m.attachments.split(',').length}</span>}
-                    {m.notified === 'no' && <span className="ad-tag is-muted">{s.notEmailed}</span>}
+                  <span className="lu-list-tags">
+                    {isSetlist && <span className="lu-tag is-ok">♪ {s.setlistInfo}</span>}
+                    {m.attachments && <span className="lu-tag">📎 {m.attachments.split(',').length}</span>}
+                    {m.notified === 'no' && <span className="lu-tag is-muted">{s.notEmailed}</span>}
                   </span>
                 </button>
                 {isOpen && (
-                  <div className="ad-message-body">
+                  <div className="lu-message-body">
                     {isSetlist && m.event && (
-                      <p className="ad-hint">
+                      <p className="lu-hint">
                         <a href={`/${locale}/events/${m.event}`} target="_blank" rel="noopener noreferrer">♪ {m.event} ↗</a>
                       </p>
                     )}
-                    {m.email && <p className="ad-hint">{m.email}</p>}
-                    <p className="ad-message-text">{m.message}</p>
+                    {m.email && <p className="lu-hint">{m.email}</p>}
+                    <p className="lu-message-text">{m.message}</p>
                     {m.attachments && <Attachments names={m.attachments.split(',').filter(Boolean)} />}
-                    <div className="ad-row">
+                    <div className="lu-row">
                       {isSetlist && m.event && (
-                        <Link className="ad-btn ad-btn-primary" to={`${prefix}/events/${m.event}#setlist`}>♪ {s.openSetlist}</Link>
+                        <Link className="lu-btn lu-btn-primary" to={`${prefix}/events/${m.event}#setlist`}>♪ {s.openSetlist}</Link>
                       )}
                       {isSetlist && m.event && (
-                        <a className="ad-btn" href={`/${locale}/events/${m.event}`} target="_blank" rel="noopener noreferrer">{s.viewOnSite} ↗</a>
+                        <a className="lu-btn" href={`/${locale}/events/${m.event}`} target="_blank" rel="noopener noreferrer">{s.viewOnSite} ↗</a>
                       )}
                       {m.email && (
-                        <a className={`ad-btn${isSetlist ? '' : ' ad-btn-primary'}`} href={`mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent('Re: advantage Lucy')}`}>
+                        <a className={`lu-btn${isSetlist ? '' : ' lu-btn-primary'}`} href={`mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent('Re: advantage Lucy')}`}>
                           ✉ {s.reply}
                         </a>
                       )}

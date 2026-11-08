@@ -106,13 +106,13 @@ export default function AdminAlbumForm() {
     }
   }
 
-  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
+  if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   return (
-    <form className="ad-form" onSubmit={handleSubmit} noValidate>
-      <div className="ad-page-head">
+    <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      <div className="lu-page-head">
         <div>
-          <p className="ad-eyebrow">{isNew ? s.releasesTitle : s.editRelease}</p>
+          <p className="lu-eyebrow">{isNew ? s.releasesTitle : s.editRelease}</p>
           <h1>{isNew ? s.newRelease : form.title}</h1>
         </div>
       </div>
@@ -121,7 +121,7 @@ export default function AdminAlbumForm() {
         <Field label={s.releaseTitle} error={titleError}>
           {fid => <input id={fid} value={form.title} onChange={e => set('title', e.target.value)} />}
         </Field>
-        <div className="ad-grid-2">
+        <div className="lu-grid-2">
           <Field label={s.releaseDate} optional s={s}>
             {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
           </Field>
@@ -138,7 +138,7 @@ export default function AdminAlbumForm() {
             )}
           </Field>
         </div>
-        <div className="ad-grid-3">
+        <div className="lu-grid-3">
           <Field label={s.label} optional s={s}>
             {fid => <input id={fid} value={form.label} onChange={e => set('label', e.target.value)} />}
           </Field>
@@ -163,19 +163,19 @@ export default function AdminAlbumForm() {
       </Section>
 
       <Section title={s.secTracklist}>
-        <div className="ad-setlist">
-          <datalist id="ad-track-titles">
+        <div className="lu-setlist">
+          <datalist id="lu-track-titles">
             {songs.map(x => <option key={x.id} value={x.title} />)}
           </datalist>
-          <div className="ad-set">
+          <div className="lu-set">
             <ol>
               {tracks.map((t, i) => {
                 const song = songByTitle.get(t.title.trim());
                 return (
-                  <li key={t.key} className="ad-song">
+                  <li key={t.key} className="lu-song">
                     <input
-                      className="ad-song-title"
-                      list="ad-track-titles"
+                      className="lu-song-title"
+                      list="lu-track-titles"
                       value={t.title}
                       placeholder={s.trackTitle}
                       aria-label={s.trackTitle}
@@ -189,29 +189,29 @@ export default function AdminAlbumForm() {
                       autoFocus={i === tracks.length - 1 && !t.title}
                     />
                     {t.title.trim() && (song
-                      ? <Link to={`${prefix}/songs/${song.id}`} className={`ad-tag ${song.lyrics_doc_id ? 'is-ok' : 'is-todo'}`}>
+                      ? <Link to={`${prefix}/songs/${song.id}`} className={`lu-tag ${song.lyrics_doc_id ? 'is-ok' : 'is-todo'}`}>
                           {song.lyrics_doc_id ? s.lyricsLinked : s.lyricsMissing}
                         </Link>
-                      : <span className="ad-tag is-muted">{s.songNotListed}</span>)}
-                    <span className="ad-song-actions">
-                      <button type="button" className="ad-icon-btn" onClick={() => moveTrack(i, -1)} disabled={i === 0} aria-label={s.moveUp}>↑</button>
-                      <button type="button" className="ad-icon-btn" onClick={() => moveTrack(i, 1)} disabled={i === tracks.length - 1} aria-label={s.moveDown}>↓</button>
-                      <button type="button" className="ad-icon-btn is-danger" onClick={() => setTracks(tracks.filter(x => x.key !== t.key))} aria-label={s.remove}>✕</button>
+                      : <span className="lu-tag is-muted">{s.songNotListed}</span>)}
+                    <span className="lu-song-actions">
+                      <button type="button" className="lu-icon-btn" onClick={() => moveTrack(i, -1)} disabled={i === 0} aria-label={s.moveUp}>↑</button>
+                      <button type="button" className="lu-icon-btn" onClick={() => moveTrack(i, 1)} disabled={i === tracks.length - 1} aria-label={s.moveDown}>↓</button>
+                      <button type="button" className="lu-icon-btn is-danger" onClick={() => setTracks(tracks.filter(x => x.key !== t.key))} aria-label={s.remove}>✕</button>
                     </span>
                   </li>
                 );
               })}
             </ol>
-            <button type="button" className="ad-btn ad-btn-quiet" onClick={() => setTracks([...tracks, track()])}>+ {s.addTrack}</button>
+            <button type="button" className="lu-btn lu-btn-quiet" onClick={() => setTracks([...tracks, track()])}>+ {s.addTrack}</button>
           </div>
-          <p className="ad-hint">{s.tracklistHint}</p>
+          <p className="lu-hint">{s.tracklistHint}</p>
         </div>
       </Section>
 
       <Section title={s.artwork}>
         <ImageField s={s} value={form.artwork_url} onChange={v => set('artwork_url', v)} onError={setError} />
         {!isNew && (
-          <div className="ad-danger-row">
+          <div className="lu-danger-row">
             <DeleteButton s={s} onConfirm={async () => {
               try {
                 if (savedTitle) await replaceRows('Tracklists', savedTitle, []);

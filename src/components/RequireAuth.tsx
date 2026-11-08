@@ -11,8 +11,8 @@ export default function RequireAuth() {
   // sign-in script is still loading; only first-time visitors wait for it.
   if (!user && isLoading) {
     return (
-      <div className="admin-shell ad-shell">
-        <div className="ad-login"><p>{s.loading}</p></div>
+      <div className="admin-shell lu-shell">
+        <div className="lu-login"><p>{s.loading}</p></div>
       </div>
     );
   }

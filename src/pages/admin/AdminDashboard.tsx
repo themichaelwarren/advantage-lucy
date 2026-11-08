@@ -32,17 +32,17 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <div className="ad-page-head">
+      <div className="lu-page-head">
         <div>
-          <p className="ad-eyebrow">{s.hello}{firstName ? `${locale === 'ja' ? '、' : ', '}${firstName}` : ''} 👋</p>
+          <p className="lu-eyebrow">{s.hello}{firstName ? `${locale === 'ja' ? '、' : ', '}${firstName}` : ''} 👋</p>
           <h1>{s.whatToDo}</h1>
         </div>
       </div>
 
-      <div className="ad-tasks">
+      <div className="lu-tasks">
         {tasks.map(t => (
-          <Link key={t.title} to={t.to} className={`ad-task is-${t.tone}`}>
-            <span className="ad-task-icon" aria-hidden="true">{t.icon}</span>
+          <Link key={t.title} to={t.to} className={`lu-task is-${t.tone}`}>
+            <span className="lu-task-icon" aria-hidden="true">{t.icon}</span>
             <strong>{t.title}</strong>
             <span>{t.hint}</span>
           </Link>
@@ -50,32 +50,32 @@ export default function AdminDashboard() {
       </div>
 
       {!loading && (
-        <div className="ad-columns">
-          <section className="ad-list-group">
+        <div className="lu-columns">
+          <section className="lu-list-group">
             <h2>{s.upcomingShows}</h2>
-            {upcoming.length === 0 ? <p className="ad-empty">{s.nothingUpcoming}</p> : (
-              <ul className="ad-list">
+            {upcoming.length === 0 ? <p className="lu-empty">{s.nothingUpcoming}</p> : (
+              <ul className="lu-list">
                 {upcoming.map(e => (
                   <li key={e.id}>
-                    <Link to={`${prefix}/events/${e.id}`} className="ad-list-row">
+                    <Link to={`${prefix}/events/${e.id}`} className="lu-list-row">
                       <time>{e.date}</time>
-                      <span className="ad-list-main"><strong>{name(e)}</strong></span>
+                      <span className="lu-list-main"><strong>{name(e)}</strong></span>
                     </Link>
                   </li>
                 ))}
               </ul>
             )}
           </section>
-          <section className="ad-list-group">
+          <section className="lu-list-group">
             <h2>{s.needsSetlist}</h2>
-            {needsSetlist.length === 0 ? <p className="ad-empty">{s.allDone}</p> : (
-              <ul className="ad-list">
+            {needsSetlist.length === 0 ? <p className="lu-empty">{s.allDone}</p> : (
+              <ul className="lu-list">
                 {needsSetlist.map(e => (
                   <li key={e.id}>
-                    <Link to={`${prefix}/events/${e.id}#setlist`} className="ad-list-row">
+                    <Link to={`${prefix}/events/${e.id}#setlist`} className="lu-list-row">
                       <time>{e.date}</time>
-                      <span className="ad-list-main"><strong>{name(e)}</strong></span>
-                      <span className="ad-list-tags"><span className="ad-tag is-todo">+ {s.taskSetlist}</span></span>
+                      <span className="lu-list-main"><strong>{name(e)}</strong></span>
+                      <span className="lu-list-tags"><span className="lu-tag is-todo">+ {s.taskSetlist}</span></span>
                     </Link>
                   </li>
                 ))}

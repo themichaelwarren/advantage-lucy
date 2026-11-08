@@ -73,85 +73,85 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="admin-shell ad-shell">
-      <aside className="ad-sidebar" aria-label="Admin">
-        <Link to={prefix} className="ad-brand band-name">{s.brand}</Link>
-        <nav className="ad-side-nav">
+    <div className="admin-shell lu-shell">
+      <aside className="lu-sidebar" aria-label="Admin">
+        <Link to={prefix} className="lu-brand band-name">{s.brand}</Link>
+        <nav className="lu-side-nav">
           {groups.map((g, i) => (
-            <div key={i} className="ad-side-group">
-              {g.title && <p className="ad-side-title">{g.title}</p>}
+            <div key={i} className="lu-side-group">
+              {g.title && <p className="lu-side-title">{g.title}</p>}
               {g.links.map(l => (
-                <NavLink key={l.to} to={l.to} end={l.end} className="ad-side-link">
-                  <span className="ad-side-icon" aria-hidden="true">{l.icon}</span>
+                <NavLink key={l.to} to={l.to} end={l.end} className="lu-side-link">
+                  <span className="lu-side-icon" aria-hidden="true">{l.icon}</span>
                   {l.label}
                 </NavLink>
               ))}
             </div>
           ))}
         </nav>
-        <div className="ad-side-foot">
-          <div className="ad-side-row">
-            <Link to={otherPath} className="ad-pill" lang={otherLocale}>{otherLocale === 'ja' ? '日本語' : 'English'}</Link>
+        <div className="lu-side-foot">
+          <div className="lu-side-row">
+            <Link to={otherPath} className="lu-pill" lang={otherLocale}>{otherLocale === 'ja' ? '日本語' : 'English'}</Link>
             <ThemeToggle locale={locale} />
           </div>
-          <Link to={`/${locale}`} className="ad-side-link">
-            <span className="ad-side-icon" aria-hidden="true">↗</span>
+          <Link to={`/${locale}`} className="lu-side-link">
+            <span className="lu-side-icon" aria-hidden="true">↗</span>
             {s.viewSite}
           </Link>
           {user && (
-            <div className="ad-side-user">
-              <span className="ad-avatar-btn" aria-hidden="true">
+            <div className="lu-side-user">
+              <span className="lu-avatar-btn" aria-hidden="true">
                 {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" /> : <span>{user.name.slice(0, 1)}</span>}
               </span>
-              <span className="ad-side-user-text">
+              <span className="lu-side-user-text">
                 <strong>{user.name}</strong>
                 <span>{user.email}</span>
               </span>
-              <button type="button" className="ad-btn ad-btn-quiet ad-side-signout" onClick={logout}>{s.signOut}</button>
+              <button type="button" className="lu-btn lu-btn-quiet lu-side-signout" onClick={logout}>{s.signOut}</button>
             </div>
           )}
         </div>
       </aside>
 
-      <header className="ad-topbar">
-        <Link to={prefix} className="ad-brand band-name">{s.brand}</Link>
+      <header className="lu-topbar">
+        <Link to={prefix} className="lu-brand band-name">{s.brand}</Link>
 
-        <nav className="ad-nav" aria-label="Admin">
+        <nav className="lu-nav" aria-label="Admin">
           {main.map(l => (
-            <NavLink key={l.to} to={l.to} end={l.end} className="ad-nav-link">
-              <span className="ad-nav-icon" aria-hidden="true">{l.icon}</span>
+            <NavLink key={l.to} to={l.to} end={l.end} className="lu-nav-link">
+              <span className="lu-nav-icon" aria-hidden="true">{l.icon}</span>
               <span>{l.label}</span>
             </NavLink>
           ))}
-          <div className="ad-more" ref={moreRef}>
+          <div className="lu-more" ref={moreRef}>
             <button
               type="button"
-              className={`ad-nav-link${inMore ? ' active' : ''}`}
+              className={`lu-nav-link${inMore ? ' active' : ''}`}
               aria-expanded={moreOpen}
               onClick={() => setMoreOpen(o => !o)}
             >
-              <span className="ad-nav-icon" aria-hidden="true">⋯</span>
+              <span className="lu-nav-icon" aria-hidden="true">⋯</span>
               <span>{s.more}</span>
             </button>
             {moreOpen && (
-              <div className="ad-more-menu">
+              <div className="lu-more-menu">
                 {more.map(l => <NavLink key={l.to} to={l.to}>{l.label}</NavLink>)}
               </div>
             )}
           </div>
         </nav>
 
-        <div className="ad-topbar-right">
-          <Link to={otherPath} className="ad-pill" lang={otherLocale}>
+        <div className="lu-topbar-right">
+          <Link to={otherPath} className="lu-pill" lang={otherLocale}>
             {otherLocale === 'ja' ? '日本語' : 'English'}
           </Link>
           <ThemeToggle locale={locale} />
-          <Link to={`/${locale}`} className="ad-pill ad-hide-phone">{s.viewSite} ↗</Link>
+          <Link to={`/${locale}`} className="lu-pill lu-hide-phone">{s.viewSite} ↗</Link>
           {user && (
-            <div className="ad-account" ref={accountRef}>
+            <div className="lu-account" ref={accountRef}>
               <button
                 type="button"
-                className="ad-avatar-btn"
+                className="lu-avatar-btn"
                 aria-label={s.accountMenu}
                 aria-expanded={accountOpen}
                 aria-haspopup="menu"
@@ -160,9 +160,9 @@ export default function AdminLayout() {
                 {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" /> : <span>{user.name.slice(0, 1)}</span>}
               </button>
               {accountOpen && (
-                <div className="ad-account-menu" role="menu">
-                  <div className="ad-account-who">
-                    <span className="ad-eyebrow">{s.signedInAs}</span>
+                <div className="lu-account-menu" role="menu">
+                  <div className="lu-account-who">
+                    <span className="lu-eyebrow">{s.signedInAs}</span>
                     <strong>{user.name}</strong>
                     <span>{user.email}</span>
                   </div>
@@ -178,15 +178,15 @@ export default function AdminLayout() {
         </div>
       </header>
 
-      <div className="ad-content">
+      <div className="lu-content">
       {sessionExpired && (
-        <div className="ad-banner" role="alert">
+        <div className="lu-banner" role="alert">
           <span>{s.sessionExpired}</span>
-          <button type="button" className="ad-btn ad-btn-primary" onClick={login}>{s.signInAgain}</button>
+          <button type="button" className="lu-btn lu-btn-primary" onClick={login}>{s.signInAgain}</button>
         </div>
       )}
 
-      <main className="admin-main ad-main">
+      <main className="admin-main lu-main">
         <Outlet />
       </main>
       </div>

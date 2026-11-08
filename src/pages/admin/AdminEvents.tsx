@@ -37,7 +37,7 @@ export default function AdminEvents() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, ui.query, ui.filter, ui.sort, withSetlist, today]);
 
-  if (loading) return <p className="ad-loading">{s.loading}</p>;
+  if (loading) return <p className="lu-loading">{s.loading}</p>;
 
   const name = (e: Event) => ({
     title: locale === 'ja' ? e.title_ja || e.title_en : e.title_en || e.title_ja,
@@ -45,21 +45,21 @@ export default function AdminEvents() {
     city: locale === 'ja' ? e.city_ja || e.city_en : e.city_en || e.city_ja,
   });
   const setlistTag = (e: Event) => withSetlist.has(e.id)
-    ? <span className={`ad-tag ${setlistIsPublic(e) ? 'is-ok' : 'is-muted'}`}>{setlistIsPublic(e) ? '♪' : '🔒'} {s.hasSetlist}</span>
-    : <span className="ad-tag is-todo">{s.noSetlist}</span>;
+    ? <span className={`lu-tag ${setlistIsPublic(e) ? 'is-ok' : 'is-muted'}`}>{setlistIsPublic(e) ? '♪' : '🔒'} {s.hasSetlist}</span>
+    : <span className="lu-tag is-todo">{s.noSetlist}</span>;
 
   const row = (e: Event) => {
     const n = name(e);
     return (
       <li key={e.id}>
-        <Link to={`${prefix}/events/${e.id}`} className="ad-list-row">
+        <Link to={`${prefix}/events/${e.id}`} className="lu-list-row">
           <time>{e.date}</time>
-          <span className="ad-list-main">
+          <span className="lu-list-main">
             <strong>{n.title || n.venue}</strong>
             <span>{n.title ? `${n.venue} · ${n.city}` : n.city}</span>
           </span>
-          <span className="ad-list-tags">
-            {e.status === 'private' && <span className="ad-tag is-muted">{s.hidden}</span>}
+          <span className="lu-list-tags">
+            {e.status === 'private' && <span className="lu-tag is-muted">{s.hidden}</span>}
             {setlistTag(e)}
           </span>
         </Link>
@@ -76,9 +76,9 @@ export default function AdminEvents() {
 
   return (
     <>
-      <div className="ad-page-head">
-        <h1>{s.showsTitle} <span className="ad-count">{events.length}</span></h1>
-        <Link to={`${prefix}/events/new`} className="ad-btn ad-btn-primary ad-btn-lg">+ {s.addShow}</Link>
+      <div className="lu-page-head">
+        <h1>{s.showsTitle} <span className="lu-count">{events.length}</span></h1>
+        <Link to={`${prefix}/events/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addShow}</Link>
       </div>
 
       <ListToolbar
@@ -99,16 +99,16 @@ export default function AdminEvents() {
         shown={list.length} total={events.length}
       />
 
-      {list.length === 0 ? <p className="ad-empty">{s.noResults}</p> : ui.view === 'table' ? (
-        <div className="ad-table-wrap">
-          <table className="ad-table">
+      {list.length === 0 ? <p className="lu-empty">{s.noResults}</p> : ui.view === 'table' ? (
+        <div className="lu-table-wrap">
+          <table className="lu-table">
             <thead>
               <tr>
                 <th>{s.colDate}</th>
                 <th>{s.colTitle}</th>
                 <th>{s.colSetlist}</th>
-                <th className="ad-td-center">{s.colOnSite}</th>
-                <th className="ad-td-center">{s.colHighlight}</th>
+                <th className="lu-td-center">{s.colOnSite}</th>
+                <th className="lu-td-center">{s.colHighlight}</th>
                 <th aria-label={s.edit} />
               </tr>
             </thead>
@@ -117,19 +117,19 @@ export default function AdminEvents() {
                 const n = name(e);
                 return (
                   <tr key={e.id} className={e.status === 'private' ? 'is-hidden' : ''}>
-                    <td className="ad-td-date">{e.date}</td>
-                    <td className="ad-td-title">
+                    <td className="lu-td-date">{e.date}</td>
+                    <td className="lu-td-title">
                       <Link to={`${prefix}/events/${e.id}`}>{n.title || n.venue}</Link>
                       <span>{n.title ? `${n.venue} · ${n.city}` : n.city}</span>
                     </td>
                     <td>{setlistTag(e)}</td>
-                    <td className="ad-td-center">
+                    <td className="lu-td-center">
                       <SwitchCell checked={e.status !== 'private'} label={s.colOnSite} onChange={() => save(e.id, { status: e.status === 'private' ? 'published' : 'private' })} />
                     </td>
-                    <td className="ad-td-center">
+                    <td className="lu-td-center">
                       <SwitchCell checked={!!e.featured} label={s.colHighlight} onChange={() => save(e.id, { featured: !e.featured })} />
                     </td>
-                    <SaveStateCell s={s} state={rowState[e.id]} editHref={`${prefix}/events/${e.id}`} renderLink={(href, label) => <Link to={href} className="ad-btn ad-btn-quiet">{label}</Link>} />
+                    <SaveStateCell s={s} state={rowState[e.id]} editHref={`${prefix}/events/${e.id}`} renderLink={(href, label) => <Link to={href} className="lu-btn lu-btn-quiet">{label}</Link>} />
                   </tr>
                 );
               })}
@@ -138,9 +138,9 @@ export default function AdminEvents() {
         </div>
       ) : (
         [...groups.entries()].map(([key, rows]) => (
-          <section key={key} className="ad-list-group">
-            <h2>{key} <span className="ad-count">{rows.length}</span></h2>
-            <ul className="ad-list">{rows.map(row)}</ul>
+          <section key={key} className="lu-list-group">
+            <h2>{key} <span className="lu-count">{rows.length}</span></h2>
+            <ul className="lu-list">{rows.map(row)}</ul>
           </section>
         ))
       )}

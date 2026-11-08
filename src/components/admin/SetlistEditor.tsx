@@ -82,34 +82,34 @@ export default function SetlistEditor({ s, items, onChange, songTitles }: {
   };
 
   return (
-    <div className="ad-setlist">
-      <datalist id="ad-song-titles">
+    <div className="lu-setlist">
+      <datalist id="lu-song-titles">
         {songTitles.map(t => <option key={t} value={t} />)}
       </datalist>
 
       {sets.map(set => {
         const rows = items.filter(i => i.set === set);
         return (
-          <div key={set} className={`ad-set${set.startsWith('e') ? ' is-encore' : ''}`}>
+          <div key={set} className={`lu-set${set.startsWith('e') ? ' is-encore' : ''}`}>
             <h3>{label(set)}</h3>
-            {rows.length === 0 && <p className="ad-hint">{s.setlistEmpty}</p>}
+            {rows.length === 0 && <p className="lu-hint">{s.setlistEmpty}</p>}
             <ol>
               {rows.map(row => {
                 const idx = items.indexOf(row);
                 return (
                   <li
                     key={row.key}
-                    className={`ad-song${dragKey === row.key ? ' is-dragging' : ''}`}
+                    className={`lu-song${dragKey === row.key ? ' is-dragging' : ''}`}
                     draggable
                     onDragStart={e => { setDragKey(row.key); e.dataTransfer.effectAllowed = 'move'; }}
                     onDragOver={e => e.preventDefault()}
                     onDrop={e => { e.preventDefault(); dropOn(row.key); setDragKey(null); }}
                     onDragEnd={() => setDragKey(null)}
                   >
-                    <span className="ad-drag" aria-hidden="true">⇅</span>
+                    <span className="lu-drag" aria-hidden="true">⇅</span>
                     <input
-                      className="ad-song-title"
-                      list="ad-song-titles"
+                      className="lu-song-title"
+                      list="lu-song-titles"
                       value={row.song}
                       placeholder={s.songPlaceholder}
                       aria-label={s.songPlaceholder}
@@ -121,31 +121,31 @@ export default function SetlistEditor({ s, items, onChange, songTitles }: {
                       }}
                     />
                     <input
-                      className="ad-song-note"
+                      className="lu-song-note"
                       value={row.notes}
                       placeholder={s.notes}
                       aria-label={s.notes}
                       onChange={e => update(row.key, { notes: e.target.value })}
                     />
-                    <span className="ad-song-actions">
-                      <button type="button" className="ad-icon-btn" onClick={() => move(row.key, -1)} disabled={idx === 0} aria-label={s.moveUp}>↑</button>
-                      <button type="button" className="ad-icon-btn" onClick={() => move(row.key, 1)} disabled={idx === items.length - 1} aria-label={s.moveDown}>↓</button>
-                      <button type="button" className="ad-icon-btn is-danger" onClick={() => onChange(items.filter(i => i.key !== row.key))} aria-label={s.remove}>✕</button>
+                    <span className="lu-song-actions">
+                      <button type="button" className="lu-icon-btn" onClick={() => move(row.key, -1)} disabled={idx === 0} aria-label={s.moveUp}>↑</button>
+                      <button type="button" className="lu-icon-btn" onClick={() => move(row.key, 1)} disabled={idx === items.length - 1} aria-label={s.moveDown}>↓</button>
+                      <button type="button" className="lu-icon-btn is-danger" onClick={() => onChange(items.filter(i => i.key !== row.key))} aria-label={s.remove}>✕</button>
                     </span>
                   </li>
                 );
               })}
             </ol>
-            <button type="button" className="ad-btn ad-btn-quiet" onClick={() => add(set)}>+ {s.addSong}</button>
+            <button type="button" className="lu-btn lu-btn-quiet" onClick={() => add(set)}>+ {s.addSong}</button>
           </div>
         );
       })}
 
-      <div className="ad-row">
-        <button type="button" className="ad-btn" onClick={() => add(nextSetName())}>+ {s.addSet}</button>
-        <button type="button" className="ad-btn" onClick={() => add(nextEncoreName())}>+ {s.addEncore}</button>
+      <div className="lu-row">
+        <button type="button" className="lu-btn" onClick={() => add(nextSetName())}>+ {s.addSet}</button>
+        <button type="button" className="lu-btn" onClick={() => add(nextEncoreName())}>+ {s.addEncore}</button>
       </div>
-      <p className="ad-hint">{s.setlistHint}</p>
+      <p className="lu-hint">{s.setlistHint}</p>
     </div>
   );
 }

@@ -71,19 +71,19 @@ export default function AdminNewsForm() {
     }
   }
 
-  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
+  if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   return (
-    <form className="ad-form" onSubmit={handleSubmit} noValidate>
-      <div className="ad-page-head">
+    <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      <div className="lu-page-head">
         <div>
-          <p className="ad-eyebrow">{isNew ? s.newsTitle : s.editNews}</p>
+          <p className="lu-eyebrow">{isNew ? s.newsTitle : s.editNews}</p>
           <h1>{isNew ? s.newNews : (locale === 'ja' ? form.title_ja || form.title_en : form.title_en || form.title_ja)}</h1>
         </div>
       </div>
 
       <Section title={s.secDetails}>
-        <p className="ad-hint">{s.bothLanguagesHint}</p>
+        <p className="lu-hint">{s.bothLanguagesHint}</p>
         <Field label={s.date}>
           {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
         </Field>
@@ -96,10 +96,10 @@ export default function AdminNewsForm() {
           </Field>
         </BilingualRow>
         <Field label={`${s.body} · ${s.english}`} optional s={s}>
-          {fid => <textarea id={fid} className="ad-textarea-long" rows={8} value={form.body_en} onChange={e => set('body_en', e.target.value)} />}
+          {fid => <textarea id={fid} className="lu-textarea-long" rows={8} value={form.body_en} onChange={e => set('body_en', e.target.value)} />}
         </Field>
         <Field label={`${s.body} · ${s.japanese}`} optional s={s}>
-          {fid => <textarea id={fid} className="ad-textarea-long" rows={8} lang="ja" value={form.body_ja} onChange={e => set('body_ja', e.target.value)} />}
+          {fid => <textarea id={fid} className="lu-textarea-long" rows={8} lang="ja" value={form.body_ja} onChange={e => set('body_ja', e.target.value)} />}
         </Field>
       </Section>
 
@@ -110,7 +110,7 @@ export default function AdminNewsForm() {
       <Section title={s.visible}>
         <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
         {!isNew && (
-          <div className="ad-danger-row">
+          <div className="lu-danger-row">
             <DeleteButton s={s} onConfirm={async () => {
               try { await deleteRow('News', form.id); navigate(`${prefix}/news`); }
               catch (err) { setError(errorText(err)); }

@@ -39,13 +39,13 @@ export default function PostList<T extends { id: string; date: string; status?: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, ui.query, ui.filter, ui.sort]);
 
-  if (loading) return <p className="ad-loading">{s.loading}</p>;
+  if (loading) return <p className="lu-loading">{s.loading}</p>;
 
   return (
     <>
-      <div className="ad-page-head">
-        <h1>{title} <span className="ad-count">{items.length}</span></h1>
-        <Link to={`${base}/new`} className="ad-btn ad-btn-primary ad-btn-lg">+ {addLabel}</Link>
+      <div className="lu-page-head">
+        <h1>{title} <span className="lu-count">{items.length}</span></h1>
+        <Link to={`${base}/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {addLabel}</Link>
       </div>
       <ListToolbar
         s={s}
@@ -58,43 +58,43 @@ export default function PostList<T extends { id: string; date: string; status?: 
         view={ui.view} onView={v => ui.setView(v as View)}
         shown={list.length} total={items.length}
       />
-      {list.length === 0 ? <p className="ad-empty">{s.noResults}</p> : ui.view === 'table' ? (
-        <div className="ad-table-wrap">
-          <table className="ad-table">
+      {list.length === 0 ? <p className="lu-empty">{s.noResults}</p> : ui.view === 'table' ? (
+        <div className="lu-table-wrap">
+          <table className="lu-table">
             <thead>
               <tr>
                 <th>{s.colDate}</th>
                 <th>{s.colTitle}</th>
-                <th className="ad-td-center">{s.colOnSite}</th>
+                <th className="lu-td-center">{s.colOnSite}</th>
                 <th aria-label={s.edit} />
               </tr>
             </thead>
             <tbody>
               {list.map(r => (
                 <tr key={r.id} className={r.status === 'private' ? 'is-hidden' : ''}>
-                  <td className="ad-td-date">{r.date}</td>
-                  <td className="ad-td-title"><Link to={`${base}/${r.id}`}>{titleOf(r)}</Link></td>
-                  <td className="ad-td-center">
+                  <td className="lu-td-date">{r.date}</td>
+                  <td className="lu-td-title"><Link to={`${base}/${r.id}`}>{titleOf(r)}</Link></td>
+                  <td className="lu-td-center">
                     <SwitchCell
                       checked={r.status !== 'private'}
                       label={s.colOnSite}
                       onChange={() => save(r.id, { status: r.status === 'private' ? 'published' : 'private' } as Partial<T>)}
                     />
                   </td>
-                  <SaveStateCell s={s} state={rowState[r.id]} editHref={`${base}/${r.id}`} renderLink={(href, label) => <Link to={href} className="ad-btn ad-btn-quiet">{label}</Link>} />
+                  <SaveStateCell s={s} state={rowState[r.id]} editHref={`${base}/${r.id}`} renderLink={(href, label) => <Link to={href} className="lu-btn lu-btn-quiet">{label}</Link>} />
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <ul className="ad-list">
+        <ul className="lu-list">
           {list.map(r => (
             <li key={r.id}>
-              <Link to={`${base}/${r.id}`} className="ad-list-row">
+              <Link to={`${base}/${r.id}`} className="lu-list-row">
                 <time>{r.date}</time>
-                <span className="ad-list-main"><strong>{titleOf(r)}</strong></span>
-                {r.status === 'private' && <span className="ad-list-tags"><span className="ad-tag is-muted">{s.hidden}</span></span>}
+                <span className="lu-list-main"><strong>{titleOf(r)}</strong></span>
+                {r.status === 'private' && <span className="lu-list-tags"><span className="lu-tag is-muted">{s.hidden}</span></span>}
               </Link>
             </li>
           ))}

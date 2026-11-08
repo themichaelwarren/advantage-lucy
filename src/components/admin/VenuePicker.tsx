@@ -91,23 +91,23 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
 
   if (creating) {
     return (
-      <div className="ad-inline-card">
-        <div className="ad-bilingual">
+      <div className="lu-inline-card">
+        <div className="lu-bilingual">
           <input placeholder={s.venueNewName} value={draft.name_en} onChange={e => setDraft(d => ({ ...d, name_en: e.target.value }))} autoFocus />
           <input placeholder={s.venueNewNameJa} value={draft.name_ja} onChange={e => setDraft(d => ({ ...d, name_ja: e.target.value }))} lang="ja" />
         </div>
         <input
           placeholder={s.venueNewArea}
           value={draft.area}
-          list="ad-area-list"
+          list="lu-area-list"
           onChange={e => setDraft(d => ({ ...d, area: e.target.value }))}
         />
-        <datalist id="ad-area-list">
+        <datalist id="lu-area-list">
           {areas.map(a => <option key={a.id} value={locale === 'ja' ? a.name_ja || a.name_en : a.name_en || a.name_ja} />)}
         </datalist>
-        <div className="ad-row">
-          <button type="button" className="ad-btn" onClick={() => setCreating(false)}>{s.cancel}</button>
-          <button type="button" className="ad-btn ad-btn-primary" disabled={busy || (!draft.name_en.trim() && !draft.name_ja.trim())} onClick={createVenue}>
+        <div className="lu-row">
+          <button type="button" className="lu-btn" onClick={() => setCreating(false)}>{s.cancel}</button>
+          <button type="button" className="lu-btn lu-btn-primary" disabled={busy || (!draft.name_en.trim() && !draft.name_ja.trim())} onClick={createVenue}>
             {busy ? s.saving : s.venueCreate}
           </button>
         </div>
@@ -116,12 +116,12 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
   }
 
   return (
-    <div className="ad-combobox">
+    <div className="lu-combobox">
       {current && !open ? (
-        <button type="button" id={id} className="ad-chosen" onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}>
+        <button type="button" id={id} className="lu-chosen" onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}>
           <strong>{nameOf(current)}</strong>
           <span>{areaOf(current)}</span>
-          <span className="ad-chosen-change">{s.edit}</span>
+          <span className="lu-chosen-change">{s.edit}</span>
         </button>
       ) : (
         <input
@@ -145,7 +145,7 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
         />
       )}
       {open && (
-        <ul className="ad-options" role="listbox">
+        <ul className="lu-options" role="listbox">
           {matches.map((v, i) => (
             <li
               key={v.id}
@@ -159,7 +159,7 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
             </li>
           ))}
           <li
-            className="ad-option-new"
+            className="lu-option-new"
             onMouseDown={e => {
               e.preventDefault();
               setDraft(d => ({ ...d, [/^[\x20-\x7e]*$/.test(query) ? 'name_en' : 'name_ja']: query }));

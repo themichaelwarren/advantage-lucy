@@ -84,22 +84,22 @@ export default function AdminPhotoForm() {
     }
   }
 
-  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
+  if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   const caption = locale === 'ja' ? form.caption_ja || form.caption_en : form.caption_en || form.caption_ja;
 
   return (
-    <form className="ad-form" onSubmit={handleSubmit} noValidate>
-      <div className="ad-page-head">
+    <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      <div className="lu-page-head">
         <div>
-          <p className="ad-eyebrow">{isNew ? s.photosTitle : s.editPhoto}</p>
+          <p className="lu-eyebrow">{isNew ? s.photosTitle : s.editPhoto}</p>
           <h1>{isNew ? s.newPhoto : caption || s.editPhoto}</h1>
         </div>
       </div>
 
       <Section title={s.photo}>
         <ImageField s={s} value={form.image_url} onChange={v => set('image_url', v)} onError={setError} />
-        {photoError && <p className="ad-field-error">{photoError}</p>}
+        {photoError && <p className="lu-field-error">{photoError}</p>}
       </Section>
 
       <Section title={s.secDetails}>
@@ -114,7 +114,7 @@ export default function AdminPhotoForm() {
         <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
         <Switch checked={form.profile_photo === 'yes'} onChange={v => set('profile_photo', v ? 'yes' : '')} label={s.profilePhoto} hint={s.profilePhotoHint} />
         {!isNew && (
-          <div className="ad-danger-row">
+          <div className="lu-danger-row">
             <DeleteButton s={s} onConfirm={async () => {
               try { await deleteRow('Photos', form.id); navigate(`${prefix}/photos`); }
               catch (err) { setError(errorText(err)); }

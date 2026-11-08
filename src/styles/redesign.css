@@ -1293,7 +1293,7 @@ body { font-family: var(--font-display); }
 /* The mono bits */
 time,
 .show-row time,
-.ad-list-row time,
+.lu-list-row time,
 .section-count,
 .year-chips a {
   font-family: var(--font-main);

@@ -72,13 +72,13 @@ export default function AdminVenueForm() {
     }
   }
 
-  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
+  if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   return (
-    <form className="ad-form" onSubmit={handleSubmit} noValidate>
-      <div className="ad-page-head">
+    <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      <div className="lu-page-head">
         <div>
-          <p className="ad-eyebrow">{isNew ? s.venuesTitle : s.editVenue}</p>
+          <p className="lu-eyebrow">{isNew ? s.venuesTitle : s.editVenue}</p>
           <h1>{isNew ? s.newVenue : (locale === 'ja' ? form.name_ja || form.name_en : form.name_en || form.name_ja)}</h1>
         </div>
       </div>
@@ -95,8 +95,8 @@ export default function AdminVenueForm() {
         <Field label={s.area} hint={s.areaHint} optional s={s}>
           {fid => (
             <>
-              <input id={fid} list="ad-venue-areas" value={areaText} onChange={e => setAreaText(e.target.value)} />
-              <datalist id="ad-venue-areas">
+              <input id={fid} list="lu-venue-areas" value={areaText} onChange={e => setAreaText(e.target.value)} />
+              <datalist id="lu-venue-areas">
                 {areas.map(a => <option key={a.id} value={locale === 'ja' ? a.name_ja || a.name_en : a.name_en || a.name_ja} />)}
               </datalist>
             </>
@@ -106,9 +106,9 @@ export default function AdminVenueForm() {
           {fid => <input id={fid} type="url" inputMode="url" placeholder="https://" value={form.url} onChange={e => set('url', e.target.value)} />}
         </Field>
         {!isNew && (
-          <div className="ad-danger-row">
+          <div className="lu-danger-row">
             {usedBy > 0
-              ? <p className="ad-hint">{usedBy} {s.showsHere}</p>
+              ? <p className="lu-hint">{usedBy} {s.showsHere}</p>
               : <DeleteButton s={s} onConfirm={async () => {
                   try { await deleteRow('Venues', form.id); navigate(`${prefix}/venues`); }
                   catch (err) { setError(errorText(err)); }

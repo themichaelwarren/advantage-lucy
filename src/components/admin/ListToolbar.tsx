@@ -47,34 +47,34 @@ export default function ListToolbar({ s, query, onQuery, filters, filter, onFilt
   total?: number;
 }) {
   return (
-    <div className="ad-toolbar">
-      <input type="search" className="ad-search" placeholder={s.search} value={query} onChange={e => onQuery(e.target.value)} aria-label={s.search} />
-      <div className="ad-toolbar-row">
+    <div className="lu-toolbar">
+      <input type="search" className="lu-search" placeholder={s.search} value={query} onChange={e => onQuery(e.target.value)} aria-label={s.search} />
+      <div className="lu-toolbar-row">
         {filters && filters.length > 0 && (
-          <div className="ad-chips" role="group" aria-label={s.filterAll}>
+          <div className="lu-chips" role="group" aria-label={s.filterAll}>
             {filters.map(f => (
-              <button key={f.value} type="button" className={`ad-pill${filter === f.value ? ' is-on' : ''}`} aria-pressed={filter === f.value} onClick={() => onFilter?.(f.value)}>
+              <button key={f.value} type="button" className={`lu-pill${filter === f.value ? ' is-on' : ''}`} aria-pressed={filter === f.value} onClick={() => onFilter?.(f.value)}>
                 {f.label}
               </button>
             ))}
           </div>
         )}
-        <div className="ad-toolbar-right">
+        <div className="lu-toolbar-right">
           {shown != null && total != null && shown !== total && (
-            <span className="ad-hint ad-toolbar-count">{s.showingCount} {shown} / {total}</span>
+            <span className="lu-hint lu-toolbar-count">{s.showingCount} {shown} / {total}</span>
           )}
           {sorts && sorts.length > 1 && (
-            <label className="ad-sort">
-              <span className="ad-visually-hidden">{s.sortBy}</span>
+            <label className="lu-sort">
+              <span className="lu-visually-hidden">{s.sortBy}</span>
               <select value={sort} onChange={e => onSort?.(e.target.value)} aria-label={s.sortBy}>
                 {sorts.map(o => <option key={o.value} value={o.value}>↕ {o.label}</option>)}
               </select>
             </label>
           )}
           {views && views.length > 1 && (
-            <div className="ad-chips" role="group">
+            <div className="lu-chips" role="group">
               {views.map(v => (
-                <button key={v.value} type="button" className={`ad-pill${view === v.value ? ' is-on' : ''}`} aria-pressed={view === v.value} onClick={() => onView?.(v.value)}>
+                <button key={v.value} type="button" className={`lu-pill${view === v.value ? ' is-on' : ''}`} aria-pressed={view === v.value} onClick={() => onView?.(v.value)}>
                   {v.label}
                 </button>
               ))}
@@ -89,8 +89,8 @@ export default function ListToolbar({ s, query, onQuery, filters, filter, onFilt
 /** An on/off switch for a table cell. */
 export function SwitchCell({ checked, label, onChange }: { checked: boolean; label: string; onChange: () => void }) {
   return (
-    <button type="button" role="switch" aria-checked={checked} aria-label={label} className="ad-switch" onClick={onChange}>
-      <span className="ad-switch-knob" />
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} className="lu-switch" onClick={onChange}>
+      <span className="lu-switch-knob" />
     </button>
   );
 }
@@ -103,10 +103,10 @@ export function SaveStateCell({ s, state, editHref, renderLink }: {
   renderLink: (href: string, label: string) => React.ReactNode;
 }) {
   return (
-    <td className="ad-td-actions">
-      {state === 'saving' ? <span className="ad-hint">{s.saving}</span>
-        : state === 'saved' ? <span className="ad-status-ok">✓ {s.savedShort}</span>
-        : state ? <span className="ad-status-error" title={state}>! {s.errorPrefix}</span>
+    <td className="lu-td-actions">
+      {state === 'saving' ? <span className="lu-hint">{s.saving}</span>
+        : state === 'saved' ? <span className="lu-status-ok">✓ {s.savedShort}</span>
+        : state ? <span className="lu-status-error" title={state}>! {s.errorPrefix}</span>
         : renderLink(editHref, s.edit)}
     </td>
   );

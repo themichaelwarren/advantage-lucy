@@ -11,12 +11,12 @@ import type { AdminStrings } from '../../i18n/admin';
 
 export function Section({ title, children, aside, id }: { title: string; children: ReactNode; aside?: ReactNode; id?: string }) {
   return (
-    <section className="ad-section" id={id}>
-      <header className="ad-section-head">
+    <section className="lu-section" id={id}>
+      <header className="lu-section-head">
         <h2>{title}</h2>
         {aside}
       </header>
-      <div className="ad-section-body">{children}</div>
+      <div className="lu-section-body">{children}</div>
     </section>
   );
 }
@@ -33,20 +33,20 @@ export function Field({ label, hint, error, optional, s, children, wide }: {
 }) {
   const id = useId();
   return (
-    <div className={`ad-field${error ? ' has-error' : ''}${wide ? ' is-wide' : ''}`}>
+    <div className={`lu-field${error ? ' has-error' : ''}${wide ? ' is-wide' : ''}`}>
       <label htmlFor={id}>
         {label}
-        {optional && s && <span className="ad-optional"> · {s.optional}</span>}
+        {optional && s && <span className="lu-optional"> · {s.optional}</span>}
       </label>
       {children(id)}
-      {error ? <p className="ad-field-error">{error}</p> : hint ? <p className="ad-hint">{hint}</p> : null}
+      {error ? <p className="lu-field-error">{error}</p> : hint ? <p className="lu-hint">{hint}</p> : null}
     </div>
   );
 }
 
 /** English / 日本語 side by side (stacked on phones). */
 export function BilingualRow({ children }: { children: ReactNode }) {
-  return <div className="ad-bilingual">{children}</div>;
+  return <div className="lu-bilingual">{children}</div>;
 }
 
 export function Switch({ checked, onChange, label, hint }: {
@@ -57,20 +57,20 @@ export function Switch({ checked, onChange, label, hint }: {
 }) {
   const id = useId();
   return (
-    <div className="ad-switch-row">
+    <div className="lu-switch-row">
       <button
         id={id}
         type="button"
         role="switch"
         aria-checked={checked}
-        className="ad-switch"
+        className="lu-switch"
         onClick={() => onChange(!checked)}
       >
-        <span className="ad-switch-knob" />
+        <span className="lu-switch-knob" />
       </button>
       <label htmlFor={id}>
-        <span className="ad-switch-label">{label}</span>
-        {hint && <span className="ad-hint">{hint}</span>}
+        <span className="lu-switch-label">{label}</span>
+        {hint && <span className="lu-hint">{hint}</span>}
       </label>
     </div>
   );
@@ -96,23 +96,23 @@ export function SaveBar({ s, saving, savedAt, error, dirty, viewHref, onCancel }
   }, [savedAt]);
 
   return (
-    <div className={`ad-savebar${error ? ' has-error' : ''}`} role="region" aria-label={s.save}>
-      <div className="ad-savebar-status" aria-live="polite">
+    <div className={`lu-savebar${error ? ' has-error' : ''}`} role="region" aria-label={s.save}>
+      <div className="lu-savebar-status" aria-live="polite">
         {error ? (
-          <span className="ad-status-error">{s.errorPrefix} {error}</span>
+          <span className="lu-status-error">{s.errorPrefix} {error}</span>
         ) : saving ? (
           <span>{s.saving}</span>
         ) : showSaved ? (
-          <span className="ad-status-ok">✓ {s.saved}{viewHref && <> · <Link to={viewHref}>{s.viewOnSite} →</Link></>}</span>
+          <span className="lu-status-ok">✓ {s.saved}{viewHref && <> · <Link to={viewHref}>{s.viewOnSite} →</Link></>}</span>
         ) : dirty ? (
-          <span className="ad-status-dirty">● {s.unsaved}</span>
+          <span className="lu-status-dirty">● {s.unsaved}</span>
         ) : viewHref ? (
           <Link to={viewHref}>{s.viewOnSite} →</Link>
         ) : null}
       </div>
-      <div className="ad-savebar-actions">
-        {onCancel && <button type="button" className="ad-btn" onClick={onCancel}>{s.back}</button>}
-        <button type="submit" className="ad-btn ad-btn-primary ad-btn-lg" disabled={saving}>
+      <div className="lu-savebar-actions">
+        {onCancel && <button type="button" className="lu-btn" onClick={onCancel}>{s.back}</button>}
+        <button type="submit" className="lu-btn lu-btn-primary lu-btn-lg" disabled={saving}>
           {saving ? s.saving : s.save}
         </button>
       </div>
@@ -145,10 +145,10 @@ export function ImageField({ s, value, onChange, onError }: {
   }
 
   return (
-    <div className="ad-image">
+    <div className="lu-image">
       <button
         type="button"
-        className={`ad-dropzone${over ? ' is-over' : ''}${value ? ' has-image' : ''}`}
+        className={`lu-dropzone${over ? ' is-over' : ''}${value ? ' has-image' : ''}`}
         onClick={() => inputRef.current?.click()}
         onDragOver={e => { e.preventDefault(); setOver(true); }}
         onDragLeave={() => setOver(false)}
@@ -156,19 +156,19 @@ export function ImageField({ s, value, onChange, onError }: {
         disabled={uploading}
       >
         {value ? <img src={value} alt="" /> : null}
-        <span className="ad-dropzone-label">
+        <span className="lu-dropzone-label">
           {uploading ? s.imageUploading : value ? s.imageReplace : s.imageDrop}
         </span>
       </button>
       <input ref={inputRef} type="file" accept="image/*" hidden onChange={e => upload(e.target.files?.[0])} />
-      <div className="ad-image-row">
+      <div className="lu-image-row">
         <input
           type="url"
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={s.imagePasteUrl}
         />
-        {value && <button type="button" className="ad-btn ad-btn-quiet" onClick={() => onChange('')}>{s.remove}</button>}
+        {value && <button type="button" className="lu-btn lu-btn-quiet" onClick={() => onChange('')}>{s.remove}</button>}
       </div>
     </div>
   );
@@ -184,28 +184,28 @@ export function DeleteButton({ s, onConfirm, label }: { s: AdminStrings; onConfi
 
   return (
     <>
-      <button type="button" className="ad-btn ad-btn-danger-quiet" onClick={() => { setText(''); setOpen(true); }}>
+      <button type="button" className="lu-btn lu-btn-danger-quiet" onClick={() => { setText(''); setOpen(true); }}>
         {label || s.delete}
       </button>
       {open && (
-        <div className="ad-modal-overlay" onClick={() => !busy && setOpen(false)}>
-          <div className="ad-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+        <div className="lu-modal-overlay" onClick={() => !busy && setOpen(false)}>
+          <div className="lu-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
             <h3>{s.confirmDeleteTitle}</h3>
             <p>{s.confirmDeleteBody}</p>
-            <label className="ad-hint" htmlFor="ad-confirm-delete">{s.confirmDeleteType}</label>
+            <label className="lu-hint" htmlFor="lu-confirm-delete">{s.confirmDeleteType}</label>
             <input
-              id="ad-confirm-delete"
+              id="lu-confirm-delete"
               ref={inputRef}
               value={text}
               onChange={e => setText(e.target.value)}
               placeholder="delete"
               autoComplete="off"
             />
-            <div className="ad-modal-actions">
-              <button type="button" className="ad-btn" onClick={() => setOpen(false)} disabled={busy}>{s.cancel}</button>
+            <div className="lu-modal-actions">
+              <button type="button" className="lu-btn" onClick={() => setOpen(false)} disabled={busy}>{s.cancel}</button>
               <button
                 type="button"
-                className="ad-btn ad-btn-danger"
+                className="lu-btn lu-btn-danger"
                 disabled={text.trim().toLowerCase() !== 'delete' || busy}
                 onClick={async () => {
                   setBusy(true);

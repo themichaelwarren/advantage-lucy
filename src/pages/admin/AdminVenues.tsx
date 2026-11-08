@@ -36,13 +36,13 @@ export default function AdminVenues() {
         : (showCount.get(b.v.id) || 0) - (showCount.get(a.v.id) || 0) || a.name.localeCompare(b.name));
   }, [venues, ui.query, ui.filter, ui.sort, locale, areaName, showCount]);
 
-  if (loading) return <p className="ad-loading">{s.loading}</p>;
+  if (loading) return <p className="lu-loading">{s.loading}</p>;
 
   return (
     <>
-      <div className="ad-page-head">
-        <h1>{s.venuesTitle} <span className="ad-count">{venues.length}</span></h1>
-        <Link to={`${prefix}/venues/new`} className="ad-btn ad-btn-primary ad-btn-lg">+ {s.addVenue}</Link>
+      <div className="lu-page-head">
+        <h1>{s.venuesTitle} <span className="lu-count">{venues.length}</span></h1>
+        <Link to={`${prefix}/venues/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addVenue}</Link>
       </div>
       <ListToolbar
         s={s}
@@ -53,22 +53,22 @@ export default function AdminVenues() {
         sort={ui.sort} onSort={v => ui.setSort(v as Sort)}
         shown={list.length} total={venues.length}
       />
-      <ul className="ad-list">
+      <ul className="lu-list">
         {list.map(({ v, name }) => (
           <li key={v.id}>
-            <Link to={`${prefix}/venues/${v.id}`} className="ad-list-row">
-              <span className="ad-list-main">
+            <Link to={`${prefix}/venues/${v.id}`} className="lu-list-row">
+              <span className="lu-list-main">
                 <strong>{name || v.id}</strong>
                 <span>{areaName(v.area)}</span>
               </span>
-              <span className="ad-list-tags">
-                <span className="ad-tag">{showCount.get(v.id) || 0} {s.showsHere}</span>
+              <span className="lu-list-tags">
+                <span className="lu-tag">{showCount.get(v.id) || 0} {s.showsHere}</span>
               </span>
             </Link>
           </li>
         ))}
       </ul>
-      {list.length === 0 && <p className="ad-empty">{s.noResults}</p>}
+      {list.length === 0 && <p className="lu-empty">{s.noResults}</p>}
     </>
   );
 }

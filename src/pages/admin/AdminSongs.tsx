@@ -27,13 +27,13 @@ export default function AdminSongs() {
       .sort((a, b) => (ui.sort === 'za' ? -1 : 1) * a.title.localeCompare(b.title, locale));
   }, [songs, ui.query, ui.filter, ui.sort, locale, names]);
 
-  if (loading) return <p className="ad-loading">{s.loading}</p>;
+  if (loading) return <p className="lu-loading">{s.loading}</p>;
 
   return (
     <>
-      <div className="ad-page-head">
-        <h1>{s.songsTitle} <span className="ad-count">{songs.length}</span></h1>
-        <Link to={`${prefix}/songs/new`} className="ad-btn ad-btn-primary ad-btn-lg">+ {s.addSongItem}</Link>
+      <div className="lu-page-head">
+        <h1>{s.songsTitle} <span className="lu-count">{songs.length}</span></h1>
+        <Link to={`${prefix}/songs/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addSongItem}</Link>
       </div>
       <ListToolbar
         s={s}
@@ -44,27 +44,27 @@ export default function AdminSongs() {
         sort={ui.sort} onSort={v => ui.setSort(v as Sort)}
         shown={list.length} total={songs.length}
       />
-      <ul className="ad-list">
+      <ul className="lu-list">
         {list.map(x => {
           const credits = [names(x.music_by), names(x.lyrics_by)].filter(Boolean);
           return (
             <li key={x.id}>
-              <Link to={`${prefix}/songs/${x.id}`} className="ad-list-row">
-                <span className="ad-list-main">
+              <Link to={`${prefix}/songs/${x.id}`} className="lu-list-row">
+                <span className="lu-list-main">
                   <strong>{x.title}</strong>
                   {credits.length > 0 && <span>{[...new Set(credits)].join(' · ')}</span>}
                 </span>
-                <span className="ad-list-tags">
+                <span className="lu-list-tags">
                   {x.lyrics_doc_id
-                    ? <span className="ad-tag is-ok">✎ {s.lyricsLinked}</span>
-                    : <span className="ad-tag is-todo">{s.lyricsMissing}</span>}
+                    ? <span className="lu-tag is-ok">✎ {s.lyricsLinked}</span>
+                    : <span className="lu-tag is-todo">{s.lyricsMissing}</span>}
                 </span>
               </Link>
             </li>
           );
         })}
       </ul>
-      {list.length === 0 && <p className="ad-empty">{s.noResults}</p>}
+      {list.length === 0 && <p className="lu-empty">{s.noResults}</p>}
     </>
   );
 }
