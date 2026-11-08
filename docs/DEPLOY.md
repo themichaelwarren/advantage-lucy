@@ -45,6 +45,13 @@ Do a quick check on the live site:
 2. Sign in to `/en/admin`, save something small, and check the public page shows the change.
 3. If forms or email code changed: send a test from the Contact page, then check the email arrives and appears under Admin → Messages.
 
+## If the site shows no data
+
+Open `/api/sheets/news` on the live site. If it says **"Invalid JWT Signature"**, the Google key saved in Cloudflare doesn't match the service account. This happens when a new key is made, for example on a new laptop. Fix it like this:
+
+1. Copy `GOOGLE_PRIVATE_KEY` and `GOOGLE_SERVICE_ACCOUNT_EMAIL` from a working `.env` into Cloudflare. The key must have real line breaks, not `\n`.
+2. Deploy again.
+
 ## Running locally
 
 ```sh
