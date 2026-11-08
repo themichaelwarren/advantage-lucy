@@ -10,6 +10,17 @@ function base64url(input: string | Uint8Array): string {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+/**
+ * The base64 body of a PEM private key. Forgiving about how the secret was
+ * pasted: surrounding quotes, a "NAME=" prefix, "\n" written as text, or the
+ * whole service-account JSON. Only what is between BEGIN and END is used.
+ */
+export function pemKeyBody(key: string): string {
+  const text = key.replace(/\\n/g, '\n');
+  const m = text.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
+  return (m ? m[1] : text).replace(/[^A-Za-z0-9+/=]/g, '');
+}
+
 async function createJwt(email: string, key: string, scope: string): Promise<string> {
   const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const now = Math.floor(Date.now() / 1000);
@@ -18,10 +29,7 @@ async function createJwt(email: string, key: string, scope: string): Promise<str
   );
 
   const textToSign = `${header}.${payload}`;
-  const pemBody = key
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
-    .replace(/\s/g, '');
+  const pemBody = pemKeyBody(key);
   const binaryKey = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
 
   const cryptoKey = await crypto.subtle.importKey(
