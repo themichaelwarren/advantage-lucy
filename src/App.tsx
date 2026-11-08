@@ -9,6 +9,7 @@ import About from './pages/About';
 import AlbumDetail from './pages/AlbumDetail';
 import SongDetail from './pages/SongDetail';
 import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
 import News from './pages/News';
 import NewsDetail from './pages/NewsDetail';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -27,28 +28,12 @@ import AdminBlog from './pages/admin/AdminBlog';
 import AdminBlogForm from './pages/admin/AdminBlogForm';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
-import Splash from './pages/Splash';
 import AdminPhotos from './pages/admin/AdminPhotos';
 import AdminPhotoForm from './pages/admin/AdminPhotoForm';
+import AdminMessages from './pages/admin/AdminMessages';
 import RequireAuth from './components/RequireAuth';
 
-// Soft indie pop palette
-const BG_COLORS = [
-  '#ffe8a3', // warm buttercream
-  '#fcc8b2', // peach blush
-  '#b8e0d2', // seafoam
-  '#c7ceea', // periwinkle
-  '#f6d5e3', // rose quartz
-  '#d4e4bc', // pistachio
-  '#eddcd2', // linen
-  '#bcd4e6', // powder blue
-];
-
-function pickRandomBg(current?: string) {
-  // Avoid repeating the same color twice in a row
-  const choices = current ? BG_COLORS.filter(c => c !== current) : BG_COLORS;
-  return choices[Math.floor(Math.random() * choices.length)];
-}
+import { ACCENTS, pickAccent } from './utils/palette';
 
 function setFavicon(color: string) {
   const size = 64;
@@ -72,7 +57,7 @@ function setFavicon(color: string) {
 }
 
 function shuffleDotColors(exclude: string) {
-  const pool = BG_COLORS.filter(c => c !== exclude);
+  const pool = ACCENTS.filter(c => c !== exclude);
   // Fisher-Yates shuffle
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -83,9 +68,11 @@ function shuffleDotColors(exclude: string) {
   }
 }
 
+// The page background is now a fixed warm white (see redesign.css);
+// each page view picks a bold accent as `--pop` instead.
 function applyBg(current?: string) {
-  const color = pickRandomBg(current);
-  document.documentElement.style.setProperty('--bg', color);
+  const color = pickAccent(current);
+  document.documentElement.style.setProperty('--pop', color);
   setFavicon(color);
   shuffleDotColors(color);
   return color;
@@ -99,14 +86,14 @@ export default function App() {
 
   useEffect(() => {
     if (location.pathname.includes('/admin') || location.pathname === '/') return;
-    const current = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    const current = getComputedStyle(document.documentElement).getPropertyValue('--pop').trim();
     applyBg(current);
   }, [location.pathname]);
 
   return (
     <Routes>
-      {/* Splash entrance page */}
-      <Route path="/" element={<Splash />} />
+      {/* Root: straight into the site in the browser's language */}
+      <Route path="/" element={<Navigate to={navigator.language.startsWith('ja') ? '/ja' : '/en'} replace />} />
 
       {/* English routes */}
       <Route path="/en" element={<Layout locale="en" />}>
@@ -122,6 +109,7 @@ export default function App() {
         <Route path="blog/:id" element={<BlogDetail locale="en" />} />
         <Route path="about" element={<About locale="en" />} />
         <Route path="contact" element={<Contact locale="en" />} />
+        <Route path="privacy" element={<Privacy locale="en" />} />
       </Route>
 
       {/* Japanese routes */}
@@ -138,6 +126,7 @@ export default function App() {
         <Route path="blog/:id" element={<BlogDetail locale="ja" />} />
         <Route path="about" element={<About locale="ja" />} />
         <Route path="contact" element={<Contact locale="ja" />} />
+        <Route path="privacy" element={<Privacy locale="ja" />} />
       </Route>
 
       {/* Admin routes (under locale, auth-protected) */}
@@ -158,6 +147,7 @@ export default function App() {
           <Route path="blog/:id" element={<AdminBlogForm />} />
           <Route path="photos" element={<AdminPhotos />} />
           <Route path="photos/:id" element={<AdminPhotoForm />} />
+          <Route path="messages" element={<AdminMessages />} />
         </Route>
       </Route>
 

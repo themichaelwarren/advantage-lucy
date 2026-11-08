@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useNews } from '../hooks/useSheetData';
+import PageLoader from '../components/PageLoader';
 
 interface Props {
   locale: Locale;
@@ -14,7 +15,7 @@ export default function News({ locale }: Props) {
 
   const sorted = [...news].sort((a, b) => b.date.localeCompare(a.date));
 
-  if (loading) return null;
+  if (loading) return <PageLoader locale={locale} />;
 
   return (
     <>
@@ -28,17 +29,19 @@ export default function News({ locale }: Props) {
         </p>
       )}
 
-      <div className="news-list">
+      <ul className="show-list">
         {sorted.map(post => {
-          const title = locale === 'ja' ? post.title_ja : post.title_en;
+          const title = (locale === 'ja' ? post.title_ja || post.title_en : post.title_en || post.title_ja) || post.id;
           return (
-            <Link key={post.id} to={`${prefix}/news/${post.id}`} className="news-row">
-              <time>{post.date}</time>
-              <span className="news-row-title">{title}</span>
-            </Link>
+            <li key={post.id}>
+              <Link to={`${prefix}/news/${post.id}`} className="show-row">
+                <time dateTime={post.date}>{post.date}</time>
+                <span className="show-row-main"><strong>{title}</strong></span>
+              </Link>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </>
   );
 }

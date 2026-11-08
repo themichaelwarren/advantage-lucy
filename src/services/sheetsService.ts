@@ -1,3 +1,4 @@
+import { setlistIsPublic } from '../utils/showDates';
 import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -78,10 +79,14 @@ export async function getAllSetlists(): Promise<SetlistEntry[]> {
   }
 }
 
-/** Published setlists only — used by public-facing pages. */
+/**
+ * Setlists the public may see: published, and only once the show is over
+ * (Japan time), so a setlist can be entered ahead of time without spoilers.
+ */
 export async function getSetlists(): Promise<SetlistEntry[]> {
-  const all = await getAllSetlists();
-  return all.filter(s => s.status !== 'private');
+  const [all, events] = await Promise.all([getAllSetlists(), getAllEvents()]);
+  const played = new Set(events.filter(e => setlistIsPublic(e)).map(e => e.id));
+  return all.filter(s => s.status !== 'private' && played.has(s.event));
 }
 
 export async function getVenues(): Promise<Venue[]> {

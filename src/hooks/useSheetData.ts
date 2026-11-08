@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
-import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPeople } from '../services/sheetsService';
+import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPeople } from '../services/sheetsService';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -68,6 +68,21 @@ export function useSongs() {
   return { songs, loading };
 }
 
+/** Every setlist row, including hidden and not-yet-played ones. Admin only. */
+export function useAllSetlists() {
+  const [setlists, setSetlists] = useState<SetlistEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAllSetlists()
+      .then(setSetlists)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { setlists, loading };
+}
+
+/** Setlists the public may see (published, show already played). */
 export function useSetlists() {
   const [setlists, setSetlists] = useState<SetlistEntry[]>([]);
   const [loading, setLoading] = useState(true);

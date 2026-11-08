@@ -1,8 +1,10 @@
+import { linkify } from '../utils/linkify';
 import type { ReactNode } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useNews } from '../hooks/useSheetData';
+import PageLoader from '../components/PageLoader';
 
 function renderBody(text: string): ReactNode[] {
   return text.split('\n').map((line, i) => {
@@ -14,7 +16,7 @@ function renderBody(text: string): ReactNode[] {
     let match;
     while ((match = re.exec(line)) !== null) {
       if (match.index > lastIndex) {
-        parts.push(line.slice(lastIndex, match.index));
+        parts.push(...linkify(line.slice(lastIndex, match.index), `${i}-${lastIndex}-`));
       }
       parts.push(
         <a key={`${i}-${match.index}`} href={match[2]} target="_blank" rel="noopener noreferrer" className="ticket-btn">
@@ -24,7 +26,7 @@ function renderBody(text: string): ReactNode[] {
       lastIndex = match.index + match[0].length;
     }
     if (lastIndex < line.length) {
-      parts.push(line.slice(lastIndex));
+      parts.push(...linkify(line.slice(lastIndex), `${i}-${lastIndex}-`));
     }
     // If line is only a link, render as a div (block), otherwise as a paragraph
     const hasOnlyLinks = parts.every(p => typeof p !== 'string' || !p.trim());
@@ -45,7 +47,7 @@ export default function NewsDetail({ locale }: Props) {
   const { id } = useParams<{ id: string }>();
   const { news, loading } = useNews();
 
-  if (loading) return null;
+  if (loading) return <PageLoader locale={locale} />;
 
   const post = news.find(n => n.id === id);
 
@@ -64,8 +66,9 @@ export default function NewsDetail({ locale }: Props) {
     );
   }
 
-  const title = locale === 'ja' ? post.title_ja : post.title_en;
-  const body = locale === 'ja' ? post.body_ja : post.body_en;
+  // Fall back to the other language when a translation is missing
+  const title = (locale === 'ja' ? post.title_ja || post.title_en : post.title_en || post.title_ja) || '';
+  const body = (locale === 'ja' ? post.body_ja || post.body_en : post.body_en || post.body_ja) || '';
 
   return (
     <article className="news-detail">

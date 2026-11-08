@@ -10,6 +10,15 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <title>advantage Lucy</title>
   <meta name="description" content="advantage Lucy — indie pop from Tokyo since 1995" />
+  <script>
+    // Apply the saved theme (or the system one) before first paint
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

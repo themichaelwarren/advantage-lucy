@@ -12,6 +12,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
   }
 
   const key = params.key as string;
+  // Private uploads (fans' photos) live under "submissions/": admins only
+  if (!key || key.includes('/') || key.startsWith('submissions')) {
+    return new Response('Not found', { status: 404 });
+  }
   const object = await env.POSTERS.get(key);
 
   if (!object) {

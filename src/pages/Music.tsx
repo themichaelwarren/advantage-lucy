@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useAlbums } from '../hooks/useSheetData';
+import PageLoader from '../components/PageLoader';
 
 interface Props {
   locale: Locale;
@@ -14,7 +15,7 @@ export default function Music({ locale }: Props) {
   const { albums, loading } = useAlbums();
   const [view, setView] = useState<'list' | 'card'>('list');
 
-  if (loading) return null;
+  if (loading) return <PageLoader locale={locale} />;
 
   return (
     <>
@@ -55,7 +56,7 @@ export default function Music({ locale }: Props) {
                 <h3>{album.title}</h3>
                 <span className="year-label">{album.year}</span>
                 {' · '}
-                <span className="format-label">{album.type}</span>
+                <span className="format-label">{s.music.types[album.type?.toLowerCase()] || album.type}</span>
                 {album.label && <span className="year-label"> · {album.label}</span>}
               </div>
             </Link>
@@ -78,7 +79,7 @@ export default function Music({ locale }: Props) {
               </div>
               <div className="disco-card-info">
                 <h3>{album.title}</h3>
-                <span>{album.year} · {album.type}</span>
+                <span>{album.year} · {s.music.types[album.type?.toLowerCase()] || album.type}</span>
               </div>
             </Link>
           ))}

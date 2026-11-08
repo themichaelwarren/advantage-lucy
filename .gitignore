@@ -7,3 +7,4 @@ public/uploads/
 tsconfig.tsbuildinfo
 .vscode/
 .claude/settings.local.json
+.dev-submissions/

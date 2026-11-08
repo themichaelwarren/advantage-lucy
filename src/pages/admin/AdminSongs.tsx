@@ -1,139 +1,70 @@
-import { useState, useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useSongs, usePeople } from '../../hooks/useSheetData';
-import type { Person } from '../../types';
-import { t, type Locale } from '../../i18n/translations';
+import { useAdminT } from '../../i18n/admin';
+import { personName } from '../../components/admin/PeoplePicker';
+import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
 
-function personLabel(ids: string | undefined, peopleMap: Map<string, Person>): string {
-  if (!ids) return '—';
-  return ids.split(',').filter(Boolean).map(pid => {
-    const p = peopleMap.get(pid.trim());
-    if (!p) return pid;
-    return [p.name_given_en, p.name_family_en].filter(Boolean).join(' ') || pid;
-  }).join(', ');
-}
+type Filter = 'all' | 'has' | 'none';
+type Sort = 'az' | 'za';
 
 export default function AdminSongs() {
-  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
-  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
-  const s = t(locale).admin;
-  const prefix = `/${locale}/admin`;
+  const { s, locale, prefix } = useAdminT();
   const { songs, loading } = useSongs();
   const { people } = usePeople();
-  const [search, setSearch] = useState('');
+  const ui = useListPrefs<Filter, Sort>('songs', { filter: 'all', sort: 'az' });
 
-  const peopleMap = useMemo(
-    () => new Map(people.map(p => [p.id, p])),
-    [people]
-  );
+  const names = useMemo(() => {
+    const m = new Map(people.map(p => [p.id, personName(p, locale)]));
+    return (ids?: string) => (ids || '').split(',').map(x => m.get(x.trim()) || x.trim()).filter(Boolean).join(', ');
+  }, [people, locale]);
 
-  const filtered = songs
-    .sort((a, b) => a.title.localeCompare(b.title))
-    .filter(song => {
-      if (!search) return true;
-      const hay = `${song.title} ${song.id} ${song.music_by || ''} ${song.lyrics_by || ''}`.toLowerCase();
-      return hay.includes(search.toLowerCase());
-    });
+  const list = useMemo(() => {
+    const q = ui.query.trim().toLowerCase();
+    return songs
+      .filter(x => ui.filter === 'all' ? true : ui.filter === 'has' ? !!x.lyrics_doc_id : !x.lyrics_doc_id)
+      .filter(x => !q || [x.title, names(x.music_by), names(x.lyrics_by)].some(t => t.toLowerCase().includes(q)))
+      .sort((a, b) => (ui.sort === 'za' ? -1 : 1) * a.title.localeCompare(b.title, locale));
+  }, [songs, ui.query, ui.filter, ui.sort, locale, names]);
 
-  if (loading) return <p>{s.loading}</p>;
+  if (loading) return <p className="ad-loading">{s.loading}</p>;
 
   return (
     <>
-      <div className="admin-page-header">
-        <h1>{s.songs} ({songs.length})</h1>
-        <Link to={`${prefix}/songs/new`} className="admin-btn admin-btn-primary">
-          {s.newSong}
-        </Link>
+      <div className="ad-page-head">
+        <h1>{s.songsTitle} <span className="ad-count">{songs.length}</span></h1>
+        <Link to={`${prefix}/songs/new`} className="ad-btn ad-btn-primary ad-btn-lg">+ {s.addSongItem}</Link>
       </div>
-
-      <input
-        type="search"
-        className="admin-search"
-        placeholder="Search songs..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
+      <ListToolbar
+        s={s}
+        query={ui.query} onQuery={ui.setQuery}
+        filters={[{ value: 'all', label: s.filterAll }, { value: 'has', label: s.filterHasLyrics }, { value: 'none', label: s.filterNoLyrics }]}
+        filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
+        sorts={[{ value: 'az', label: s.sortAZ }, { value: 'za', label: s.sortZA }]}
+        sort={ui.sort} onSort={v => ui.setSort(v as Sort)}
+        shown={list.length} total={songs.length}
       />
-
-      {/* Desktop table */}
-      <table className="admin-table admin-desktop-only">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Music by</th>
-            <th>Lyrics by</th>
-            <th>Lyrics</th>
-            <th>ID</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map(song => (
-            <tr key={song.id}>
-              <td>
-                <Link to={`${prefix}/songs/${song.id}`}>{song.title}</Link>
-              </td>
-              <td>{personLabel(song.music_by, peopleMap)}</td>
-              <td>{personLabel(song.lyrics_by, peopleMap)}</td>
-              <td>
-                {song.lyrics_doc_id ? (
-                  <a
-                    href={`https://docs.google.com/document/d/${song.lyrics_doc_id}/edit`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="admin-lyrics-icon has-doc"
-                    title="Open lyrics doc"
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM7 13h10v2H7v-2zm0 4h7v2H7v-2zm0-8h3v2H7V9z"/>
-                    </svg>
-                  </a>
-                ) : (
-                  <span className="admin-lyrics-icon" title="No lyrics doc">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM7 13h10v2H7v-2zm0 4h7v2H7v-2zm0-8h3v2H7V9z"/>
-                    </svg>
-                  </span>
-                )}
-              </td>
-              <td className="admin-td-id">{song.id}</td>
-              <td className="admin-td-actions">
-                <Link to={`${prefix}/songs/${song.id}`} className="admin-btn admin-btn-sm">
-                  Edit
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Mobile cards */}
-      <div className="admin-card-list admin-mobile-only">
-        {filtered.map(song => (
-          <Link
-            key={song.id}
-            to={`${prefix}/songs/${song.id}`}
-            className="admin-event-card"
-          >
-            <div className="admin-event-card-title">
-              {song.title}
-              {song.lyrics_doc_id && (
-                <span className="admin-lyrics-icon has-doc" style={{ marginLeft: 6, verticalAlign: 'middle' }}>
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM7 13h10v2H7v-2zm0 4h7v2H7v-2zm0-8h3v2H7V9z"/>
-                  </svg>
+      <ul className="ad-list">
+        {list.map(x => {
+          const credits = [names(x.music_by), names(x.lyrics_by)].filter(Boolean);
+          return (
+            <li key={x.id}>
+              <Link to={`${prefix}/songs/${x.id}`} className="ad-list-row">
+                <span className="ad-list-main">
+                  <strong>{x.title}</strong>
+                  {credits.length > 0 && <span>{[...new Set(credits)].join(' · ')}</span>}
                 </span>
-              )}
-            </div>
-            <div className="admin-event-card-meta">
-              {song.music_by && <span>♪ {personLabel(song.music_by, peopleMap)}</span>}
-              {song.lyrics_by && <span>✎ {personLabel(song.lyrics_by, peopleMap)}</span>}
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {filtered.length === 0 && <p className="admin-empty">No songs match your search.</p>}
+                <span className="ad-list-tags">
+                  {x.lyrics_doc_id
+                    ? <span className="ad-tag is-ok">✎ {s.lyricsLinked}</span>
+                    : <span className="ad-tag is-todo">{s.lyricsMissing}</span>}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      {list.length === 0 && <p className="ad-empty">{s.noResults}</p>}
     </>
   );
 }

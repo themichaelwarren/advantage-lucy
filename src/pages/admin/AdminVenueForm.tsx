@@ -1,233 +1,123 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useVenues, useAreas } from '../../hooks/useSheetData';
+import { useVenues, useAreas, useAllEvents } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
+import { useAdminT } from '../../i18n/admin';
+import { Section, Field, BilingualRow, SaveBar, DeleteButton, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
+import { resolveArea } from '../../components/admin/VenuePicker';
 
-const VENUE_COLUMNS = ['id', 'name_en', 'name_ja', 'area', 'url'] as const;
-type VenueField = typeof VENUE_COLUMNS[number];
-
-const FIELD_LABELS: Record<VenueField, string> = {
-  id: 'ID',
-  name_en: 'Name (EN)',
-  name_ja: 'Name (JA)',
-  area: 'Area',
-  url: 'Website URL',
-};
-
-function emptyForm(): Record<VenueField, string> {
-  const form: Record<string, string> = {};
-  VENUE_COLUMNS.forEach(col => { form[col] = ''; });
-  return form as Record<VenueField, string>;
-}
+interface Form { id: string; name_en: string; name_ja: string; area: string; url: string }
+const empty: Form = { id: '', name_en: '', name_ja: '', area: '', url: '' };
 
 export default function AdminVenueForm() {
-  const { locale = 'en', id } = useParams<{ locale: string; id: string }>();
-  const prefix = `/${locale}/admin`;
+  const { id } = useParams<{ id: string }>();
+  const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
   const { venues, loading } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
+  const { events } = useAllEvents();
 
-  const [form, setForm] = useState<Record<VenueField, string>>(emptyForm);
+  // `areaText` is what's typed in the area box: a name in either language
+  const [form, setForm] = useState<Form>(empty);
+  const [areaText, setAreaText] = useState('');
+  const [baseline, setBaseline] = useState('');
+  const [nameError, setNameError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const deleteInputRef = useRef<HTMLInputElement>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [showNewArea, setShowNewArea] = useState(false);
-  const [newArea, setNewArea] = useState({ id: '', name_en: '', name_ja: '', prefecture: '' });
-  const [savingArea, setSavingArea] = useState(false);
+
+  const areaLabel = (areaId: string) => {
+    const a = areas.find(x => x.id === areaId);
+    return a ? (locale === 'ja' ? a.name_ja || a.name_en : a.name_en || a.name_ja) : areaId;
+  };
 
   useEffect(() => {
-    if (isNew || loading || venues.length === 0) return;
-    const venue = venues.find(v => v.id === id);
-    if (!venue) return;
-    setForm({
-      id: venue.id,
-      name_en: venue.name_en || '',
-      name_ja: venue.name_ja || '',
-      area: venue.area || '',
-      url: venue.url || '',
-    });
-  }, [isNew, id, venues, loading]);
+    if (isNew) { setBaseline(JSON.stringify([empty, ''])); return; }
+    if (loading) return;
+    const v = venues.find(x => x.id === id);
+    if (!v) return;
+    const f = { id: v.id, name_en: v.name_en || '', name_ja: v.name_ja || '', area: v.area || '', url: v.url || '' };
+    setForm(f);
+    setAreaText(areaLabel(f.area));
+    setBaseline(JSON.stringify([f, areaLabel(f.area)]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, id, loading, venues, areas.length]);
 
-  function handleChange(field: VenueField, value: string) {
-    setForm(prev => ({ ...prev, [field]: value }));
-  }
+  const dirty = baseline !== '' && JSON.stringify([form, areaText]) !== baseline;
+  useUnsavedWarning(dirty);
+  const set = (k: keyof Form, v: string) => { setForm(f => ({ ...f, [k]: v })); setNameError(''); };
+  const usedBy = events.filter(e => e.venue_id === form.id).length;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.name_en.trim() && !form.name_ja.trim()) { setNameError(s.venueNameMissing); return; }
     setSaving(true);
     setError('');
-    const fields: Record<string, string> = {};
-    VENUE_COLUMNS.forEach(col => { fields[col] = form[col]; });
     try {
-      if (isNew) {
-        await createRow('Venues', fields);
-      } else {
-        await updateRow('Venues', form.id, fields);
-      }
-      navigate(`${prefix}/venues`);
+      const area = await resolveArea(areaText, areas);
+      if (area && !areas.some(a => a.id === area.id)) refreshAreas();
+      const venueId = isNew ? makeId([form.name_en || form.name_ja], new Set(venues.map(v => v.id))) : form.id;
+      const fields = { ...form, id: venueId, area: area?.id || '' };
+      if (isNew) await createRow('Venues', fields);
+      else await updateRow('Venues', venueId, fields);
+      setForm(fields);
+      setBaseline(JSON.stringify([fields, areaText]));
+      setSavedAt(Date.now());
+      if (isNew) navigate(`${prefix}/venues/${venueId}`, { replace: true });
     } catch (err) {
-      setError(String(err));
+      setError(errorText(err));
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete() {
-    setDeleting(true);
-    setError('');
-    try {
-      await deleteRow('Venues', form.id);
-      navigate(`${prefix}/venues`);
-    } catch (err) {
-      setError(String(err));
-      setShowDeleteModal(false);
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  if (!isNew && loading) return <p>Loading...</p>;
+  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
 
   return (
-    <>
-      <h1>{isNew ? 'New Venue' : `Edit: ${form.name_en || form.id}`}</h1>
+    <form className="ad-form" onSubmit={handleSubmit} noValidate>
+      <div className="ad-page-head">
+        <div>
+          <p className="ad-eyebrow">{isNew ? s.venuesTitle : s.editVenue}</p>
+          <h1>{isNew ? s.newVenue : (locale === 'ja' ? form.name_ja || form.name_en : form.name_en || form.name_ja)}</h1>
+        </div>
+      </div>
 
-      {error && <div className="admin-error">{error}</div>}
-
-      <form onSubmit={handleSubmit} className="admin-form">
-        {VENUE_COLUMNS.map(col => (
-          <div className="admin-field" key={col}>
-            <label htmlFor={`field-${col}`}>{FIELD_LABELS[col]}</label>
-            {col === 'area' ? (
-              <div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <select
-                    id={`field-${col}`}
-                    value={form[col]}
-                    onChange={e => handleChange(col, e.target.value)}
-                    style={{ flex: 1 }}
-                  >
-                    <option value="">— select area —</option>
-                    {areas.map(a => (
-                      <option key={a.id} value={a.id}>{a.name_en} ({a.name_ja})</option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn-sm"
-                    onClick={() => setShowNewArea(v => !v)}
-                  >
-                    {showNewArea ? '✕' : '+ New'}
-                  </button>
-                </div>
-                {showNewArea && (
-                  <div className="admin-inline-create">
-                    <input placeholder="Area ID (e.g. shimokitazawa)" value={newArea.id} onChange={e => setNewArea(a => ({ ...a, id: e.target.value }))} />
-                    <input placeholder="Area Name (EN)" value={newArea.name_en} onChange={e => setNewArea(a => ({ ...a, name_en: e.target.value }))} />
-                    <input placeholder="Area Name (JA)" value={newArea.name_ja} onChange={e => setNewArea(a => ({ ...a, name_ja: e.target.value }))} />
-                    <input placeholder="Prefecture ID" value={newArea.prefecture} onChange={e => setNewArea(a => ({ ...a, prefecture: e.target.value }))} />
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-primary admin-btn-sm"
-                      disabled={savingArea || !newArea.id || !newArea.name_en}
-                      onClick={async () => {
-                        setSavingArea(true);
-                        try {
-                          await createRow('Areas', newArea);
-                          handleChange('area', newArea.id);
-                          setShowNewArea(false);
-                          setNewArea({ id: '', name_en: '', name_ja: '', prefecture: '' });
-                          refreshAreas();
-                        } catch (err) { setError(`Area creation failed: ${err}`); }
-                        finally { setSavingArea(false); }
-                      }}
-                    >
-                      {savingArea ? 'Saving...' : 'Create Area'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <input
-                id={`field-${col}`}
-                type={col === 'url' ? 'url' : 'text'}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-              />
-            )}
+      <Section title={s.secDetails}>
+        <BilingualRow>
+          <Field label={`${s.venueName} · ${s.english}`} error={nameError}>
+            {fid => <input id={fid} value={form.name_en} onChange={e => set('name_en', e.target.value)} />}
+          </Field>
+          <Field label={`${s.venueName} · ${s.japanese}`}>
+            {fid => <input id={fid} lang="ja" value={form.name_ja} onChange={e => set('name_ja', e.target.value)} />}
+          </Field>
+        </BilingualRow>
+        <Field label={s.area} hint={s.areaHint} optional s={s}>
+          {fid => (
+            <>
+              <input id={fid} list="ad-venue-areas" value={areaText} onChange={e => setAreaText(e.target.value)} />
+              <datalist id="ad-venue-areas">
+                {areas.map(a => <option key={a.id} value={locale === 'ja' ? a.name_ja || a.name_en : a.name_en || a.name_ja} />)}
+              </datalist>
+            </>
+          )}
+        </Field>
+        <Field label={s.venueUrl} optional s={s}>
+          {fid => <input id={fid} type="url" inputMode="url" placeholder="https://" value={form.url} onChange={e => set('url', e.target.value)} />}
+        </Field>
+        {!isNew && (
+          <div className="ad-danger-row">
+            {usedBy > 0
+              ? <p className="ad-hint">{usedBy} {s.showsHere}</p>
+              : <DeleteButton s={s} onConfirm={async () => {
+                  try { await deleteRow('Venues', form.id); navigate(`${prefix}/venues`); }
+                  catch (err) { setError(errorText(err)); }
+                }} />}
           </div>
-        ))}
+        )}
+      </Section>
 
-        <div className="admin-form-actions">
-          <button type="submit" className="admin-btn admin-btn-primary" disabled={saving}>
-            {saving ? 'Saving...' : isNew ? 'Create Venue' : 'Save Changes'}
-          </button>
-          <button type="button" className="admin-btn" onClick={() => navigate(`${prefix}/venues`)}>
-            Cancel
-          </button>
-        </div>
-      </form>
-
-      {!isNew && (
-        <div className="admin-danger-zone">
-          <h2>Danger Zone</h2>
-          <p>Permanently delete this venue from the spreadsheet. This cannot be undone.</p>
-          <button
-            type="button"
-            className="admin-btn admin-btn-danger"
-            onClick={() => {
-              setShowDeleteModal(true);
-              setDeleteConfirmText('');
-              setTimeout(() => deleteInputRef.current?.focus(), 50);
-            }}
-          >
-            Delete Venue
-          </button>
-        </div>
-      )}
-
-      {showDeleteModal && (
-        <div className="admin-modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
-            <h3>Delete this venue?</h3>
-            <p>
-              This will permanently remove <strong>{form.name_en || form.id}</strong> from the spreadsheet.
-            </p>
-            <p className="admin-modal-confirm-label">
-              Type <strong>delete</strong> to confirm:
-            </p>
-            <input
-              ref={deleteInputRef}
-              type="text"
-              className="admin-modal-input"
-              value={deleteConfirmText}
-              onChange={e => setDeleteConfirmText(e.target.value)}
-              placeholder="delete"
-            />
-            <div className="admin-modal-actions">
-              <button
-                type="button"
-                className="admin-btn admin-btn-danger"
-                disabled={deleteConfirmText !== 'delete' || deleting}
-                onClick={handleDelete}
-              >
-                {deleting ? 'Deleting...' : 'Delete Forever'}
-              </button>
-              <button
-                type="button"
-                className="admin-btn"
-                onClick={() => setShowDeleteModal(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} onCancel={() => navigate(`${prefix}/venues`)} />
+    </form>
   );
 }

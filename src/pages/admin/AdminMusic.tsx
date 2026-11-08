@@ -1,102 +1,64 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAlbums } from '../../hooks/useSheetData';
-import { t, type Locale } from '../../i18n/translations';
+import { useAdminT } from '../../i18n/admin';
+import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
+
+type Sort = 'newest' | 'oldest' | 'title';
 
 export default function AdminMusic() {
-  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
-  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
-  const s = t(locale).admin;
-  const prefix = `/${locale}/admin`;
+  const { s, prefix } = useAdminT();
   const { albums, loading } = useAlbums();
-  const [search, setSearch] = useState('');
+  const ui = useListPrefs<string, Sort>('releases', { filter: 'all', sort: 'newest' });
 
-  const filtered = albums
-    .sort((a, b) => (b.date || b.year).localeCompare(a.date || a.year))
-    .filter(album => {
-      if (!search) return true;
-      const hay = `${album.title} ${album.id} ${album.type} ${album.label || ''} ${album.year}`.toLowerCase();
-      return hay.includes(search.toLowerCase());
-    });
+  const typeLabel: Record<string, string> = {
+    album: s.typeAlbum, lp: s.typeLp, ep: s.typeEp, single: s.typeSingle, compilation: s.typeCompilation,
+  };
+  // Only offer the types this discography actually has
+  const types = useMemo(() => [...new Set(albums.map(a => (a.type || '').toLowerCase()).filter(Boolean))], [albums]);
+  const when = (a: typeof albums[number]) => a.date || a.year || '';
 
-  if (loading) return <p>{s.loading}</p>;
+  const list = useMemo(() => {
+    const q = ui.query.trim().toLowerCase();
+    return albums
+      .filter(a => !q || [a.title, a.label, a.number, a.year].some(t => t?.toLowerCase().includes(q)))
+      .filter(a => ui.filter === 'all' || (a.type || '').toLowerCase() === ui.filter)
+      .sort((a, b) => ui.sort === 'title' ? a.title.localeCompare(b.title)
+        : ui.sort === 'oldest' ? when(a).localeCompare(when(b)) : when(b).localeCompare(when(a)));
+  }, [albums, ui.query, ui.filter, ui.sort]);
+
+  if (loading) return <p className="ad-loading">{s.loading}</p>;
 
   return (
     <>
-      <div className="admin-page-header">
-        <h1>{s.releases} ({albums.length})</h1>
-        <Link to={`${prefix}/releases/new`} className="admin-btn admin-btn-primary">
-          {s.newRelease}
-        </Link>
+      <div className="ad-page-head">
+        <h1>{s.releasesTitle} <span className="ad-count">{albums.length}</span></h1>
+        <Link to={`${prefix}/releases/new`} className="ad-btn ad-btn-primary ad-btn-lg">+ {s.addRelease}</Link>
       </div>
-
-      <input
-        type="search"
-        className="admin-search"
-        placeholder="Search releases..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
+      <ListToolbar
+        s={s}
+        query={ui.query} onQuery={ui.setQuery}
+        filters={[{ value: 'all', label: s.filterAll }, ...types.map(t => ({ value: t, label: typeLabel[t] || t }))]}
+        filter={ui.filter} onFilter={ui.setFilter}
+        sorts={[{ value: 'newest', label: s.sortNewest }, { value: 'oldest', label: s.sortOldest }, { value: 'title', label: s.sortTitle }]}
+        sort={ui.sort} onSort={v => ui.setSort(v as Sort)}
+        shown={list.length} total={albums.length}
       />
-
-      {/* Desktop table */}
-      <table className="admin-table admin-desktop-only">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Title</th>
-            <th>Year</th>
-            <th>Type</th>
-            <th>Label</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map(album => (
-            <tr key={album.id}>
-              <td className="admin-td-thumb">
-                {album.coverUrl
-                  ? <img src={album.coverUrl} alt="" className="admin-thumb" />
-                  : <span className="admin-thumb-placeholder">{album.title.slice(0, 2)}</span>
-                }
-              </td>
-              <td>
-                <Link to={`${prefix}/releases/${album.id}`}>{album.title}</Link>
-              </td>
-              <td>{album.year}</td>
-              <td><span className="format-label">{album.type}</span></td>
-              <td>{album.label || '—'}</td>
-              <td className="admin-td-actions">
-                <Link to={`${prefix}/releases/${album.id}`} className="admin-btn admin-btn-sm">
-                  Edit
-                </Link>
-              </td>
-            </tr>
+      {list.length === 0 ? <p className="ad-empty">{s.noResults}</p> : (
+        <ul className="ad-list">
+          {list.map(a => (
+            <li key={a.id}>
+              <Link to={`${prefix}/releases/${a.id}`} className="ad-list-row">
+                {a.coverUrl ? <img className="ad-thumb" src={a.coverUrl} alt="" loading="lazy" /> : <span className="ad-thumb" />}
+                <span className="ad-list-main">
+                  <strong>{a.title}</strong>
+                  <span>{[when(a), typeLabel[a.type?.toLowerCase()] || a.type, a.label].filter(Boolean).join(' · ')}</span>
+                </span>
+              </Link>
+            </li>
           ))}
-        </tbody>
-      </table>
-
-      {/* Mobile cards */}
-      <div className="admin-card-list admin-mobile-only">
-        {filtered.map(album => (
-          <Link
-            key={album.id}
-            to={`${prefix}/releases/${album.id}`}
-            className="admin-event-card"
-          >
-            <div className="admin-event-card-header">
-              <span className="admin-event-card-date">{album.year}</span>
-              <span className="format-label">{album.type}</span>
-            </div>
-            <div className="admin-event-card-title">{album.title}</div>
-            <div className="admin-event-card-meta">
-              {album.label && <span>{album.label}</span>}
-              {album.number && <span>{album.number}</span>}
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {filtered.length === 0 && <p className="admin-empty">No releases match your search.</p>}
+        </ul>
+      )}
     </>
   );
 }

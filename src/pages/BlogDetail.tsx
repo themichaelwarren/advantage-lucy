@@ -4,6 +4,7 @@ import { t } from '../i18n/translations';
 import { useBlog } from '../hooks/useSheetData';
 import { formatDate } from '../utils/format';
 import InstagramEmbed from '../components/InstagramEmbed';
+import PageLoader from '../components/PageLoader';
 
 interface Props {
   locale: Locale;
@@ -15,7 +16,7 @@ export default function BlogDetail({ locale }: Props) {
   const { id } = useParams<{ id: string }>();
   const { blog, loading } = useBlog();
 
-  if (loading) return null;
+  if (loading) return <PageLoader locale={locale} />;
 
   const post = blog.find(b => b.id === id);
 

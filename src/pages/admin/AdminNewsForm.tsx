@@ -1,258 +1,129 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAllNews } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, uploadFile } from '../../services/adminService';
+import { createRow, updateRow, deleteRow } from '../../services/adminService';
+import { useAdminT } from '../../i18n/admin';
+import {
+  Section, Field, BilingualRow, Switch, SaveBar, ImageField, DeleteButton,
+  useUnsavedWarning, makeId, errorText,
+} from '../../components/admin/ui';
+import { NEWS_COLUMNS, newsToRow } from '../../utils/adminRows';
 
-const NEWS_COLUMNS = ['id', 'date', 'title_en', 'title_ja', 'body_en', 'body_ja', 'image_url', 'status'] as const;
 type NewsField = typeof NEWS_COLUMNS[number];
+type Form = Record<NewsField, string>;
 
-const FIELD_LABELS: Record<NewsField, string> = {
-  id: 'ID',
-  date: 'Date',
-  title_en: 'Title (EN)',
-  title_ja: 'Title (JA)',
-  body_en: 'Body (EN)',
-  body_ja: 'Body (JA)',
-  image_url: 'Image',
-  status: 'Status',
-};
-
-function emptyForm(): Record<NewsField, string> {
-  const form: Record<string, string> = {};
-  NEWS_COLUMNS.forEach(col => { form[col] = ''; });
-  form.status = 'published';
-  return form as Record<NewsField, string>;
+const today = () => new Date().toISOString().slice(0, 10);
+function emptyForm(): Form {
+  const f = Object.fromEntries(NEWS_COLUMNS.map(c => [c, ''])) as Form;
+  f.date = today();
+  f.status = 'published';
+  return f;
 }
 
 export default function AdminNewsForm() {
-  const { locale = 'en', id } = useParams<{ locale: string; id: string }>();
-  const prefix = `/${locale}/admin`;
+  const { id } = useParams<{ id: string }>();
+  const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
   const { news, loading } = useAllNews();
 
-  const [form, setForm] = useState<Record<NewsField, string>>(emptyForm);
+  const [form, setForm] = useState<Form>(emptyForm);
+  const [baseline, setBaseline] = useState('');
+  const [titleError, setTitleError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const deleteInputRef = useRef<HTMLInputElement>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   useEffect(() => {
-    if (isNew || loading || news.length === 0) return;
+    if (isNew) { setBaseline(JSON.stringify(emptyForm())); return; }
+    if (loading) return;
     const post = news.find(n => n.id === id);
     if (!post) return;
-    setForm({
-      id: post.id,
-      date: post.date || '',
-      title_en: post.title_en || '',
-      title_ja: post.title_ja || '',
-      body_en: post.body_en || '',
-      body_ja: post.body_ja || '',
-      image_url: post.image_url || '',
-      status: post.status || 'published',
-    });
-  }, [isNew, id, news, loading]);
+    const f: Form = newsToRow(post);
+    setForm(f);
+    setBaseline(JSON.stringify(f));
+  }, [isNew, id, loading, news]);
 
-  function handleChange(field: NewsField, value: string) {
-    setForm(prev => ({ ...prev, [field]: value }));
-  }
+  const dirty = baseline !== '' && JSON.stringify(form) !== baseline;
+  useUnsavedWarning(dirty);
+  const set = (field: NewsField, value: string) => { setForm(f => ({ ...f, [field]: value })); if (field.startsWith('title')) setTitleError(''); };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.title_en.trim() && !form.title_ja.trim()) { setTitleError(s.titleMissing); return; }
     setSaving(true);
     setError('');
-    const fields: Record<string, string> = {};
-    NEWS_COLUMNS.forEach(col => { fields[col] = form[col]; });
     try {
-      if (isNew) {
-        await createRow('News', fields);
-      } else {
-        await updateRow('News', form.id, fields);
-      }
-      navigate(`${prefix}/news`);
+      const postId = isNew
+        ? makeId(/^[\x20-\x7e]+$/.test(form.title_en) ? [form.title_en] : [form.date, 'news'], new Set(news.map(n => n.id)))
+        : form.id;
+      const fields = { ...form, id: postId, date: form.date || today() };
+      if (isNew) await createRow('News', fields);
+      else await updateRow('News', postId, fields);
+      setForm(fields);
+      setBaseline(JSON.stringify(fields));
+      setSavedAt(Date.now());
+      if (isNew) navigate(`${prefix}/news/${postId}`, { replace: true });
     } catch (err) {
-      setError(String(err));
+      setError(errorText(err));
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete() {
-    setDeleting(true);
-    setError('');
-    try {
-      await deleteRow('News', form.id);
-      navigate(`${prefix}/news`);
-    } catch (err) {
-      setError(String(err));
-      setShowDeleteModal(false);
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  if (!isNew && loading) return <p>Loading...</p>;
+  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
 
   return (
-    <>
-      <h1>{isNew ? 'New Post' : `Edit: ${form.title_en || form.title_ja || form.id}`}</h1>
+    <form className="ad-form" onSubmit={handleSubmit} noValidate>
+      <div className="ad-page-head">
+        <div>
+          <p className="ad-eyebrow">{isNew ? s.newsTitle : s.editNews}</p>
+          <h1>{isNew ? s.newNews : (locale === 'ja' ? form.title_ja || form.title_en : form.title_en || form.title_ja)}</h1>
+        </div>
+      </div>
 
-      {error && <div className="admin-error">{error}</div>}
+      <Section title={s.secDetails}>
+        <p className="ad-hint">{s.bothLanguagesHint}</p>
+        <Field label={s.date}>
+          {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
+        </Field>
+        <BilingualRow>
+          <Field label={`${s.title} · ${s.english}`} error={titleError}>
+            {fid => <input id={fid} value={form.title_en} onChange={e => set('title_en', e.target.value)} />}
+          </Field>
+          <Field label={`${s.title} · ${s.japanese}`}>
+            {fid => <input id={fid} lang="ja" value={form.title_ja} onChange={e => set('title_ja', e.target.value)} />}
+          </Field>
+        </BilingualRow>
+        <Field label={`${s.body} · ${s.english}`} optional s={s}>
+          {fid => <textarea id={fid} className="ad-textarea-long" rows={8} value={form.body_en} onChange={e => set('body_en', e.target.value)} />}
+        </Field>
+        <Field label={`${s.body} · ${s.japanese}`} optional s={s}>
+          {fid => <textarea id={fid} className="ad-textarea-long" rows={8} lang="ja" value={form.body_ja} onChange={e => set('body_ja', e.target.value)} />}
+        </Field>
+      </Section>
 
-      <form onSubmit={handleSubmit} className="admin-form">
-        {NEWS_COLUMNS.map(col => (
-          <div className="admin-field" key={col}>
-            <label htmlFor={`field-${col}`}>{FIELD_LABELS[col]}</label>
-            {col === 'status' ? (
-              <select
-                id={`field-${col}`}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-              >
-                <option value="published">Published</option>
-                <option value="private">Draft</option>
-              </select>
-            ) : col === 'date' ? (
-              <input
-                id={`field-${col}`}
-                type="date"
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-              />
-            ) : col === 'body_en' || col === 'body_ja' ? (
-              <textarea
-                id={`field-${col}`}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-                rows={5}
-              />
-            ) : col === 'image_url' ? (
-              <div className="admin-upload-field">
-                {form.image_url && (
-                  <div className="admin-upload-preview">
-                    <img src={form.image_url} alt="Preview" />
-                  </div>
-                )}
-                <div className="admin-upload-controls">
-                  <input
-                    id={`field-${col}`}
-                    type="file"
-                    accept="image/*"
-                    disabled={uploading}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploading(true);
-                      setError('');
-                      try {
-                        const url = await uploadFile(file);
-                        handleChange('image_url', url);
-                      } catch (err) {
-                        setError(`Upload failed: ${err}`);
-                      } finally {
-                        setUploading(false);
-                      }
-                    }}
-                  />
-                  {uploading && <span className="admin-upload-status">Uploading...</span>}
-                  {form.image_url && (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-sm"
-                      onClick={() => handleChange('image_url', '')}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  placeholder="Or paste image URL"
-                  value={form.image_url}
-                  onChange={e => handleChange('image_url', e.target.value)}
-                  style={{ marginTop: '0.4rem' }}
-                />
-              </div>
-            ) : (
-              <input
-                id={`field-${col}`}
-                type="text"
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-              />
-            )}
+      <Section title={s.image}>
+        <ImageField s={s} value={form.image_url} onChange={v => set('image_url', v)} onError={setError} />
+      </Section>
+
+      <Section title={s.visible}>
+        <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
+        {!isNew && (
+          <div className="ad-danger-row">
+            <DeleteButton s={s} onConfirm={async () => {
+              try { await deleteRow('News', form.id); navigate(`${prefix}/news`); }
+              catch (err) { setError(errorText(err)); }
+            }} />
           </div>
-        ))}
+        )}
+      </Section>
 
-        <div className="admin-form-actions">
-          <button type="submit" className="admin-btn admin-btn-primary" disabled={saving}>
-            {saving ? 'Saving...' : isNew ? 'Create Post' : 'Save Changes'}
-          </button>
-          <button type="button" className="admin-btn" onClick={() => navigate(`${prefix}/news`)}>
-            Cancel
-          </button>
-        </div>
-      </form>
-
-      {!isNew && (
-        <div className="admin-danger-zone">
-          <h2>Danger Zone</h2>
-          <p>Permanently delete this post from the spreadsheet. This cannot be undone.</p>
-          <button
-            type="button"
-            className="admin-btn admin-btn-danger"
-            onClick={() => {
-              setShowDeleteModal(true);
-              setDeleteConfirmText('');
-              setTimeout(() => deleteInputRef.current?.focus(), 50);
-            }}
-          >
-            Delete Post
-          </button>
-        </div>
-      )}
-
-      {showDeleteModal && (
-        <div className="admin-modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
-            <h3>Delete this post?</h3>
-            <p>
-              This will permanently remove <strong>{form.title_en || form.title_ja || form.id}</strong> from the spreadsheet.
-            </p>
-            <p className="admin-modal-confirm-label">
-              Type <strong>delete</strong> to confirm:
-            </p>
-            <input
-              ref={deleteInputRef}
-              type="text"
-              className="admin-modal-input"
-              value={deleteConfirmText}
-              onChange={e => setDeleteConfirmText(e.target.value)}
-              placeholder="delete"
-            />
-            <div className="admin-modal-actions">
-              <button
-                type="button"
-                className="admin-btn admin-btn-danger"
-                disabled={deleteConfirmText !== 'delete' || deleting}
-                onClick={handleDelete}
-              >
-                {deleting ? 'Deleting...' : 'Delete Forever'}
-              </button>
-              <button
-                type="button"
-                className="admin-btn"
-                onClick={() => setShowDeleteModal(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      <SaveBar
+        s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty}
+        viewHref={!isNew ? `/${locale}/news/${form.id}` : undefined}
+        onCancel={() => navigate(`${prefix}/news`)}
+      />
+    </form>
   );
 }

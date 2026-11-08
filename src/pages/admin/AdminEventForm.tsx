@@ -1,551 +1,253 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAllEvents, useVenues, useAreas, useSetlists, useSongs } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, uploadFile, replaceRows } from '../../services/adminService';
-
-/** Pad time like "9:30" → "09:30" for HTML time inputs. */
-function padTime(t: string | undefined): string {
-  if (!t) return '';
-  const m = t.match(/^(\d{1,2}):(\d{2})/);
-  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : t;
-}
-
-/** Events sheet columns — order no longer matters (server maps via headers). */
-const EVENT_COLUMNS = [
-  'id', 'title_en', 'title_ja', 'date', 'end_date',
-  'venue', 'doors', 'start', 'end', 'adv_price',
-  'door_price', 'ticket_url', 'poster_url', 'performers',
-  'featured', 'body_en', 'body_ja', 'status',
-] as const;
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useAllEvents, useVenues, useAreas, useAllSetlists, useSongs } from '../../hooks/useSheetData';
+import { createRow, updateRow, deleteRow, replaceRows } from '../../services/adminService';
+import { useAdminT } from '../../i18n/admin';
+import {
+  Section, Field, BilingualRow, Switch, SaveBar, ImageField, DeleteButton,
+  useUnsavedWarning, makeId, errorText,
+} from '../../components/admin/ui';
+import VenuePicker from '../../components/admin/VenuePicker';
+import { setlistIsPublic } from '../../utils/showDates';
+import { EVENT_COLUMNS, eventToRow } from '../../utils/adminRows';
+import SetlistEditor, { newItem, type SetlistItem } from '../../components/admin/SetlistEditor';
 
 type EventField = typeof EVENT_COLUMNS[number];
+type Form = Record<EventField, string>;
 
-const FIELD_LABELS: Record<EventField, string> = {
-  id: 'ID',
-  title_en: 'Title (EN)',
-  title_ja: 'Title (JA)',
-  date: 'Date',
-  end_date: 'End Date',
-  venue: 'Venue',
-  doors: 'Doors',
-  start: 'Start',
-  end: 'End',
-  adv_price: 'Advance Price',
-  door_price: 'Door Price',
-  ticket_url: 'Ticket URL',
-  poster_url: 'Poster URL',
-  performers: 'Performers',
-  featured: 'Featured',
-  body_en: 'Description (EN)',
-  body_ja: 'Description (JA)',
-  status: 'Status',
-};
-
-const FIELD_TYPES: Partial<Record<EventField, string>> = {
-  date: 'date',
-  end_date: 'date',
-  doors: 'time',
-  start: 'time',
-  end: 'time',
-  ticket_url: 'url',
-  poster_url: 'url',
-};
-
-function emptyForm(): Record<EventField, string> {
-  const form: Record<string, string> = {};
-  EVENT_COLUMNS.forEach(col => { form[col] = ''; });
-  form.status = 'published';
-  return form as Record<EventField, string>;
+function emptyForm(): Form {
+  const f = Object.fromEntries(EVENT_COLUMNS.map(c => [c, ''])) as Form;
+  f.status = 'published';
+  f.performers = 'advantage Lucy';
+  return f;
 }
 
 export default function AdminEventForm() {
-  const { locale = 'en', id } = useParams<{ locale: string; id: string }>();
-  const prefix = `/${locale}/admin`;
+  const { id } = useParams<{ id: string }>();
+  const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
+
   const { events, loading } = useAllEvents();
   const { venues, refresh: refreshVenues } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
-  const { setlists: allSetlists } = useSetlists();
+  const { setlists } = useAllSetlists();
   const { songs } = useSongs();
 
-  const [form, setForm] = useState<Record<EventField, string>>(emptyForm);
-  type SetlistRow = { song: string; set: string; order: string; notes: string; status: string };
-  const [setlistRows, setSetlistRows] = useState<SetlistRow[]>([]);
-  const [savingSetlist, setSavingSetlist] = useState(false);
+  const [form, setForm] = useState<Form>(emptyForm);
+  const [setlist, setSetlist] = useState<SetlistItem[]>([]);
+  const [baseline, setBaseline] = useState('');
+  const [errors, setErrors] = useState<Partial<Record<EventField, string>>>({});
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const deleteInputRef = useRef<HTMLInputElement>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [showNewVenue, setShowNewVenue] = useState(false);
-  const [newVenue, setNewVenue] = useState({ id: '', name_en: '', name_ja: '', area: '' });
-  const [showNewArea, setShowNewArea] = useState(false);
-  const [newArea, setNewArea] = useState({ id: '', name_en: '', name_ja: '', prefecture: '' });
-  const [savingVenue, setSavingVenue] = useState(false);
-  const [savingArea, setSavingArea] = useState(false);
 
-  // Populate form for editing
+  const snapshot = (f: Form, sl: SetlistItem[]) =>
+    JSON.stringify([f, sl.map(({ song, set, notes }) => [song, set, notes])]);
+
+  // Load an existing show and its setlist
   useEffect(() => {
-    if (isNew || loading || events.length === 0) return;
-    const event = events.find(e => e.id === id);
-    if (!event) return;
-    setForm({
-      id: event.id,
-      title_en: event.title_en || '',
-      title_ja: event.title_ja || '',
-      date: event.date || '',
-      end_date: event.end_date || '',
-      venue: event.venue_id || '',
-      doors: padTime(event.doors),
-      start: padTime(event.start),
-      end: padTime(event.end_time),
-      adv_price: event.adv_price || '',
-      door_price: event.door_price || '',
-      ticket_url: event.ticketUrl || '',
-      poster_url: event.posterUrl || '',
-      performers: event.performers || '',
-      featured: event.featured ? 'TRUE' : '',
-      body_en: event.body_en || '',
-      body_ja: event.body_ja || '',
-      status: event.status || 'published',
-    });
-  }, [isNew, id, events, loading]);
+    if (isNew) { setBaseline(snapshot(emptyForm(), [])); return; }
+    if (loading) return;
+    const ev = events.find(e => e.id === id);
+    if (!ev) return;
+    const f: Form = eventToRow(ev);
+    const sl = setlists
+      .filter(x => x.event === ev.id)
+      .sort((a, b) => a.set.localeCompare(b.set, undefined, { numeric: true }) || a.order - b.order)
+      .map(x => ({ ...newItem(x.set, x.song), notes: x.notes || '', status: x.status || 'published' }));
+    setForm(f);
+    setSetlist(sl);
+    setBaseline(snapshot(f, sl));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, id, loading, events, setlists]);
 
-  // Populate setlist for existing event
+  // Arriving from "Add a setlist": jump to the setlist once the show has loaded
+  const location = useLocation();
   useEffect(() => {
-    if (isNew || !form.id) return;
-    const entries = allSetlists
-      .filter(s => s.event === form.id)
-      .sort((a, b) => {
-        if (a.set !== b.set) return a.set.localeCompare(b.set);
-        return a.order - b.order;
-      })
-      .map(s => ({
-        song: s.song,
-        set: s.set,
-        order: String(s.order),
-        notes: s.notes || '',
-        status: s.status || 'published',
-      }));
-    if (entries.length > 0) setSetlistRows(entries);
-  }, [isNew, form.id, allSetlists]);
+    if (location.hash === '#setlist' && baseline) {
+      document.getElementById('setlist')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [location.hash, baseline]);
 
-  function handleChange(field: EventField, value: string) {
-    setForm(prev => ({ ...prev, [field]: value }));
+  const dirty = baseline !== '' && snapshot(form, setlist) !== baseline;
+  useUnsavedWarning(dirty);
+
+  const set = (field: EventField, value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
+    setErrors(e => ({ ...e, [field]: undefined }));
+  };
+
+  const songTitles = useMemo(() => songs.map(x => x.title).filter(Boolean).sort(), [songs]);
+
+  /** e.g. 2025-11-30-tokyo, like the existing IDs (date + prefecture). */
+  function newEventId(): string {
+    const venue = venues.find(v => v.id === form.venue);
+    const area = areas.find(a => a.id === venue?.area);
+    const place = area?.prefecture || area?.id || '';
+    return makeId([form.date, place], new Set(events.map(e => e.id)));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const problems: Partial<Record<EventField, string>> = {};
+    if (!form.date) problems.date = s.dateMissing;
+    if (!form.venue) problems.venue = s.venueMissing;
+    setErrors(problems);
+    if (Object.keys(problems).length) {
+      document.querySelector('.ad-field.has-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     setSaving(true);
     setError('');
-
-    // Send as key-value object — server maps to correct columns via headers
-    const fields: Record<string, string> = {};
-    EVENT_COLUMNS.forEach(col => { fields[col] = form[col]; });
-
     try {
-      if (isNew) {
-        await createRow('Events', fields);
-      } else {
-        await updateRow('Events', form.id, fields);
-      }
-      navigate(`${prefix}/events`);
+      const eventId = isNew ? newEventId() : form.id;
+      const fields = { ...form, id: eventId };
+      if (isNew) await createRow('Events', fields);
+      else await updateRow('Events', eventId, fields);
+
+      // Setlist: the order on screen becomes the order numbers
+      const counters: Record<string, number> = {};
+      const rows = setlist
+        .filter(r => r.song.trim())
+        .map(r => {
+          counters[r.set] = (counters[r.set] || 0) + 1;
+          return { event: eventId, song: r.song.trim(), set: r.set, order: String(counters[r.set]), notes: r.notes, status: r.status };
+        });
+      const hadSetlist = setlists.some(x => x.event === eventId);
+      if (rows.length || hadSetlist) await replaceRows('Setlists', eventId, rows);
+
+      setForm(fields);
+      setBaseline(snapshot(fields, setlist));
+      setSavedAt(Date.now());
+      if (isNew) navigate(`${prefix}/events/${eventId}`, { replace: true });
     } catch (err) {
-      setError(String(err));
+      setError(errorText(err));
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete() {
-    setDeleting(true);
-    setError('');
-    try {
-      await deleteRow('Events', form.id);
-      navigate(`${prefix}/events`);
-    } catch (err) {
-      setError(String(err));
-      setShowDeleteModal(false);
-    } finally {
-      setDeleting(false);
-    }
-  }
+  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
 
-  // Build venue lookup
-  const areaMap = new Map(areas.map(a => [a.id, a]));
-  const venueOptions = venues.map(v => {
-    const area = areaMap.get(v.area);
-    return { value: v.id, label: `${v.name_en} (${area?.name_en || v.area})` };
-  });
-
-  if (!isNew && loading) return <p>Loading...</p>;
+  const heading = isNew ? s.newShow : (locale === 'ja' ? form.title_ja || form.title_en : form.title_en || form.title_ja) || form.date;
 
   return (
-    <>
-      <h1>{isNew ? 'New Event' : `Edit: ${form.title_en || form.id}`}</h1>
-
-      {error && <div className="admin-error">{error}</div>}
-
-      <form onSubmit={handleSubmit} className="admin-form">
-        {EVENT_COLUMNS.map(col => (
-          <div className="admin-field" key={col}>
-            <label htmlFor={`field-${col}`}>{FIELD_LABELS[col]}</label>
-            {col === 'venue' ? (
-              <div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <select
-                    id={`field-${col}`}
-                    value={form[col]}
-                    onChange={e => handleChange(col, e.target.value)}
-                    style={{ flex: 1 }}
-                  >
-                    <option value="">— select venue —</option>
-                    {venueOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn-sm"
-                    onClick={() => setShowNewVenue(v => !v)}
-                  >
-                    {showNewVenue ? '✕' : '+ New'}
-                  </button>
-                </div>
-                {showNewVenue && (
-                  <div className="admin-inline-create">
-                    <input placeholder="ID (e.g. club-que)" value={newVenue.id} onChange={e => setNewVenue(v => ({ ...v, id: e.target.value }))} />
-                    <input placeholder="Name (EN)" value={newVenue.name_en} onChange={e => setNewVenue(v => ({ ...v, name_en: e.target.value }))} />
-                    <input placeholder="Name (JA)" value={newVenue.name_ja} onChange={e => setNewVenue(v => ({ ...v, name_ja: e.target.value }))} />
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <select value={newVenue.area} onChange={e => setNewVenue(v => ({ ...v, area: e.target.value }))} style={{ flex: 1 }}>
-                        <option value="">— select area —</option>
-                        {areas.map(a => (
-                          <option key={a.id} value={a.id}>{a.name_en}</option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-sm"
-                        onClick={() => setShowNewArea(v => !v)}
-                      >
-                        {showNewArea ? '✕' : '+ New'}
-                      </button>
-                    </div>
-                    {showNewArea && (
-                      <div className="admin-inline-create">
-                        <input placeholder="Area ID (e.g. shimokitazawa)" value={newArea.id} onChange={e => setNewArea(a => ({ ...a, id: e.target.value }))} />
-                        <input placeholder="Area Name (EN)" value={newArea.name_en} onChange={e => setNewArea(a => ({ ...a, name_en: e.target.value }))} />
-                        <input placeholder="Area Name (JA)" value={newArea.name_ja} onChange={e => setNewArea(a => ({ ...a, name_ja: e.target.value }))} />
-                        <input placeholder="Prefecture ID" value={newArea.prefecture} onChange={e => setNewArea(a => ({ ...a, prefecture: e.target.value }))} />
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn-primary admin-btn-sm"
-                          disabled={savingArea || !newArea.id || !newArea.name_en}
-                          onClick={async () => {
-                            setSavingArea(true);
-                            try {
-                              await createRow('Areas', newArea);
-                              setNewVenue(v => ({ ...v, area: newArea.id }));
-                              setShowNewArea(false);
-                              setNewArea({ id: '', name_en: '', name_ja: '', prefecture: '' });
-                              refreshAreas();
-                            } catch (err) { setError(`Area creation failed: ${err}`); }
-                            finally { setSavingArea(false); }
-                          }}
-                        >
-                          {savingArea ? 'Saving...' : 'Create Area'}
-                        </button>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-primary admin-btn-sm"
-                      disabled={savingVenue || !newVenue.id || !newVenue.name_en}
-                      onClick={async () => {
-                        setSavingVenue(true);
-                        try {
-                          await createRow('Venues', newVenue);
-                          handleChange('venue', newVenue.id);
-                          setShowNewVenue(false);
-                          setNewVenue({ id: '', name_en: '', name_ja: '', area: '' });
-                          refreshVenues();
-                        } catch (err) { setError(`Venue creation failed: ${err}`); }
-                        finally { setSavingVenue(false); }
-                      }}
-                    >
-                      {savingVenue ? 'Saving...' : 'Create Venue'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : col === 'status' ? (
-              <select
-                id={`field-${col}`}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-              >
-                <option value="published">Published</option>
-                <option value="private">Private</option>
-              </select>
-            ) : col === 'featured' ? (
-              <select
-                id={`field-${col}`}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-              >
-                <option value="">No</option>
-                <option value="TRUE">Yes</option>
-              </select>
-            ) : col === 'poster_url' ? (
-              <div className="admin-upload-field">
-                {form.poster_url && (
-                  <div className="admin-upload-preview">
-                    <img src={form.poster_url} alt="Poster preview" />
-                  </div>
-                )}
-                <div className="admin-upload-controls">
-                  <input
-                    id={`field-${col}`}
-                    type="file"
-                    accept="image/*"
-                    disabled={uploading}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploading(true);
-                      setError('');
-                      try {
-                        const url = await uploadFile(file);
-                        handleChange('poster_url', url);
-                      } catch (err) {
-                        setError(`Upload failed: ${err}`);
-                      } finally {
-                        setUploading(false);
-                      }
-                    }}
-                  />
-                  {uploading && <span className="admin-upload-status">Uploading...</span>}
-                  {form.poster_url && (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-sm"
-                      onClick={() => handleChange('poster_url', '')}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  placeholder="Or paste image URL"
-                  value={form.poster_url}
-                  onChange={e => handleChange('poster_url', e.target.value)}
-                  style={{ marginTop: '0.4rem' }}
-                />
-              </div>
-            ) : col === 'body_en' || col === 'body_ja' ? (
-              <textarea
-                id={`field-${col}`}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-                rows={3}
-              />
-            ) : (
-              <input
-                id={`field-${col}`}
-                type={FIELD_TYPES[col] || 'text'}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-              />
-            )}
-          </div>
-        ))}
-
-        <div className="admin-form-actions">
-          <button type="submit" className="admin-btn admin-btn-primary" disabled={saving}>
-            {saving ? 'Saving...' : isNew ? 'Create Event' : 'Save Changes'}
-          </button>
-          <button type="button" className="admin-btn" onClick={() => navigate(`${prefix}/events`)}>
-            Cancel
-          </button>
+    <form className="ad-form" onSubmit={handleSubmit} noValidate>
+      <div className="ad-page-head">
+        <div>
+          <p className="ad-eyebrow">{isNew ? s.shows : s.editShow}</p>
+          <h1>{heading}</h1>
         </div>
-      </form>
+      </div>
 
-      {/* Setlist editor — only for existing events */}
-      {!isNew && (
-        <section className="admin-related-section">
-          <h2>Setlist</h2>
-          <div className="admin-tracklist">
-            {setlistRows.map((row, i) => (
-              <div key={i} className="admin-tracklist-row">
-                <select
-                  className="admin-setlist-set"
-                  value={row.set}
-                  onChange={e => {
-                    const copy = [...setlistRows];
-                    copy[i] = { ...copy[i], set: e.target.value };
-                    setSetlistRows(copy);
-                  }}
-                >
-                  <option value="1">Set 1</option>
-                  <option value="2">Set 2</option>
-                  <option value="3">Set 3</option>
-                  <option value="e">Encore</option>
-                  <option value="e2">Encore 2</option>
-                </select>
-                <input
-                  type="number"
-                  className="admin-tracklist-num"
-                  value={row.order}
-                  onChange={e => {
-                    const copy = [...setlistRows];
-                    copy[i] = { ...copy[i], order: e.target.value };
-                    setSetlistRows(copy);
-                  }}
-                  min={1}
-                  placeholder="#"
-                />
-                <input
-                  type="text"
-                  className="admin-tracklist-title"
-                  value={row.song}
-                  onChange={e => {
-                    const copy = [...setlistRows];
-                    copy[i] = { ...copy[i], song: e.target.value };
-                    setSetlistRows(copy);
-                  }}
-                  list="song-titles-setlist"
-                  placeholder="Song title"
-                />
-                <input
-                  type="text"
-                  className="admin-setlist-notes"
-                  value={row.notes}
-                  onChange={e => {
-                    const copy = [...setlistRows];
-                    copy[i] = { ...copy[i], notes: e.target.value };
-                    setSetlistRows(copy);
-                  }}
-                  placeholder="Notes"
-                />
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-sm admin-btn-danger"
-                  onClick={() => setSetlistRows(setlistRows.filter((_, j) => j !== i))}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-            <datalist id="song-titles-setlist">
-              {songs.map(s => <option key={s.id} value={s.title} />)}
-            </datalist>
-            <button
-              type="button"
-              className="admin-btn admin-btn-sm"
-              onClick={() => {
-                const lastSet = setlistRows.length > 0 ? setlistRows[setlistRows.length - 1].set : '1';
-                const lastOrder = setlistRows.filter(r => r.set === lastSet).length + 1;
-                setSetlistRows([...setlistRows, { song: '', set: lastSet, order: String(lastOrder), notes: '', status: 'published' }]);
-              }}
-            >
-              + Add Song
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn-primary admin-btn-sm"
-              style={{ marginLeft: '0.5rem' }}
-              disabled={savingSetlist}
-              onClick={async () => {
-                setSavingSetlist(true);
-                setError('');
-                try {
-                  const rows = setlistRows
-                    .filter(r => r.song.trim())
-                    .map(r => ({
-                      event: form.id,
-                      song: r.song,
-                      set: r.set,
-                      order: r.order,
-                      notes: r.notes,
-                      status: r.status,
-                    }));
-                  await replaceRows('Setlists', form.id, rows);
-                } catch (err) {
-                  setError(`Setlist save failed: ${err}`);
-                } finally {
-                  setSavingSetlist(false);
-                }
-              }}
-            >
-              {savingSetlist ? 'Saving...' : 'Save Setlist'}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* Danger zone — only for existing events */}
-      {!isNew && (
-        <div className="admin-danger-zone">
-          <h2>Danger Zone</h2>
-          <p>Permanently delete this event from the spreadsheet. This cannot be undone.</p>
-          <button
-            type="button"
-            className="admin-btn admin-btn-danger"
-            onClick={() => {
-              setShowDeleteModal(true);
-              setDeleteConfirmText('');
-              setTimeout(() => deleteInputRef.current?.focus(), 50);
-            }}
-          >
-            Delete Event
-          </button>
+      <Section title={s.secWhenWhere}>
+        <div className="ad-grid-2">
+          <Field label={s.date} error={errors.date}>
+            {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
+          </Field>
+          <Field label={s.endDate} hint={s.endDateHint} optional s={s}>
+            {fid => <input id={fid} type="date" value={form.end_date} min={form.date} onChange={e => set('end_date', e.target.value)} />}
+          </Field>
         </div>
-      )}
-
-      {/* Delete confirmation modal */}
-      {showDeleteModal && (
-        <div className="admin-modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
-            <h3>Delete this event?</h3>
-            <p>
-              This will permanently remove <strong>{form.title_en || form.id}</strong> from the spreadsheet.
-            </p>
-            <p className="admin-modal-confirm-label">
-              Type <strong>delete</strong> to confirm:
-            </p>
-            <input
-              ref={deleteInputRef}
-              type="text"
-              className="admin-modal-input"
-              value={deleteConfirmText}
-              onChange={e => setDeleteConfirmText(e.target.value)}
-              placeholder="delete"
+        <Field label={s.venue} error={errors.venue}>
+          {fid => (
+            <VenuePicker
+              s={s} locale={locale} id={fid}
+              value={form.venue}
+              onChange={v => set('venue', v)}
+              venues={venues} areas={areas}
+              onCreated={() => { refreshVenues(); refreshAreas(); }}
+              onError={setError}
             />
-            <div className="admin-modal-actions">
-              <button
-                type="button"
-                className="admin-btn admin-btn-danger"
-                disabled={deleteConfirmText !== 'delete' || deleting}
-                onClick={handleDelete}
-              >
-                {deleting ? 'Deleting...' : 'Delete Forever'}
-              </button>
-              <button
-                type="button"
-                className="admin-btn"
-                onClick={() => setShowDeleteModal(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+          )}
+        </Field>
+        <div className="ad-grid-3">
+          <Field label={s.doors} optional s={s}>
+            {fid => <input id={fid} type="time" value={form.doors} onChange={e => set('doors', e.target.value)} />}
+          </Field>
+          <Field label={s.start} optional s={s}>
+            {fid => <input id={fid} type="time" value={form.start} onChange={e => set('start', e.target.value)} />}
+          </Field>
+          <Field label={s.end} optional s={s}>
+            {fid => <input id={fid} type="time" value={form.end} onChange={e => set('end', e.target.value)} />}
+          </Field>
         </div>
-      )}
-    </>
+      </Section>
+
+      <Section title={s.secAbout}>
+        <p className="ad-hint">{s.bothLanguagesHint}</p>
+        <BilingualRow>
+          <Field label={`${s.showTitle} · ${s.english}`} hint={s.showTitleHint} optional s={s}>
+            {fid => <input id={fid} value={form.title_en} onChange={e => set('title_en', e.target.value)} />}
+          </Field>
+          <Field label={`${s.showTitle} · ${s.japanese}`} optional s={s}>
+            {fid => <input id={fid} lang="ja" value={form.title_ja} onChange={e => set('title_ja', e.target.value)} />}
+          </Field>
+        </BilingualRow>
+        <Field label={s.performers} hint={s.performersHint} optional s={s}>
+          {fid => <input id={fid} value={form.performers} onChange={e => set('performers', e.target.value)} />}
+        </Field>
+        {/* Notes can be long (times, ticket details…): full width, growing with the text */}
+        <Field label={`${s.description} · ${s.english}`} hint={s.notesHint} optional s={s}>
+          {fid => <textarea id={fid} className="ad-textarea-long" rows={6} value={form.body_en} onChange={e => set('body_en', e.target.value)} />}
+        </Field>
+        <Field label={`${s.description} · ${s.japanese}`} optional s={s}>
+          {fid => <textarea id={fid} className="ad-textarea-long" rows={6} lang="ja" value={form.body_ja} onChange={e => set('body_ja', e.target.value)} />}
+        </Field>
+      </Section>
+
+      <Section title={s.secSetlist} id="setlist">
+        {form.date && !setlistIsPublic({ date: form.date, end_date: form.end_date }) && (
+          <p className="ad-note">🔒 {s.setlistAfterShow}</p>
+        )}
+        <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} />
+      </Section>
+
+      <Section title={s.secTickets}>
+        <div className="ad-grid-2">
+          <Field label={s.advPrice} optional s={s}>
+            {fid => <input id={fid} value={form.adv_price} placeholder={s.pricePlaceholder} onChange={e => set('adv_price', e.target.value)} />}
+          </Field>
+          <Field label={s.doorPrice} optional s={s}>
+            {fid => <input id={fid} value={form.door_price} placeholder={s.pricePlaceholder} onChange={e => set('door_price', e.target.value)} />}
+          </Field>
+        </div>
+        <Field label={s.ticketUrl} optional s={s}>
+          {fid => <input id={fid} type="url" inputMode="url" value={form.ticket_url} placeholder="https://" onChange={e => set('ticket_url', e.target.value)} />}
+        </Field>
+      </Section>
+
+      <Section title={s.secPoster}>
+        <ImageField s={s} value={form.poster_url} onChange={v => set('poster_url', v)} onError={setError} />
+      </Section>
+
+      <Section title={s.visible}>
+        <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
+        <Switch checked={form.featured === 'TRUE'} onChange={v => set('featured', v ? 'TRUE' : '')} label={s.featured} hint={s.featuredHint} />
+        {!isNew && (
+          <div className="ad-danger-row">
+            <DeleteButton s={s} onConfirm={async () => {
+              try {
+                if (setlists.some(x => x.event === form.id)) await replaceRows('Setlists', form.id, []);
+                await deleteRow('Events', form.id);
+                navigate(`${prefix}/events`);
+              } catch (err) { setError(errorText(err)); }
+            }} />
+          </div>
+        )}
+      </Section>
+
+      <SaveBar
+        s={s}
+        saving={saving}
+        savedAt={savedAt}
+        error={error}
+        dirty={dirty}
+        viewHref={!isNew ? `/${locale}/events/${form.id}` : undefined}
+        onCancel={() => navigate(`${prefix}/events`)}
+      />
+    </form>
   );
 }

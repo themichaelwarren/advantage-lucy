@@ -1,8 +1,13 @@
+import { linkify } from '../utils/linkify';
 import { useParams, Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useSetlists, useSongs } from '../hooks/useSheetData';
 import { formatDateWithDay, formatPrice } from '../utils/format';
+import PageLoader from '../components/PageLoader';
+import { setlistIsPublic } from '../utils/showDates';
+import { useFitsViewport } from '../hooks/useFitsViewport';
+import SetlistTip from '../components/SetlistTip';
 
 const MONTHS_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
@@ -18,8 +23,10 @@ export default function EventDetail({ locale }: Props) {
   const { setlists, loading: setlistsLoading } = useSetlists();
   const { songs } = useSongs();
   const event = events.find(e => e.id === id);
+  // The left panel only sticks when it fits on screen (otherwise its bottom would be unreachable)
+  const panel = useFitsViewport<HTMLElement>();
 
-  if (loading) return null;
+  if (loading) return <PageLoader locale={locale} />;
 
   if (!event) {
     return (
@@ -36,10 +43,14 @@ export default function EventDetail({ locale }: Props) {
     );
   }
 
-  const title = locale === 'ja' ? event.title_ja : event.title_en;
-  const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
-  const city = locale === 'ja' ? event.city_ja : event.city_en;
-  const body = locale === 'ja' ? event.body_ja : event.body_en;
+  // Fall back to the other language when a translation is missing
+  // (the admin tells editors one language is enough).
+  const pick = (en?: string, ja?: string) => (locale === 'ja' ? ja || en : en || ja) || '';
+  const title = pick(event.title_en, event.title_ja);
+  const venue = pick(event.venue_en, event.venue_ja);
+  const city = pick(event.city_en, event.city_ja);
+  const body = pick(event.body_en, event.body_ja);
+  const bodyLang = (locale === 'ja' ? event.body_ja : event.body_en) ? locale : (locale === 'ja' ? 'en' : 'ja');
 
   const dateStr = formatDateWithDay(event.date, locale);
   const d = new Date(event.date + 'T00:00:00');
@@ -69,150 +80,117 @@ export default function EventDetail({ locale }: Props) {
     return `${s.setlist.set} ${key}`;
   }
 
+  const hasPrice = (v?: string) => v != null && v !== '';
+
   return (
     <article className="event-detail">
-      <div className="next-show-hero next-show-hero-static">
-        {locale === 'ja' ? (
-          <div className="next-show-date next-show-date-ja">
-            <span className="next-show-year">{d.getFullYear()}</span>
-            <span className="next-show-monthday">{d.getMonth() + 1}.{d.getDate()}</span>
+      {/* Wide screens: date, title and flyer in a sticky panel on the left;
+          details, tickets, setlist and notes on the right. Phones: stacked. */}
+      <div className="evd-layout">
+        <aside ref={panel.ref} className={`evd-aside${panel.fits ? ' is-sticky' : ''}`}>
+          <div className="evd-head">
+            {locale === 'ja' ? (
+              <div className="next-show-date next-show-date-ja">
+                <span className="next-show-year">{d.getFullYear()}</span>
+                <span className="next-show-monthday">{d.getMonth() + 1}.{d.getDate()}</span>
+              </div>
+            ) : (
+              <div className="next-show-date">
+                <span className="next-show-month">{MONTHS_EN[d.getMonth()]}</span>
+                <span className="next-show-day">{d.getDate()}</span>
+                <span className="next-show-year">{d.getFullYear()}</span>
+              </div>
+            )}
+            <time className="evd-weekday" dateTime={event.date}>{dateStr}</time>
           </div>
-        ) : (
-          <div className="next-show-date">
-            <span className="next-show-month">{MONTHS_EN[d.getMonth()]}</span>
-            <span className="next-show-day">{d.getDate()}</span>
-            <span className="next-show-year">{d.getFullYear()}</span>
-          </div>
-        )}
-        <div className="next-show-body">
-          {title ? (
-            <>
-              <h1 className="next-show-title">{title}</h1>
-              <div className="next-show-venue">{venue}</div>
-              {area && <div className="next-show-area">{area}</div>}
-            </>
-          ) : (
-            <>
-              <h1 className="next-show-venue">{venue}</h1>
-              {area && <div className="next-show-area">{area}</div>}
-            </>
+
+          <header className="evd-title-block">
+            <h1 className="news-detail-title evd-title">{title || venue}</h1>
+          </header>
+
+          {event.posterUrl && (
+            <a className="event-poster" href={event.posterUrl} target="_blank" rel="noopener noreferrer">
+              <img src={event.posterUrl} alt={title || venue} />
+              <span className="event-poster-zoom" aria-hidden="true">⤢</span>
+            </a>
+          )}
+
+        <div className="evd-section evd-details">
+          <dl className="event-meta evd-facts">
+                <dt>{s.events.venue}</dt>
+              <dd>
+                {event.venue_url
+                  ? <a className="evd-venue-link" href={event.venue_url} target="_blank" rel="noopener noreferrer">{venue}</a>
+                  : venue}
+                {area && <span className="evd-area">{area}</span>}
+              </dd>
+              {event.doors && (<><dt>{s.events.doors}</dt><dd className="is-number">{event.doors}</dd></>)}
+              {event.start && (<><dt>{s.events.start}</dt><dd className="is-number">{event.start}</dd></>)}
+              {event.end_time && (<><dt>{s.events.endTime}</dt><dd className="is-number">{event.end_time}</dd></>)}
+              {hasPrice(event.adv_price) && (<><dt>{s.events.advPrice}</dt><dd className="is-number">{formatPrice(event.adv_price!, locale, event.country_en)}</dd></>)}
+              {hasPrice(event.door_price) && (<><dt>{s.events.doorPrice}</dt><dd className="is-number">{formatPrice(event.door_price!, locale, event.country_en)}</dd></>)}
+              {event.performers && (<><dt>{s.events.performers}</dt><dd>{event.performers}</dd></>)}
+            </dl>
+
+          {event.ticketUrl && (
+            <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer" className="ticket-btn evd-tickets">
+              {s.events.tickets} →
+            </a>
           )}
         </div>
+        </aside>
+
+        <div className="evd-main">
+            {setGroups.size === 0 && (
+              <section className="evd-section">
+                <h2 className="section-label">{s.setlist.title}</h2>
+                <div className="evd-empty">
+                  <p>
+                    <span aria-hidden="true">♪</span>
+                    {setlistIsPublic(event) ? s.setlist.none : s.setlist.afterShow}
+                  </p>
+                  {/* Past shows: ask fans who were there */}
+                  {setlistIsPublic(event) && (
+                    <SetlistTip locale={locale} eventId={event.id} eventTitle={title || venue} variant="empty" />
+                  )}
+                </div>
+              </section>
+            )}
+
+            {setGroups.size > 0 && (
+              <section className="evd-section">
+                <h2 className="section-label">{s.setlist.title}</h2>
+                {Array.from(setGroups.entries()).map(([setKey, entries]) => (
+                  <div key={setKey} className="setlist-group">
+                    {setGroups.size > 1 && <h3 className="setlist-set-label">{setLabel(setKey)}</h3>}
+                    <ol className="tracklist">
+                      {entries.map((entry, i) => {
+                        const song = songs.find(x => x.title === entry.song);
+                        return (
+                          <li key={`${setKey}-${i}`} value={entry.order}>
+                            {song ? <Link to={`${prefix}/songs/${song.id}`}>{entry.song}</Link> : entry.song}
+                            {entry.notes && <span className="setlist-note">({entry.notes})</span>}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+                ))}
+                <SetlistTip locale={locale} eventId={event.id} eventTitle={title || venue} variant="fix" />
+              </section>
+            )}
+
+            {body && (
+              <section className="evd-section">
+                <h2 className="section-label">{s.events.info}</h2>
+                {/* Blank lines start a new paragraph; single line breaks are kept */}
+                <div className="event-notes" lang={bodyLang}>
+                  {body.split(/\n\s*\n/).map((para, i) => <p key={i}>{linkify(para.trim())}</p>)}
+                </div>
+              </section>
+            )}
+        </div>
       </div>
-
-      {event.posterUrl && (
-        <div className="event-poster">
-          <img src={event.posterUrl} alt={title} />
-        </div>
-      )}
-
-      <dl className="event-meta">
-        <dt>{s.events.date}</dt>
-        <dd>{dateStr}</dd>
-
-        <dt>{s.events.venue}</dt>
-        <dd>
-          {event.venue_url
-            ? <a href={event.venue_url} target="_blank" rel="noopener noreferrer">{venue}</a>
-            : venue
-          }
-        </dd>
-
-        <dt>{s.events.location}</dt>
-        <dd>
-          {city}
-          {event.prefecture_en && `, ${locale === 'ja' ? event.prefecture_ja : event.prefecture_en}`}
-          {event.country_en && `, ${locale === 'ja' ? event.country_ja : event.country_en}`}
-        </dd>
-
-        {(event.doors || event.start) && (
-          <>
-            {event.doors && (
-              <>
-                <dt>{s.events.doors}</dt>
-                <dd>{event.doors}</dd>
-              </>
-            )}
-            {event.start && (
-              <>
-                <dt>{s.events.start}</dt>
-                <dd>{event.start}</dd>
-              </>
-            )}
-            {event.end_time && (
-              <>
-                <dt>{s.events.endTime}</dt>
-                <dd>{event.end_time}</dd>
-              </>
-            )}
-          </>
-        )}
-
-        {(event.adv_price != null && event.adv_price !== '' || event.door_price != null && event.door_price !== '') && (
-          <>
-            {event.adv_price != null && event.adv_price !== '' && (
-              <>
-                <dt>{s.events.advPrice}</dt>
-                <dd>{formatPrice(event.adv_price, locale, event.country_en)}</dd>
-              </>
-            )}
-            {event.door_price != null && event.door_price !== '' && (
-              <>
-                <dt>{s.events.doorPrice}</dt>
-                <dd>{formatPrice(event.door_price, locale, event.country_en)}</dd>
-              </>
-            )}
-          </>
-        )}
-
-        {event.performers && (
-          <>
-            <dt>{s.events.performers}</dt>
-            <dd style={{ textTransform: 'none' }}>{event.performers}</dd>
-          </>
-        )}
-      </dl>
-
-      {event.ticketUrl && (
-        <div className="mb-2">
-          <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer" className="ticket-btn">
-            {s.events.tickets} →
-          </a>
-        </div>
-      )}
-
-      {body && (
-        <div className="prose">
-          <p>{body}</p>
-        </div>
-      )}
-
-      {setGroups.size > 0 && (
-        <section className="mb-2">
-          <h2 className="section-label">{s.setlist.title}</h2>
-          {Array.from(setGroups.entries()).map(([setKey, entries]) => (
-            <div key={setKey} className="setlist-group">
-              {setGroups.size > 1 && (
-                <h3 className="setlist-set-label">{setLabel(setKey)}</h3>
-              )}
-              <ol className="tracklist">
-                {entries.map((entry, i) => {
-                  const song = songs.find(s => s.title === entry.song);
-                  return (
-                    <li key={`${setKey}-${i}`} value={entry.order}>
-                      {song
-                        ? <Link to={`${prefix}/songs/${song.id}`}>{entry.song}</Link>
-                        : entry.song
-                      }
-                      {entry.notes && <span className="setlist-note">({entry.notes})</span>}
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-          ))}
-        </section>
-      )}
 
       <div className="mt-2">
         <Link to={`${prefix}/events`} className="tag">

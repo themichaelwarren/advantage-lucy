@@ -6,6 +6,7 @@ import {
   fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews, fetchBlog, fetchPhotos,
   fetchVenues, fetchAreas, fetchPrefectures, fetchCountries,
 } from '../../lib/sheets';
+import { EDGE_TTL_SECONDS, sheetCacheKey } from '../../lib/edgeCache';
 
 const fetchers: Record<string, (id: string, e: string, k: string) => Promise<unknown>> = {
   events: fetchEvents,
@@ -23,17 +24,27 @@ const fetchers: Record<string, (id: string, e: string, k: string) => Promise<unk
   countries: fetchCountries,
 };
 
-export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
+export const onRequestGet: PagesFunction<Env> = async ({ request, params, env, waitUntil }) => {
   const tab = (params.tab as string).toLowerCase();
   const fetcher = fetchers[tab];
   if (!fetcher) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
+  // Serve from the edge cache when we can (cleared on every admin save)
+  const cache = (caches as unknown as { default: Cache }).default;
+  const key = sheetCacheKey(new URL(request.url).origin, tab);
+  const hit = await cache.match(key);
+  if (hit) return hit;
+
   try {
     const { sheetId, email, privateKey } = getCredentials(env);
     const data = await fetcher(sheetId, email, privateKey);
-    return Response.json(data);
+    const res = Response.json(data, {
+      headers: { 'Cache-Control': `public, max-age=0, s-maxage=${EDGE_TTL_SECONDS}` },
+    });
+    waitUntil(cache.put(key, res.clone()));
+    return res;
   } catch (err) {
     console.error('[sheets-api]', err);
     return Response.json({ error: String(err) }, { status: 500 });

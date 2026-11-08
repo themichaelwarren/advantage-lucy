@@ -83,7 +83,32 @@ async function getAccessToken(email: string, privateKey: string): Promise<string
   return cachedToken.token;
 }
 
+// Dev-only read cache. Google allows 60 Sheets reads/minute; without this,
+// clicking around locally (each page reads several tabs) trips the quota.
+// Cleared on every admin write so edits show up immediately.
+const CACHE_TTL_MS = 30_000;
+const sheetCache = new Map<string, { at: number; rows: Promise<string[][]> }>();
+
+export function clearSheetCache() {
+  sheetCache.clear();
+}
+
 async function fetchSheet(
+  sheetId: string,
+  range: string,
+  email: string,
+  privateKey: string
+): Promise<string[][]> {
+  const key = `${sheetId}|${range}`;
+  const hit = sheetCache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.rows;
+  const rows = fetchSheetUncached(sheetId, range, email, privateKey);
+  sheetCache.set(key, { at: Date.now(), rows });
+  rows.catch(() => sheetCache.delete(key));
+  return rows;
+}
+
+async function fetchSheetUncached(
   sheetId: string,
   range: string,
   email: string,

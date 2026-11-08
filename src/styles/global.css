@@ -169,7 +169,7 @@ main {
 }
 .nav-main a[aria-current="page"] {
   background: var(--text);
-  color: #fff;
+  color: var(--bg);
 }
 .nav-main a[aria-current="page"]:hover {
   background: var(--text);
@@ -448,7 +448,7 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
   display: inline-block;
 }
 .tag span:last-child {
-  background: #eee;
+  background: var(--surface-hover);
 }
 .tag:hover {
   scale: 1.05;
@@ -670,14 +670,14 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
 .ticket-btn {
   display: inline-block;
   background: var(--text);
-  color: #fff;
+  color: var(--bg);
   font-family: var(--font-display);
   font-size: 1rem;
   padding: 0.5em 1.2em;
   border: none;
   transition: transform 60ms ease;
 }
-.ticket-btn:hover { transform: rotate(-2deg) scale(1.05); color: #fff; text-decoration: none; }
+.ticket-btn:hover { transform: rotate(-2deg) scale(1.05); color: var(--bg); text-decoration: none; }
 
 /* ---------- DISCOGRAPHY ---------- */
 .disco-item {
@@ -709,7 +709,7 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
   color: var(--text-muted);
   border-radius: 4px;
   overflow: hidden;
-  background: #eee;
+  background: var(--surface-hover);
 }
 .disco-item .disco-cover img {
   width: 100%;
@@ -777,7 +777,7 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
 }
 .disco-card-cover {
   aspect-ratio: 1;
-  background: #eee;
+  background: var(--surface-hover);
   overflow: hidden;
   margin-bottom: 0.5rem;
 }
@@ -969,7 +969,7 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
   font-size: 0.7rem;
   font-weight: 400;
   background: var(--text);
-  color: #fff;
+  color: var(--bg);
   padding: 0.2em 0.5em;
   pointer-events: none;
   opacity: 0;
@@ -1034,7 +1034,7 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
   width: 3.2rem;
   height: 3.2rem;
   flex-shrink: 0;
-  background: #eee;
+  background: var(--surface-hover);
   overflow: hidden;
 }
 .song-album-cover img {
@@ -1314,20 +1314,20 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
   display: flex;
   align-items: stretch;
   gap: 1.2rem;
-  background: #fff;
+  background: var(--surface);
   padding: 1.2rem;
   text-decoration: none;
   color: var(--text);
   transition: background-color 80ms ease;
 }
 .next-show-hero:hover {
-  background-color: color-mix(in srgb, var(--text) 6%, #fff);
+  background-color: color-mix(in srgb, var(--text) 6%, var(--surface));
 }
 .next-show-hero-static {
   margin-bottom: 1.5rem;
 }
 .next-show-hero-static:hover {
-  background-color: #fff;
+  background-color: var(--surface);
 }
 .next-show-date {
   flex-shrink: 0;
@@ -1481,102 +1481,6 @@ section:nth-of-type(8n+8) .section-label::before { --dot-color: var(--dot-8); }
   .home-blog-item-title,
   .home-event-venue {
     font-size: 0.92rem;
-  }
-}
-
-/* ---------- SPLASH ENTRANCE ---------- */
-.splash {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: #222 no-repeat center / cover;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 600ms ease;
-}
-.splash.splash-ready {
-  opacity: 1;
-}
-.splash-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0) 40%);
-  pointer-events: none;
-}
-.splash-logo {
-  position: absolute;
-  top: var(--padding);
-  left: var(--padding);
-  z-index: 2;
-  background: var(--surface);
-  color: var(--text);
-  font-family: var(--font-display);
-  font-size: clamp(1.1rem, 4vw, 1.6rem);
-  line-height: 1;
-  padding: 0.25em 0.4em;
-  transform: rotate(-2deg);
-}
-
-/* Mobile polaroid pile — hidden on desktop */
-.splash-pile {
-  display: none;
-}
-.splash-polaroid {
-  position: absolute;
-  background: var(--surface);
-  padding: 0.4rem 0.4rem 1rem;
-  border: 1px solid var(--border);
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.12);
-  width: 68%;
-  max-width: 320px;
-}
-.splash-polaroid img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-.splash-enter {
-  position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1;
-  color: var(--text);
-  font-family: var(--font-main);
-  font-size: 0.8rem;
-  letter-spacing: 0.1em;
-  background: #fff;
-  padding: 0.3em 0.8em;
-}
-
-/* Mobile: solid bg + polaroid pile instead of full-bleed image */
-@media (max-width: 700px) {
-  .splash {
-    background-image: none !important;
-    background-color: var(--bg, #eddcd2);
-  }
-  .splash-overlay {
-    display: none;
-  }
-  .splash-pile {
-    display: block;
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-  }
-  .splash-logo {
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-2deg);
-    z-index: 20;
-    font-size: clamp(1.4rem, 7vw, 2.2rem);
-    padding: 0.2em 0.4em;
-    text-align: center;
-    white-space: nowrap;
-  }
-  .splash-enter {
-    z-index: 20;
   }
 }
 

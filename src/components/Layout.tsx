@@ -1,12 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 
-const HOVER_COLORS = [
-  '#ffe8a3', '#fcc8b2', '#b8e0d2', '#c7ceea',
-  '#f6d5e3', '#d4e4bc', '#eddcd2', '#bcd4e6',
-];
+import { pickAccent } from '../utils/palette';
+import ThemeToggle from './ThemeToggle';
 
 interface Props {
   locale: Locale;
@@ -56,11 +54,20 @@ export default function Layout({ locale }: Props) {
     { to: `${prefix}/contact`, label: s.nav.contact },
   ];
 
+  // Phones: the nav lives in a menu panel behind a ☰ button
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    document.documentElement.classList.add('menu-open'); // stop the page scrolling behind the menu
+    return () => { document.removeEventListener('keydown', onKey); document.documentElement.classList.remove('menu-open'); };
+  }, [menuOpen]);
+
   const randomHover = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    const currentBg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-    const choices = HOVER_COLORS.filter(c => c !== currentBg);
-    const color = choices[Math.floor(Math.random() * choices.length)];
-    e.currentTarget.style.setProperty('--hover-bg', color);
+    const current = getComputedStyle(document.documentElement).getPropertyValue('--pop').trim();
+    e.currentTarget.style.setProperty('--hover-bg', pickAccent(current));
   }, []);
 
   const clearHover = useCallback((e: React.MouseEvent<HTMLElement>) => {
@@ -71,12 +78,25 @@ export default function Layout({ locale }: Props) {
     <>
       <a href="#main" className="skip-link">Skip to content</a>
 
-      <header className="site-header">
+      <header className={`site-header${menuOpen ? ' is-menu-open' : ''}`}>
         <Link to={prefix} className="site-logo band-name" onMouseEnter={randomHover} onMouseLeave={clearHover}>
           advantage Lucy
         </Link>
 
-        <nav className="nav-main" aria-label="Main navigation">
+        <button
+          type="button"
+          className="nav-burger"
+          aria-expanded={menuOpen}
+          aria-controls="site-nav"
+          aria-label={locale === 'ja' ? (menuOpen ? 'メニューを閉じる' : 'メニュー') : (menuOpen ? 'Close menu' : 'Menu')}
+          onClick={() => setMenuOpen(o => !o)}
+        >
+          <span /><span /><span />
+        </button>
+
+        {menuOpen && <div className="nav-backdrop" onClick={() => setMenuOpen(false)} aria-hidden="true" />}
+
+        <nav id="site-nav" className="nav-main" aria-label="Main navigation">
           {navLinks.map(link => (
             <Link
               key={link.to}
@@ -95,6 +115,7 @@ export default function Layout({ locale }: Props) {
           <Link to={otherPath} className="lang-toggle" onMouseEnter={randomHover} onMouseLeave={clearHover} aria-label={`Switch to ${otherLocale === 'en' ? 'English' : '日本語'}`}>
             {s.language}
           </Link>
+          <ThemeToggle locale={locale} onMouseEnter={randomHover} onMouseLeave={clearHover} />
         </nav>
       </header>
 
@@ -104,7 +125,7 @@ export default function Layout({ locale }: Props) {
 
       <footer className="site-footer">
         <div className="container">
-          <p>{s.footer.copyright}</p>
+          <p>{s.footer.copyright} · <Link to={`${prefix}/privacy`}>{s.footer.privacy}</Link></p>
           <div className="social-links">
             {SOCIAL_LINKS.map(link => (
               <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label}>

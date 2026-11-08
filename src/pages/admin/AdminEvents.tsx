@@ -1,110 +1,149 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { useAllEvents } from '../../hooks/useSheetData';
-import { t, type Locale } from '../../i18n/translations';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useAllEvents, useAllSetlists } from '../../hooks/useSheetData';
+import { useAdminT } from '../../i18n/admin';
+import type { Event } from '../../types';
+import { setlistIsPublic, todayInJapan } from '../../utils/showDates';
+import { eventToRow } from '../../utils/adminRows';
+import ListToolbar, { useListPrefs, SwitchCell, SaveStateCell } from '../../components/admin/ListToolbar';
+import { useQuickEdit } from '../../components/admin/useQuickEdit';
+
+type Filter = 'all' | 'upcoming' | 'past' | 'nosetlist' | 'hidden';
+type Sort = 'newest' | 'oldest';
+type View = 'list' | 'table';
 
 export default function AdminEvents() {
-  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
-  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
-  const s = t(locale).admin;
-  const prefix = `/${locale}/admin`;
-  const { events, loading } = useAllEvents();
-  const [search, setSearch] = useState('');
+  const { s, locale, prefix } = useAdminT();
+  const { events: loaded, loading } = useAllEvents();
+  const { setlists } = useAllSetlists();
+  const { items: events, save, rowState } = useQuickEdit<Event>(loaded, 'Events', eventToRow);
+  const ui = useListPrefs<Filter, Sort, View>('shows', { filter: 'all', sort: 'newest', view: 'list' });
 
-  const filtered = events
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .filter(e => {
-      if (!search) return true;
-      const hay = `${e.title_en} ${e.title_ja} ${e.venue_en} ${e.venue_ja} ${e.date}`.toLowerCase();
-      return hay.includes(search.toLowerCase());
-    });
+  const withSetlist = useMemo(() => new Set(setlists.map(x => x.event)), [setlists]);
+  const today = todayInJapan();
+  const isUpcoming = (e: Event) => (e.end_date || e.date) >= today;
 
-  if (loading) return <p>{s.loading}</p>;
+  const list = useMemo(() => {
+    const q = ui.query.trim().toLowerCase();
+    return events
+      .filter(e => !q || [e.date, e.title_en, e.title_ja, e.venue_en, e.venue_ja, e.city_en, e.city_ja, e.performers]
+        .some(t => t?.toLowerCase().includes(q)))
+      .filter(e => ui.filter === 'all' ? true
+        : ui.filter === 'upcoming' ? isUpcoming(e)
+        : ui.filter === 'past' ? !isUpcoming(e)
+        : ui.filter === 'nosetlist' ? !isUpcoming(e) && !withSetlist.has(e.id)
+        : e.status === 'private')
+      .sort((a, b) => ui.sort === 'oldest' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, ui.query, ui.filter, ui.sort, withSetlist, today]);
+
+  if (loading) return <p className="ad-loading">{s.loading}</p>;
+
+  const name = (e: Event) => ({
+    title: locale === 'ja' ? e.title_ja || e.title_en : e.title_en || e.title_ja,
+    venue: locale === 'ja' ? e.venue_ja || e.venue_en : e.venue_en || e.venue_ja,
+    city: locale === 'ja' ? e.city_ja || e.city_en : e.city_en || e.city_ja,
+  });
+  const setlistTag = (e: Event) => withSetlist.has(e.id)
+    ? <span className={`ad-tag ${setlistIsPublic(e) ? 'is-ok' : 'is-muted'}`}>{setlistIsPublic(e) ? '♪' : '🔒'} {s.hasSetlist}</span>
+    : <span className="ad-tag is-todo">{s.noSetlist}</span>;
+
+  const row = (e: Event) => {
+    const n = name(e);
+    return (
+      <li key={e.id}>
+        <Link to={`${prefix}/events/${e.id}`} className="ad-list-row">
+          <time>{e.date}</time>
+          <span className="ad-list-main">
+            <strong>{n.title || n.venue}</strong>
+            <span>{n.title ? `${n.venue} · ${n.city}` : n.city}</span>
+          </span>
+          <span className="ad-list-tags">
+            {e.status === 'private' && <span className="ad-tag is-muted">{s.hidden}</span>}
+            {setlistTag(e)}
+          </span>
+        </Link>
+      </li>
+    );
+  };
+
+  // List view: grouped by year (or "Upcoming" first when newest-first)
+  const groups = new Map<string, Event[]>();
+  list.forEach(e => {
+    const key = ui.sort === 'newest' && isUpcoming(e) ? s.upcoming : e.date.slice(0, 4);
+    groups.set(key, [...(groups.get(key) || []), e]);
+  });
 
   return (
     <>
-      <div className="admin-page-header">
-        <h1>{s.events} ({events.length})</h1>
-        <Link to={`${prefix}/events/new`} className="admin-btn admin-btn-primary">
-          {s.newEvent}
-        </Link>
+      <div className="ad-page-head">
+        <h1>{s.showsTitle} <span className="ad-count">{events.length}</span></h1>
+        <Link to={`${prefix}/events/new`} className="ad-btn ad-btn-primary ad-btn-lg">+ {s.addShow}</Link>
       </div>
 
-      <input
-        type="search"
-        className="admin-search"
-        placeholder="Search events..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
+      <ListToolbar
+        s={s}
+        query={ui.query} onQuery={ui.setQuery}
+        filters={[
+          { value: 'all', label: s.filterAll },
+          { value: 'upcoming', label: s.filterUpcoming },
+          { value: 'past', label: s.filterPast },
+          { value: 'nosetlist', label: s.filterNoSetlist },
+          { value: 'hidden', label: s.filterHidden },
+        ]}
+        filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
+        sorts={[{ value: 'newest', label: s.sortNewest }, { value: 'oldest', label: s.sortOldest }]}
+        sort={ui.sort} onSort={v => ui.setSort(v as Sort)}
+        views={[{ value: 'list', label: `☰ ${s.viewList}` }, { value: 'table', label: `▦ ${s.viewTable}` }]}
+        view={ui.view} onView={v => ui.setView(v as View)}
+        shown={list.length} total={events.length}
       />
 
-      {/* Desktop table */}
-      <table className="admin-table admin-desktop-only">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Title / ID</th>
-            <th>Venue</th>
-            <th>City</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map(event => (
-            <tr key={event.id} className={event.status === 'private' ? 'admin-row-draft' : ''}>
-              <td className="admin-td-date">{event.date}</td>
-              <td>
-                <Link to={`${prefix}/events/${event.id}`}>
-                  {event.title_en || event.title_ja || event.id}
-                </Link>
-              </td>
-              <td>{event.venue_en}</td>
-              <td>{event.city_en}</td>
-              <td>
-                <span className={`admin-status ${event.status === 'private' ? 'admin-status-draft' : 'admin-status-live'}`}>
-                  {event.status === 'private' ? s.draft : s.live}
-                </span>
-              </td>
-              <td className="admin-td-actions">
-                <Link to={`${prefix}/events/${event.id}`} className="admin-btn admin-btn-sm">
-                  Edit
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Mobile cards */}
-      <div className="admin-card-list admin-mobile-only">
-        {filtered.map(event => (
-          <Link
-            key={event.id}
-            to={`${prefix}/events/${event.id}`}
-            className={`admin-event-card ${event.status === 'private' ? 'admin-event-card-draft' : ''}`}
-          >
-            <div className="admin-event-card-header">
-              <span className="admin-event-card-date">{event.date}</span>
-              <span className={`admin-status ${event.status === 'private' ? 'admin-status-draft' : 'admin-status-live'}`}>
-                {event.status === 'private' ? s.draft : s.live}
-              </span>
-            </div>
-            <div className="admin-event-card-title">
-              {event.title_en || event.title_ja || event.id}
-            </div>
-            <div className="admin-event-card-meta">
-              {event.venue_en && <span>{event.venue_en}</span>}
-              {event.city_en && <span>{event.city_en}</span>}
-            </div>
-            {event.performers && (
-              <div className="admin-event-card-performers">{event.performers}</div>
-            )}
-          </Link>
-        ))}
-      </div>
-
-      {filtered.length === 0 && <p className="admin-empty">No events match your search.</p>}
+      {list.length === 0 ? <p className="ad-empty">{s.noResults}</p> : ui.view === 'table' ? (
+        <div className="ad-table-wrap">
+          <table className="ad-table">
+            <thead>
+              <tr>
+                <th>{s.colDate}</th>
+                <th>{s.colTitle}</th>
+                <th>{s.colSetlist}</th>
+                <th className="ad-td-center">{s.colOnSite}</th>
+                <th className="ad-td-center">{s.colHighlight}</th>
+                <th aria-label={s.edit} />
+              </tr>
+            </thead>
+            <tbody>
+              {list.map(e => {
+                const n = name(e);
+                return (
+                  <tr key={e.id} className={e.status === 'private' ? 'is-hidden' : ''}>
+                    <td className="ad-td-date">{e.date}</td>
+                    <td className="ad-td-title">
+                      <Link to={`${prefix}/events/${e.id}`}>{n.title || n.venue}</Link>
+                      <span>{n.title ? `${n.venue} · ${n.city}` : n.city}</span>
+                    </td>
+                    <td>{setlistTag(e)}</td>
+                    <td className="ad-td-center">
+                      <SwitchCell checked={e.status !== 'private'} label={s.colOnSite} onChange={() => save(e.id, { status: e.status === 'private' ? 'published' : 'private' })} />
+                    </td>
+                    <td className="ad-td-center">
+                      <SwitchCell checked={!!e.featured} label={s.colHighlight} onChange={() => save(e.id, { featured: !e.featured })} />
+                    </td>
+                    <SaveStateCell s={s} state={rowState[e.id]} editHref={`${prefix}/events/${e.id}`} renderLink={(href, label) => <Link to={href} className="ad-btn ad-btn-quiet">{label}</Link>} />
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        [...groups.entries()].map(([key, rows]) => (
+          <section key={key} className="ad-list-group">
+            <h2>{key} <span className="ad-count">{rows.length}</span></h2>
+            <ul className="ad-list">{rows.map(row)}</ul>
+          </section>
+        ))
+      )}
     </>
   );
 }

@@ -1,390 +1,233 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAlbums, useTracklists, useSongs } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, uploadFile, replaceRows } from '../../services/adminService';
+import { createRow, updateRow, deleteRow, replaceRows } from '../../services/adminService';
+import { useAdminT } from '../../i18n/admin';
+import {
+  Section, Field, BilingualRow, SaveBar, ImageField, DeleteButton,
+  useUnsavedWarning, makeId, errorText,
+} from '../../components/admin/ui';
 
+// Same columns as before; the server rewrites whole rows, so all are always sent
 const ALBUM_COLUMNS = [
   'id', 'title', 'date', 'year', 'type', 'number',
   'format', 'label', 'artwork_url', 'listen_url',
   'description_en', 'description_ja',
 ] as const;
-
 type AlbumField = typeof ALBUM_COLUMNS[number];
+type Form = Record<AlbumField, string>;
+const emptyForm = (): Form => Object.fromEntries(ALBUM_COLUMNS.map(c => [c, ''])) as Form;
 
-const FIELD_LABELS: Record<AlbumField, string> = {
-  id: 'ID',
-  title: 'Title',
-  date: 'Release Date',
-  year: 'Year',
-  type: 'Type',
-  number: 'Catalog #',
-  format: 'Format',
-  label: 'Label',
-  artwork_url: 'Artwork',
-  listen_url: 'Listen URL',
-  description_en: 'Description (EN)',
-  description_ja: 'Description (JA)',
-};
-
-const FIELD_TYPES: Partial<Record<AlbumField, string>> = {
-  date: 'date',
-  listen_url: 'url',
-};
-
-function emptyForm(): Record<AlbumField, string> {
-  const form: Record<string, string> = {};
-  ALBUM_COLUMNS.forEach(col => { form[col] = ''; });
-  return form as Record<AlbumField, string>;
-}
+interface Track { key: string; title: string }
+let nextKey = 0;
+const track = (title = ''): Track => ({ key: `t${nextKey++}`, title });
 
 export default function AdminAlbumForm() {
-  const { locale = 'en', id } = useParams<{ locale: string; id: string }>();
-  const prefix = `/${locale}/admin`;
+  const { id } = useParams<{ id: string }>();
+  const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
   const { albums, loading } = useAlbums();
   const { tracklists } = useTracklists();
   const { songs } = useSongs();
 
-  const [form, setForm] = useState<Record<AlbumField, string>>(emptyForm);
-  const [tracks, setTracks] = useState<{ track: string; title: string }[]>([]);
-  const [savingTracks, setSavingTracks] = useState(false);
+  const [form, setForm] = useState<Form>(emptyForm);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [savedTitle, setSavedTitle] = useState(''); // tracklists are keyed by release title
+  const [baseline, setBaseline] = useState('');
+  const [titleError, setTitleError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const deleteInputRef = useRef<HTMLInputElement>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [uploading, setUploading] = useState(false);
 
-  // Map song titles to their Song objects for lyrics status lookup
-  const songsByTitle = useMemo(() => {
-    const map = new Map<string, typeof songs[number]>();
-    for (const s of songs) map.set(s.title, s);
-    return map;
-  }, [songs]);
+  const songByTitle = useMemo(() => new Map(songs.map(x => [x.title, x])), [songs]);
+  const snapshot = (f: Form, t: Track[]) => JSON.stringify([f, t.map(x => x.title)]);
 
   useEffect(() => {
-    if (isNew || loading || albums.length === 0) return;
-    const album = albums.find(a => a.id === id);
-    if (!album) return;
-    setForm({
-      id: album.id,
-      title: album.title || '',
-      date: album.date || '',
-      year: album.year || '',
-      type: album.type || '',
-      number: album.number || '',
-      format: album.format || '',
-      label: album.label || '',
-      artwork_url: album.coverUrl || '',
-      listen_url: album.listenUrl || '',
-      description_en: album.description_en || '',
-      description_ja: album.description_ja || '',
-    });
-  }, [isNew, id, albums, loading]);
+    if (isNew) { setBaseline(snapshot(emptyForm(), [])); return; }
+    if (loading) return;
+    const a = albums.find(x => x.id === id);
+    if (!a) return;
+    const f: Form = {
+      id: a.id, title: a.title || '', date: a.date || '', year: a.year || '', type: a.type || '',
+      number: a.number || '', format: a.format || '', label: a.label || '', artwork_url: a.coverUrl || '',
+      listen_url: a.listenUrl || '', description_en: a.description_en || '', description_ja: a.description_ja || '',
+    };
+    const t = tracklists.filter(x => x.release === a.title).sort((x, y) => x.track - y.track).map(x => track(x.title));
+    setForm(f);
+    setTracks(t);
+    setSavedTitle(a.title);
+    setBaseline(snapshot(f, t));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, id, loading, albums, tracklists]);
 
-  // Populate tracklist for existing album
-  useEffect(() => {
-    if (isNew || !form.title) return;
-    const albumTracks = tracklists
-      .filter(t => t.release === form.title)
-      .sort((a, b) => a.track - b.track)
-      .map(t => ({ track: String(t.track), title: t.title }));
-    if (albumTracks.length > 0) setTracks(albumTracks);
-  }, [isNew, form.title, tracklists]);
+  const dirty = baseline !== '' && snapshot(form, tracks) !== baseline;
+  useUnsavedWarning(dirty);
+  const set = (k: AlbumField, v: string) => { setForm(f => ({ ...f, [k]: v })); if (k === 'title') setTitleError(''); };
 
-  function handleChange(field: AlbumField, value: string) {
-    setForm(prev => ({ ...prev, [field]: value }));
+  function moveTrack(i: number, dir: -1 | 1) {
+    const j = i + dir;
+    if (j < 0 || j >= tracks.length) return;
+    const copy = [...tracks];
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+    setTracks(copy);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.title.trim()) { setTitleError(s.releaseTitleMissing); return; }
     setSaving(true);
     setError('');
-    const fields: Record<string, string> = {};
-    ALBUM_COLUMNS.forEach(col => { fields[col] = form[col]; });
     try {
-      if (isNew) {
-        await createRow('Albums', fields);
-      } else {
-        await updateRow('Albums', form.id, fields);
-      }
-      navigate(`${prefix}/releases`);
+      const year = form.date ? form.date.slice(0, 4) : form.year;
+      const albumId = isNew
+        ? makeId([/^[\x20-\x7e]+$/.test(form.title) ? form.title : `${year || 'release'}-${Date.now().toString(36)}`], new Set(albums.map(a => a.id)))
+        : form.id;
+      const fields = { ...form, id: albumId, year, title: form.title.trim() };
+      if (isNew) await createRow('Albums', fields);
+      else await updateRow('Albums', albumId, fields);
+
+      // Tracklist rows are keyed by the release title: move them if it was renamed
+      const rows = tracks
+        .filter(t => t.title.trim())
+        .map((t, i) => ({ release: fields.title, track: String(i + 1), title: t.title.trim() }));
+      if (savedTitle && savedTitle !== fields.title) await replaceRows('Tracklists', savedTitle, []);
+      if (rows.length || savedTitle) await replaceRows('Tracklists', fields.title, rows);
+
+      setForm(fields);
+      setSavedTitle(fields.title);
+      setBaseline(snapshot(fields, tracks));
+      setSavedAt(Date.now());
+      if (isNew) navigate(`${prefix}/releases/${albumId}`, { replace: true });
     } catch (err) {
-      setError(String(err));
+      setError(errorText(err));
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete() {
-    setDeleting(true);
-    setError('');
-    try {
-      await deleteRow('Albums', form.id);
-      navigate(`${prefix}/releases`);
-    } catch (err) {
-      setError(String(err));
-      setShowDeleteModal(false);
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  if (!isNew && loading) return <p>Loading...</p>;
+  if (!isNew && loading) return <p className="ad-loading">{s.loading}</p>;
 
   return (
-    <>
-      <h1>{isNew ? 'New Release' : `Edit: ${form.title || form.id}`}</h1>
+    <form className="ad-form" onSubmit={handleSubmit} noValidate>
+      <div className="ad-page-head">
+        <div>
+          <p className="ad-eyebrow">{isNew ? s.releasesTitle : s.editRelease}</p>
+          <h1>{isNew ? s.newRelease : form.title}</h1>
+        </div>
+      </div>
 
-      {error && <div className="admin-error">{error}</div>}
-
-      <form onSubmit={handleSubmit} className="admin-form">
-        {ALBUM_COLUMNS.map(col => (
-          <div className="admin-field" key={col}>
-            <label htmlFor={`field-${col}`}>{FIELD_LABELS[col]}</label>
-            {col === 'type' ? (
-              <select
-                id={`field-${col}`}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-              >
-                <option value="">— select type —</option>
-                <option value="album">Album</option>
-                <option value="ep">EP</option>
-                <option value="single">Single</option>
-                <option value="compilation">Compilation</option>
+      <Section title={s.secDetails}>
+        <Field label={s.releaseTitle} error={titleError}>
+          {fid => <input id={fid} value={form.title} onChange={e => set('title', e.target.value)} />}
+        </Field>
+        <div className="ad-grid-2">
+          <Field label={s.releaseDate} optional s={s}>
+            {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
+          </Field>
+          <Field label={s.releaseType} optional s={s}>
+            {fid => (
+              <select id={fid} value={form.type} onChange={e => set('type', e.target.value)}>
+                <option value="">—</option>
+                <option value="album">{s.typeAlbum}</option>
+                <option value="lp">{s.typeLp}</option>
+                <option value="ep">{s.typeEp}</option>
+                <option value="single">{s.typeSingle}</option>
+                <option value="compilation">{s.typeCompilation}</option>
               </select>
-            ) : col === 'artwork_url' ? (
-              <div className="admin-upload-field">
-                {form.artwork_url && (
-                  <div className="admin-upload-preview">
-                    <img src={form.artwork_url} alt="Artwork preview" />
-                  </div>
-                )}
-                <div className="admin-upload-controls">
-                  <input
-                    id={`field-${col}`}
-                    type="file"
-                    accept="image/*"
-                    disabled={uploading}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploading(true);
-                      setError('');
-                      try {
-                        const url = await uploadFile(file);
-                        handleChange('artwork_url', url);
-                      } catch (err) {
-                        setError(`Upload failed: ${err}`);
-                      } finally {
-                        setUploading(false);
-                      }
-                    }}
-                  />
-                  {uploading && <span className="admin-upload-status">Uploading...</span>}
-                  {form.artwork_url && (
-                    <button
-                      type="button"
-                      className="admin-btn admin-btn-sm"
-                      onClick={() => handleChange('artwork_url', '')}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  placeholder="Or paste image URL"
-                  value={form.artwork_url}
-                  onChange={e => handleChange('artwork_url', e.target.value)}
-                  style={{ marginTop: '0.4rem' }}
-                />
-              </div>
-            ) : col === 'description_en' || col === 'description_ja' ? (
-              <textarea
-                id={`field-${col}`}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-                rows={3}
-              />
-            ) : (
-              <input
-                id={`field-${col}`}
-                type={FIELD_TYPES[col] || 'text'}
-                value={form[col]}
-                onChange={e => handleChange(col, e.target.value)}
-              />
             )}
-          </div>
-        ))}
-
-        <div className="admin-form-actions">
-          <button type="submit" className="admin-btn admin-btn-primary" disabled={saving}>
-            {saving ? 'Saving...' : isNew ? 'Create Release' : 'Save Changes'}
-          </button>
-          <button type="button" className="admin-btn" onClick={() => navigate(`${prefix}/releases`)}>
-            Cancel
-          </button>
+          </Field>
         </div>
-      </form>
+        <div className="ad-grid-3">
+          <Field label={s.label} optional s={s}>
+            {fid => <input id={fid} value={form.label} onChange={e => set('label', e.target.value)} />}
+          </Field>
+          <Field label={s.catalogNo} optional s={s}>
+            {fid => <input id={fid} value={form.number} onChange={e => set('number', e.target.value)} />}
+          </Field>
+          <Field label={s.format} optional s={s}>
+            {fid => <input id={fid} value={form.format} placeholder={s.formatPlaceholder} onChange={e => set('format', e.target.value)} />}
+          </Field>
+        </div>
+        <Field label={s.listenUrl} hint={s.listenHint} optional s={s}>
+          {fid => <input id={fid} type="url" inputMode="url" placeholder="https://" value={form.listen_url} onChange={e => set('listen_url', e.target.value)} />}
+        </Field>
+        <BilingualRow>
+          <Field label={`${s.description} · ${s.english}`} optional s={s}>
+            {fid => <textarea id={fid} rows={4} value={form.description_en} onChange={e => set('description_en', e.target.value)} />}
+          </Field>
+          <Field label={`${s.description} · ${s.japanese}`} optional s={s}>
+            {fid => <textarea id={fid} rows={4} lang="ja" value={form.description_ja} onChange={e => set('description_ja', e.target.value)} />}
+          </Field>
+        </BilingualRow>
+      </Section>
 
-      {/* Tracklist editor — only for existing releases */}
-      {!isNew && (
-        <section className="admin-related-section">
-          <h2>Tracklist</h2>
-          <div className="admin-tracklist">
-            {tracks.map((t, i) => {
-              const song = t.title ? songsByTitle.get(t.title) : undefined;
-              return (
-                <div key={i} className="admin-tracklist-row">
-                  <input
-                    type="number"
-                    className="admin-tracklist-num"
-                    value={t.track}
-                    onChange={e => {
-                      const copy = [...tracks];
-                      copy[i] = { ...copy[i], track: e.target.value };
-                      setTracks(copy);
-                    }}
-                    min={1}
-                  />
-                  <input
-                    type="text"
-                    className="admin-tracklist-title"
-                    value={t.title}
-                    onChange={e => {
-                      const copy = [...tracks];
-                      copy[i] = { ...copy[i], title: e.target.value };
-                      setTracks(copy);
-                    }}
-                    list="song-titles"
-                    placeholder="Song title"
-                  />
-                  {song ? (
-                    <Link
-                      to={`/${locale}/admin/songs/${song.id}`}
-                      className={`admin-lyrics-icon${song.lyrics_doc_id ? ' has-doc' : ''}`}
-                      title={song.lyrics_doc_id ? 'Lyrics doc exists' : 'No lyrics doc — click to add'}
-                    >
-                      <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
-                        <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
-                        {!song.lyrics_doc_id && (
-                          <path d="M10 7v6M7 10h6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-                        )}
-                      </svg>
-                    </Link>
-                  ) : t.title ? (
-                    <span className="admin-lyrics-icon no-song" title="Song not in database">
-                      <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor" opacity="0.25">
-                        <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
-                      </svg>
+      <Section title={s.secTracklist}>
+        <div className="ad-setlist">
+          <datalist id="ad-track-titles">
+            {songs.map(x => <option key={x.id} value={x.title} />)}
+          </datalist>
+          <div className="ad-set">
+            <ol>
+              {tracks.map((t, i) => {
+                const song = songByTitle.get(t.title.trim());
+                return (
+                  <li key={t.key} className="ad-song">
+                    <input
+                      className="ad-song-title"
+                      list="ad-track-titles"
+                      value={t.title}
+                      placeholder={s.trackTitle}
+                      aria-label={s.trackTitle}
+                      onChange={e => setTracks(tracks.map(x => (x.key === t.key ? { ...x, title: e.target.value } : x)))}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (t.title.trim()) { const copy = [...tracks]; copy.splice(i + 1, 0, track()); setTracks(copy); }
+                        }
+                      }}
+                      autoFocus={i === tracks.length - 1 && !t.title}
+                    />
+                    {t.title.trim() && (song
+                      ? <Link to={`${prefix}/songs/${song.id}`} className={`ad-tag ${song.lyrics_doc_id ? 'is-ok' : 'is-todo'}`}>
+                          {song.lyrics_doc_id ? s.lyricsLinked : s.lyricsMissing}
+                        </Link>
+                      : <span className="ad-tag is-muted">{s.songNotListed}</span>)}
+                    <span className="ad-song-actions">
+                      <button type="button" className="ad-icon-btn" onClick={() => moveTrack(i, -1)} disabled={i === 0} aria-label={s.moveUp}>↑</button>
+                      <button type="button" className="ad-icon-btn" onClick={() => moveTrack(i, 1)} disabled={i === tracks.length - 1} aria-label={s.moveDown}>↓</button>
+                      <button type="button" className="ad-icon-btn is-danger" onClick={() => setTracks(tracks.filter(x => x.key !== t.key))} aria-label={s.remove}>✕</button>
                     </span>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn-sm admin-btn-danger"
-                    onClick={() => setTracks(tracks.filter((_, j) => j !== i))}
-                  >
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
-            <datalist id="song-titles">
-              {songs.map(s => <option key={s.id} value={s.title} />)}
-            </datalist>
-            <button
-              type="button"
-              className="admin-btn admin-btn-sm"
-              onClick={() => setTracks([...tracks, { track: String(tracks.length + 1), title: '' }])}
-            >
-              + Add Track
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn-primary admin-btn-sm"
-              style={{ marginLeft: '0.5rem' }}
-              disabled={savingTracks}
-              onClick={async () => {
-                setSavingTracks(true);
-                setError('');
-                try {
-                  const rows = tracks
-                    .filter(t => t.title.trim())
-                    .map(t => ({ release: form.title, track: t.track, title: t.title }));
-                  await replaceRows('Tracklists', form.title, rows);
-                } catch (err) {
-                  setError(`Tracklist save failed: ${err}`);
-                } finally {
-                  setSavingTracks(false);
-                }
-              }}
-            >
-              {savingTracks ? 'Saving...' : 'Save Tracklist'}
-            </button>
+                  </li>
+                );
+              })}
+            </ol>
+            <button type="button" className="ad-btn ad-btn-quiet" onClick={() => setTracks([...tracks, track()])}>+ {s.addTrack}</button>
           </div>
-        </section>
-      )}
-
-      {!isNew && (
-        <div className="admin-danger-zone">
-          <h2>Danger Zone</h2>
-          <p>Permanently delete this release from the spreadsheet. This cannot be undone.</p>
-          <button
-            type="button"
-            className="admin-btn admin-btn-danger"
-            onClick={() => {
-              setShowDeleteModal(true);
-              setDeleteConfirmText('');
-              setTimeout(() => deleteInputRef.current?.focus(), 50);
-            }}
-          >
-            Delete Release
-          </button>
+          <p className="ad-hint">{s.tracklistHint}</p>
         </div>
-      )}
+      </Section>
 
-      {showDeleteModal && (
-        <div className="admin-modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
-            <h3>Delete this release?</h3>
-            <p>
-              This will permanently remove <strong>{form.title || form.id}</strong> from the spreadsheet.
-            </p>
-            <p className="admin-modal-confirm-label">
-              Type <strong>delete</strong> to confirm:
-            </p>
-            <input
-              ref={deleteInputRef}
-              type="text"
-              className="admin-modal-input"
-              value={deleteConfirmText}
-              onChange={e => setDeleteConfirmText(e.target.value)}
-              placeholder="delete"
-            />
-            <div className="admin-modal-actions">
-              <button
-                type="button"
-                className="admin-btn admin-btn-danger"
-                disabled={deleteConfirmText !== 'delete' || deleting}
-                onClick={handleDelete}
-              >
-                {deleting ? 'Deleting...' : 'Delete Forever'}
-              </button>
-              <button
-                type="button"
-                className="admin-btn"
-                onClick={() => setShowDeleteModal(false)}
-              >
-                Cancel
-              </button>
-            </div>
+      <Section title={s.artwork}>
+        <ImageField s={s} value={form.artwork_url} onChange={v => set('artwork_url', v)} onError={setError} />
+        {!isNew && (
+          <div className="ad-danger-row">
+            <DeleteButton s={s} onConfirm={async () => {
+              try {
+                if (savedTitle) await replaceRows('Tracklists', savedTitle, []);
+                await deleteRow('Albums', form.id);
+                navigate(`${prefix}/releases`);
+              } catch (err) { setError(errorText(err)); }
+            }} />
           </div>
-        </div>
-      )}
-    </>
+        )}
+      </Section>
+
+      <SaveBar
+        s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty}
+        viewHref={!isNew ? `/${locale}/releases/${form.id}` : undefined}
+        onCancel={() => navigate(`${prefix}/releases`)}
+      />
+    </form>
   );
 }

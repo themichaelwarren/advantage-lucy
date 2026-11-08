@@ -4,7 +4,9 @@ import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useSongs, useTracklists, useSetlists, useEvents, useAlbums, usePeople } from '../hooks/useSheetData';
 import { formatDateWithDay } from '../utils/format';
-import { SetlistIcon } from '../components/EventCard';
+import PageLoader from '../components/PageLoader';
+import { useFitsViewport } from '../hooks/useFitsViewport';
+import NowPlaying from '../components/NowPlaying';
 
 interface Props {
   locale: Locale;
@@ -15,6 +17,8 @@ export default function SongDetail({ locale }: Props) {
   const prefix = `/${locale}`;
   const { id } = useParams<{ id: string }>();
   const { songs, loading: songsLoading } = useSongs();
+  // Side panel only sticks when it fits on screen (otherwise its bottom would be unreachable)
+  const panel = useFitsViewport<HTMLElement>();
   const { tracklists, loading: tracklistsLoading } = useTracklists();
   const { setlists, loading: setlistsLoading } = useSetlists();
   const { events } = useEvents();
@@ -52,7 +56,7 @@ export default function SongDetail({ locale }: Props) {
       .catch(() => setLyrics(null));
   }, [song?.lyrics_doc_id]);
 
-  if (songsLoading) return null;
+  if (songsLoading) return <PageLoader locale={locale} />;
 
   if (!song) {
     return (
@@ -96,69 +100,80 @@ export default function SongDetail({ locale }: Props) {
 
   return (
     <article className="song-detail">
-      <header className="song-detail-header">
-        <h1 className="song-detail-title">{song.title}</h1>
-      </header>
+      <NowPlaying title={song.title} locale={locale} watch=".song-head .song-detail-title" />
+      {/* Wide screens: title, credits and releases in a sticky panel on the
+          left, lyrics on the right. Phones: title, credits, lyrics, releases. */}
+      <div className="song-layout">
+        <aside ref={panel.ref} className={`song-aside${panel.fits ? ' is-sticky' : ''}`}>
+          <div className="song-head">
+            <header className="song-detail-header">
+              <h1 className="song-detail-title">{song.title}</h1>
+            </header>
+            {(song.music_by || song.lyrics_by) && (
+              <dl className="event-meta">
+                {song.lyrics_by && (
+                  <>
+                    <dt>{s.songs.lyricsBy}</dt>
+                    <dd>{resolveNames(song.lyrics_by)}</dd>
+                  </>
+                )}
+                {song.music_by && (
+                  <>
+                    <dt>{s.songs.musicBy}</dt>
+                    <dd>{resolveNames(song.music_by)}</dd>
+                  </>
+                )}
+              </dl>
+            )}
 
-      <section className="mb-2">
-        <h2 className="section-label">{s.songs.lyrics}</h2>
-        {lyrics ? (
-          <div className="lyrics-block">
-            {lyrics.split('\n\n').map((verse, vi) => (
-              <p key={vi} className="lyrics-verse">
-                {verse.split('\n').map((line, li) => (
-                  <span key={li}>{line}<br /></span>
+          </div>
+          <div className="song-appears">
+            {albumAppearances.length > 0 && (
+              <section className="mb-2">
+                <h2 className="section-label">{s.songs.appearsOn}</h2>
+                <div className="song-album-list">
+                  {albumAppearances.map(({ album, track }) => (
+                    <Link to={`${prefix}/releases/${album.id}`} className="song-album-item" key={album.id}>
+                      <div className="song-album-cover">
+                        {album.coverUrl
+                          ? <img src={album.coverUrl} alt={album.title} />
+                          : <span>{album.title.slice(0, 2)}</span>
+                        }
+                      </div>
+                      <div className="song-album-body">
+                        <span className="song-album-title">{album.title}</span>
+                        <span className="song-album-meta">
+                          <span>{album.year}</span>
+                          <span className="event-detail-sep">·</span>
+                          <span>{locale === 'ja' ? `${track}曲目` : `Track ${track}`}</span>
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+          </div>
+        </aside>
+
+        <section className="song-lyrics">
+          <h2 className="section-label">{s.songs.lyrics}</h2>
+            {lyrics ? (
+              <div className="lyrics-block">
+                {lyrics.split('\n\n').map((verse, vi) => (
+                  <p key={vi} className="lyrics-verse">
+                    {verse.split('\n').map((line, li) => (
+                      <span key={li}>{line}<br /></span>
+                    ))}
+                  </p>
                 ))}
-              </p>
-            ))}
-          </div>
-        ) : (
-          <p className="lyrics-placeholder">{s.songs.noLyrics}</p>
-        )}
-      </section>
-
-      {(song.music_by || song.lyrics_by) && (
-        <dl className="event-meta">
-          {song.lyrics_by && (
-            <>
-              <dt>{s.songs.lyricsBy}</dt>
-              <dd>{resolveNames(song.lyrics_by)}</dd>
-            </>
-          )}
-          {song.music_by && (
-            <>
-              <dt>{s.songs.musicBy}</dt>
-              <dd>{resolveNames(song.music_by)}</dd>
-            </>
-          )}
-        </dl>
-      )}
-
-      {albumAppearances.length > 0 && (
-        <section className="mb-2">
-          <h2 className="section-label">{s.songs.appearsOn}</h2>
-          <div className="song-album-list">
-            {albumAppearances.map(({ album, track }) => (
-              <Link to={`${prefix}/releases/${album.id}`} className="song-album-item" key={album.id}>
-                <div className="song-album-cover">
-                  {album.coverUrl
-                    ? <img src={album.coverUrl} alt={album.title} />
-                    : <span>{album.title.slice(0, 2)}</span>
-                  }
-                </div>
-                <div className="song-album-body">
-                  <span className="song-album-title">{album.title}</span>
-                  <span className="song-album-meta">
-                    <span>{album.year}</span>
-                    <span className="event-detail-sep">·</span>
-                    <span>Track {track}</span>
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+              </div>
+            ) : (
+              <p className="lyrics-placeholder">{s.songs.noLyrics}</p>
+            )}
         </section>
-      )}
+      </div>
 
       {eventAppearances.length > 0 && (
         <section className="mb-2">
@@ -166,26 +181,25 @@ export default function SongDetail({ locale }: Props) {
             <h2 className="section-label">{s.songs.performedAt}</h2>
             <span className="section-count">{eventAppearances.length}{locale === 'ja' ? '件' : ''}</span>
           </div>
-          <div className="home-event-list">
+          <ul className="show-list">
             {eventAppearances.map(({ event }) => {
-              const venue = locale === 'ja' ? event.venue_ja : event.venue_en;
-              const area = locale === 'ja' ? event.city_ja : event.city_en;
+              const title = locale === 'ja' ? event.title_ja || event.title_en : event.title_en || event.title_ja;
+              const venue = locale === 'ja' ? event.venue_ja || event.venue_en : event.venue_en || event.venue_ja;
+              const area = locale === 'ja' ? event.city_ja || event.city_en : event.city_en || event.city_ja;
               return (
-                <Link to={`${prefix}/events/${event.id}`} className="home-event-item" key={event.id}>
-                  <time>{formatDateWithDay(event.date, locale)}</time>
-                  <div className="home-event-body">
-                    <span className="home-event-venue">
-                      {venue}
-                      {eventsWithSetlist.has(event.id) && (
-                        <span className="setlist-badge" data-tooltip={locale === 'ja' ? 'セットリストあり' : 'Setlist available'}>{SetlistIcon}</span>
-                      )}
+                <li key={event.id}>
+                  <Link to={`${prefix}/events/${event.id}`} className="show-row">
+                    <time dateTime={event.date}>{formatDateWithDay(event.date, locale)}</time>
+                    <span className="show-row-main">
+                      <strong>{title || venue}</strong>
+                      <span>{[title ? venue : '', area].filter(Boolean).join(' · ')}</span>
                     </span>
-                    {area && <span className="home-event-area">{area}</span>}
-                  </div>
-                </Link>
+                    {eventsWithSetlist.has(event.id) && <span className="show-tag">♪ {locale === 'ja' ? 'セトリ' : 'Setlist'}</span>}
+                  </Link>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </section>
       )}
 

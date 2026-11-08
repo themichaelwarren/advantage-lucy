@@ -1,56 +1,89 @@
-import { Link, useParams } from 'react-router-dom';
-import { useAllEvents, useAlbums, useVenues, useSongs, useAllNews, useAllBlog, useAllPhotos } from '../../hooks/useSheetData';
-import { t, type Locale } from '../../i18n/translations';
+import { Link } from 'react-router-dom';
+import { useAllEvents, useAllSetlists } from '../../hooks/useSheetData';
+import { useAuth } from '../../contexts/AuthContext';
+import { useAdminT } from '../../i18n/admin';
 
+/** Admin home: the four everyday jobs as big buttons, plus what needs doing. */
 export default function AdminDashboard() {
-  const { locale: rawLocale = 'en' } = useParams<{ locale: string }>();
-  const locale = (rawLocale === 'ja' ? 'ja' : 'en') as Locale;
-  const s = t(locale).admin;
-  const prefix = `/${locale}/admin`;
-  const { events } = useAllEvents();
-  const { albums } = useAlbums();
-  const { venues } = useVenues();
-  const { songs } = useSongs();
-  const { news } = useAllNews();
-  const { blog } = useAllBlog();
-  const { photos } = useAllPhotos();
-  const now = new Date().toISOString().slice(0, 10);
-  const upcoming = events.filter(e => e.date >= now).length;
+  const { s, locale, prefix } = useAdminT();
+  const { user } = useAuth();
+  const { events, loading } = useAllEvents();
+  const { setlists } = useAllSetlists();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const withSetlist = new Set(setlists.map(x => x.event));
+  const upcoming = events.filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+  const needsSetlist = events
+    .filter(e => e.date < today && !withSetlist.has(e.id))
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
+
+  const name = (e: typeof events[number]) =>
+    (locale === 'ja' ? e.title_ja || e.title_en || e.venue_ja || e.venue_en : e.title_en || e.title_ja || e.venue_en || e.venue_ja);
+
+  const tasks = [
+    { to: `${prefix}/events/new`, title: s.taskAddShow, hint: s.taskAddShowHint, icon: '♪', tone: 'sun' },
+    { to: needsSetlist[0] ? `${prefix}/events/${needsSetlist[0].id}#setlist` : `${prefix}/events`, title: s.taskSetlist, hint: s.taskSetlistHint, icon: '☰', tone: 'mint' },
+    { to: `${prefix}/news/new`, title: s.taskNews, hint: s.taskNewsHint, icon: '✎', tone: 'tomato' },
+    { to: `${prefix}/blog/new`, title: s.taskBlog, hint: s.taskBlogHint, icon: '◎', tone: 'lilac' },
+  ];
+
+  const firstName = user?.name?.split(' ')[0];
 
   return (
     <>
-      <h1>{s.dashboard}</h1>
-      <div className="admin-cards">
-        <Link to={`${prefix}/events`} className="admin-stat-card">
-          <span className="admin-stat-number">{events.length}</span>
-          <span className="admin-stat-label">{s.events}</span>
-          <span className="admin-stat-sub">{upcoming} {s.upcoming}</span>
-        </Link>
-        <Link to={`${prefix}/releases`} className="admin-stat-card">
-          <span className="admin-stat-number">{albums.length}</span>
-          <span className="admin-stat-label">{s.releases}</span>
-        </Link>
-        <Link to={`${prefix}/venues`} className="admin-stat-card">
-          <span className="admin-stat-number">{venues.length}</span>
-          <span className="admin-stat-label">{s.venues}</span>
-        </Link>
-        <Link to={`${prefix}/songs`} className="admin-stat-card">
-          <span className="admin-stat-number">{songs.length}</span>
-          <span className="admin-stat-label">{s.songs}</span>
-        </Link>
-        <Link to={`${prefix}/news`} className="admin-stat-card">
-          <span className="admin-stat-number">{news.length}</span>
-          <span className="admin-stat-label">{s.news}</span>
-        </Link>
-        <Link to={`${prefix}/blog`} className="admin-stat-card">
-          <span className="admin-stat-number">{blog.length}</span>
-          <span className="admin-stat-label">{s.blog}</span>
-        </Link>
-        <Link to={`${prefix}/photos`} className="admin-stat-card">
-          <span className="admin-stat-number">{photos.length}</span>
-          <span className="admin-stat-label">{s.photos}</span>
-        </Link>
+      <div className="ad-page-head">
+        <div>
+          <p className="ad-eyebrow">{s.hello}{firstName ? `${locale === 'ja' ? '、' : ', '}${firstName}` : ''} 👋</p>
+          <h1>{s.whatToDo}</h1>
+        </div>
       </div>
+
+      <div className="ad-tasks">
+        {tasks.map(t => (
+          <Link key={t.title} to={t.to} className={`ad-task is-${t.tone}`}>
+            <span className="ad-task-icon" aria-hidden="true">{t.icon}</span>
+            <strong>{t.title}</strong>
+            <span>{t.hint}</span>
+          </Link>
+        ))}
+      </div>
+
+      {!loading && (
+        <div className="ad-columns">
+          <section className="ad-list-group">
+            <h2>{s.upcomingShows}</h2>
+            {upcoming.length === 0 ? <p className="ad-empty">{s.nothingUpcoming}</p> : (
+              <ul className="ad-list">
+                {upcoming.map(e => (
+                  <li key={e.id}>
+                    <Link to={`${prefix}/events/${e.id}`} className="ad-list-row">
+                      <time>{e.date}</time>
+                      <span className="ad-list-main"><strong>{name(e)}</strong></span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          <section className="ad-list-group">
+            <h2>{s.needsSetlist}</h2>
+            {needsSetlist.length === 0 ? <p className="ad-empty">{s.allDone}</p> : (
+              <ul className="ad-list">
+                {needsSetlist.map(e => (
+                  <li key={e.id}>
+                    <Link to={`${prefix}/events/${e.id}#setlist`} className="ad-list-row">
+                      <time>{e.date}</time>
+                      <span className="ad-list-main"><strong>{name(e)}</strong></span>
+                      <span className="ad-list-tags"><span className="ad-tag is-todo">+ {s.taskSetlist}</span></span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      )}
     </>
   );
 }

@@ -4,6 +4,7 @@ import { t } from '../i18n/translations';
 import { useBlog } from '../hooks/useSheetData';
 import { formatDate } from '../utils/format';
 import InstagramEmbed from '../components/InstagramEmbed';
+import PageLoader from '../components/PageLoader';
 
 interface Props {
   locale: Locale;
@@ -16,7 +17,7 @@ export default function Blog({ locale }: Props) {
 
   const sorted = [...blog].sort((a, b) => b.date.localeCompare(a.date));
 
-  if (loading) return null;
+  if (loading) return <PageLoader locale={locale} />;
 
   return (
     <>

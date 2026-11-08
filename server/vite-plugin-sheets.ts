@@ -3,14 +3,105 @@
  * Keeps the service account key server-side.
  */
 import type { Plugin } from 'vite';
-import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews, fetchBlog, fetchPhotos, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, replaceRows, fetchHeaders } from './sheets';
+import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews, fetchBlog, fetchPhotos, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, replaceRows, fetchHeaders, clearSheetCache } from './sheets';
 import { fetchDocText, createDoc } from './docs';
+import { checkAdmin } from '../functions/lib/adminAuth';
+import { checkContact, saveMessage, listMessages, verifyTurnstile, showForEmail } from '../functions/lib/messages';
+import { notifyBand } from '../functions/lib/notify';
+import { checkFiles, attachmentNames, isAttachmentName } from '../functions/lib/attachments';
+import type { IncomingMessage, ServerResponse } from 'http';
+
+/** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
+async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+  const check = await checkAdmin(req.headers.authorization, {
+    clientId: process.env.VITE_GOOGLE_CLIENT_ID,
+    adminEmails: process.env.VITE_ADMIN_EMAILS,
+  });
+  if (check.ok) return true;
+  res.statusCode = check.status;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify({ error: check.error }));
+  return false;
+}
 
 
 export default function sheetsPlugin(): Plugin {
   return {
     name: 'sheets-api',
     configureServer(server) {
+      // Contact form + admin message list (same code as production: functions/lib/messages.ts)
+      server.middlewares.use(async (req, res, next) => {
+        const isContact = req.url === '/api/contact' && req.method === 'POST';
+        const isList = req.url?.startsWith('/api/admin/messages') && req.method === 'GET';
+        const attachment = req.method === 'GET' ? req.url?.match(/^\/api\/admin\/attachment\/([^/?]+)/)?.[1] : undefined;
+        if (!isContact && !isList && !attachment) return next();
+        // Dev only: attached photos are kept in a local, git-ignored folder
+        const fs = await import('fs');
+        const path = await import('path');
+        const devDir = path.resolve('.dev-submissions');
+        if (attachment) {
+          if (!(await requireAdmin(req, res))) return;
+          const file = path.join(devDir, attachment);
+          if (!isAttachmentName(attachment) || !fs.existsSync(file)) { res.statusCode = 404; res.end('Not found'); return; }
+          const ext = attachment.split('.').pop();
+          res.setHeader('Content-Type', ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg');
+          res.setHeader('Cache-Control', 'private, no-store');
+          res.end(fs.readFileSync(file));
+          return;
+        }
+        res.setHeader('Content-Type', 'application/json');
+        const sheetId = process.env.VITE_GOOGLE_SHEET_ID!;
+        const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!;
+        const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '';
+        try {
+          if (isList) {
+            if (!(await requireAdmin(req, res))) return;
+            res.end(JSON.stringify({ messages: await listMessages(sheetId, email, privateKey) }));
+            return;
+          }
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) chunks.push(chunk as Buffer);
+          const raw = Buffer.concat(chunks);
+          let input;
+          let files: File[] = [];
+          try {
+            if ((req.headers['content-type'] || '').includes('multipart/form-data')) {
+              // Let the standard Request parser handle multipart, as on Cloudflare
+              const form = await new Request('http://dev/api/contact', { method: 'POST', headers: { 'content-type': req.headers['content-type']! }, body: raw }).formData();
+              input = JSON.parse(String(form.get('payload') || '{}'));
+              files = form.getAll('files').filter((f): f is File => typeof f !== 'string');
+            } else {
+              input = JSON.parse(raw.toString() || '{}');
+            }
+          } catch { res.statusCode = 400; res.end(JSON.stringify({ error: 'bad_request' })); return; }
+          const checked = checkContact(input);
+          if (!checked.ok) { res.statusCode = 400; res.end(JSON.stringify({ error: checked.error, field: checked.field })); return; }
+          if (checked.spam) { res.end(JSON.stringify({ ok: true })); return; }
+          if (!(await verifyTurnstile(process.env.TURNSTILE_SECRET, input.turnstile_token))) {
+            res.statusCode = 400; res.end(JSON.stringify({ error: 'verify' })); return;
+          }
+          const fileCheck = await checkFiles(files);
+          if (!fileCheck.ok) { res.statusCode = 400; res.end(JSON.stringify({ error: fileCheck.error, field: 'files' })); return; }
+          if (fileCheck.files.length) {
+            const names = attachmentNames(checked.message.id, fileCheck.files);
+            fs.mkdirSync(devDir, { recursive: true });
+            fileCheck.files.forEach((f, i) => fs.writeFileSync(path.join(devDir, names[i]), f.bytes));
+            checked.message.attachments = names.join(',');
+          }
+          const ctx = {
+            siteUrl: process.env.SITE_URL || `http://${req.headers.host}`,
+            show: checked.message.topic === 'setlist' ? await showForEmail(sheetId, email, privateKey, checked.message.event) : undefined,
+          };
+          const notified = await notifyBand(process.env, checked.message, ctx).catch(err => { console.error('[contact] email failed:', err); return false; });
+          await saveMessage(sheetId, email, privateKey, checked.message, notified ? 'yes' : 'no');
+          res.end(JSON.stringify({ ok: true }));
+        } catch (err) {
+          console.error('[contact]', err);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: 'server' }));
+        }
+      });
+
       // Sheets API routes
       server.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith('/api/sheets')) return next();
@@ -74,7 +165,11 @@ export default function sheetsPlugin(): Plugin {
         const match = req.url?.match(/^\/api\/admin\/([a-zA-Z]+)/);
         if (!match) return next();
 
+        if (!(await requireAdmin(req, res))) return;
+
         const tab = match[1]; // e.g. "Events", "Venues"
+        // Any write invalidates the read cache so the change shows at once
+        if (req.method !== 'GET') clearSheetCache();
         const sheetId = process.env.VITE_GOOGLE_SHEET_ID;
         const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
         const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
@@ -182,6 +277,7 @@ export default function sheetsPlugin(): Plugin {
       // Create Doc route: POST /api/docs → create a blank Google Doc in lyrics folder
       server.middlewares.use(async (req, res, next) => {
         if (req.url !== '/api/docs' || req.method !== 'POST') return next();
+        if (!(await requireAdmin(req, res))) return;
 
         const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
         const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
@@ -210,6 +306,7 @@ export default function sheetsPlugin(): Plugin {
       // Upload route: POST /api/upload → proxy to production R2 + save locally for dev serving
       server.middlewares.use(async (req, res, next) => {
         if (req.url !== '/api/upload' || req.method !== 'POST') return next();
+        if (!(await requireAdmin(req, res))) return;
 
         try {
           const contentType = req.headers['content-type'] || '';
@@ -236,8 +333,10 @@ export default function sheetsPlugin(): Plugin {
           // Proxy upload to production R2 via the Cloudflare Pages function
           const formData = new FormData();
           formData.append('file', new Blob([fileBuffer], { type: mimeType }), fileName);
+          // Pass the admin's sign-in through: production checks it too
           const prodRes = await fetch('https://new.advantagelucy.com/api/upload', {
             method: 'POST',
+            headers: req.headers.authorization ? { Authorization: req.headers.authorization } : undefined,
             body: formData,
           });
 
