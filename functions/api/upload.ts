@@ -3,11 +3,21 @@
  * Returns { url: "/api/images/<key>" } for the uploaded file.
  */
 
+import { checkAdmin } from '../lib/adminAuth';
+
 interface Env {
   POSTERS: R2Bucket;
+  VITE_GOOGLE_CLIENT_ID?: string;
+  VITE_ADMIN_EMAILS?: string;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  const check = await checkAdmin(request.headers.get('Authorization'), {
+    clientId: env.VITE_GOOGLE_CLIENT_ID,
+    adminEmails: env.VITE_ADMIN_EMAILS,
+  });
+  if (!check.ok) return Response.json({ error: check.error }, { status: check.status });
+
   if (!env.POSTERS) {
     return Response.json({ error: 'R2 bucket not configured' }, { status: 500 });
   }
