@@ -3,6 +3,7 @@ import { Outlet, Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
 import ThemeToggle from '../../components/ThemeToggle';
+import CommandPalette from '../../components/admin/CommandPalette';
 
 /**
  * Admin shell.
@@ -18,10 +19,23 @@ export default function AdminLayout() {
   const { user, logout, sessionExpired, login } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setMoreOpen(false); setAccountOpen(false); }, [location.pathname]);
+  useEffect(() => { setMoreOpen(false); setAccountOpen(false); setPaletteOpen(false); }, [location.pathname]);
+  // ⌘K / Ctrl+K: search everything. Text boxes that use ⌘K themselves
+  // (the link button in notes) handle it first and stop it here.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || !(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'k') return;
+      e.preventDefault();
+      setPaletteOpen(o => !o);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   // Close either menu on a click outside it, or on Escape
   useEffect(() => {
     if (!moreOpen && !accountOpen) return;
@@ -78,8 +92,13 @@ export default function AdminLayout() {
 
   return (
     <div className="admin-shell lu-shell">
+      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
       <aside className="lu-sidebar" aria-label="Admin">
         <Link to={prefix} className="lu-brand band-name">{s.brand}</Link>
+        <button type="button" className="lu-side-search" onClick={() => setPaletteOpen(true)}>
+          <span aria-hidden="true">⌕</span> {s.searchEverythingShort}
+          <kbd>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
+        </button>
         <nav className="lu-side-nav">
           {groups.map((g, i) => (
             <div key={i} className="lu-side-group">
@@ -149,6 +168,7 @@ export default function AdminLayout() {
         </nav>
 
         <div className="lu-topbar-right">
+          <button type="button" className="lu-pill lu-topbar-search" onClick={() => setPaletteOpen(true)} aria-label={s.searchEverything}>⌕</button>
           <Link to={otherPath} className="lu-pill" lang={otherLocale}>
             {otherLocale === 'ja' ? '日本語' : 'English'}
           </Link>

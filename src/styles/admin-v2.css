@@ -968,3 +968,47 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-song-problems a { text-decoration: underline; }
 .lu-places-tabs { margin-bottom: 1rem; }
 .lu-places-tabs .lu-pill { font-size: 0.95rem; padding: 0.45em 1.1em; text-decoration: none; }
+
+/* ---------- ⌘K SEARCH ---------- */
+.lu-side-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  width: 100%; margin: 0.9rem 0 0.4rem;
+  padding: 0.55rem 0.75rem;
+  font: inherit; font-size: 0.9rem; color: var(--text-muted);
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  cursor: pointer; text-align: left;
+}
+.lu-side-search:hover { border-color: var(--text); color: var(--text); }
+.lu-side-search kbd, .lu-palette-foot kbd {
+  margin-left: auto; font-family: var(--font-main); font-size: 0.72rem;
+  padding: 0.1em 0.45em; border: 1px solid var(--border); border-radius: 5px; background: var(--bg);
+}
+.lu-palette-foot kbd { margin: 0 0.1em; }
+.lu-topbar-search { font-size: 1.05rem; line-height: 1; }
+.lu-palette-overlay { align-items: flex-start; padding-top: 12vh; }
+.lu-palette {
+  width: min(640px, calc(100vw - 32px));
+  max-height: 70vh;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border: 1.5px solid var(--text);
+  border-radius: var(--radius);
+  box-shadow: 6px 6px 0 var(--pop);
+  overflow: hidden;
+}
+.lu-shell .lu-palette-input {
+  border: none; border-bottom: 1.5px solid var(--border); border-radius: 0;
+  padding: 1rem 1.2rem; font-size: 1.1rem; background: var(--surface);
+}
+.lu-shell .lu-palette-input:focus { outline: none; box-shadow: none; }
+.lu-palette-results { overflow: auto; padding: 0.4rem; }
+.lu-palette-group + .lu-palette-group { margin-top: 0.3rem; }
+.lu-palette-kind { margin: 0.5rem 0.7rem 0.2rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.lu-palette-row { display: flex; align-items: baseline; gap: 0.7rem; padding: 0.55rem 0.7rem; border-radius: 8px; color: var(--text); text-decoration: none; }
+.lu-palette-row strong { font-weight: 600; }
+.lu-palette-row span { color: var(--text-muted); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lu-palette-row.is-active { background: color-mix(in srgb, var(--pop) 30%, var(--surface)); }
+.lu-palette-row mark { background: color-mix(in srgb, var(--pop) 55%, transparent); color: inherit; border-radius: 3px; }
+.lu-palette-empty { padding: 1rem; margin: 0; color: var(--text-muted); }
+.lu-palette-foot { margin: 0; padding: 0.55rem 1rem; border-top: 1px solid var(--rule); font-size: 0.78rem; color: var(--text-muted); }
+@media (min-width: 980px) { .lu-topbar-search { display: none; } }
