@@ -137,32 +137,7 @@
 }
 .lu-avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
 
-/* Phones: the four everyday sections become a bottom tab bar */
-@media (max-width: 760px) {
-  .lu-hide-phone { display: none !important; }
-  /* backdrop-filter would trap the fixed tab bar inside the header */
-  .lu-topbar { justify-content: space-between; backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--bg); }
-  .lu-nav {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    z-index: 70;
-    justify-content: space-around;
-    margin: 0;
-    padding: 0.35rem 0.4rem calc(0.35rem + env(safe-area-inset-bottom));
-    background: var(--surface);
-    border-top: 1.5px solid var(--text);
-  }
-  .lu-nav-link {
-    flex-direction: column;
-    gap: 0.1rem;
-    padding: 0.35rem 0.6rem;
-    font-size: 0.72rem;
-    border-radius: var(--radius-sm);
-  }
-  .lu-nav-icon { font-size: 1.25rem; opacity: 1; }
-  .lu-more-menu { top: auto; bottom: calc(100% + 0.6rem); left: auto; right: 0; }
-  .lu-main { padding-bottom: 6rem !important; }
-}
+@media (max-width: 760px) { .lu-hide-phone { display: none !important; } }
 
 /* ---------- PAGE ---------- */
 .lu-main {
@@ -802,50 +777,6 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
     background: color-mix(in srgb, var(--surface) 55%, var(--bg));
     overflow-y: auto;
   }
-  .lu-sidebar .lu-brand { align-self: flex-start; margin-left: 0.4rem; }
-  .lu-side-nav { display: flex; flex-direction: column; gap: 1.1rem; flex: 1; }
-  .lu-side-group { display: flex; flex-direction: column; gap: 0.15rem; }
-  .lu-side-title {
-    margin: 0 0 0.25rem 0.75rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-  .lu-side-link {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.55rem 0.75rem;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    font-size: 0.97rem;
-    text-decoration: none;
-    color: var(--text);
-    transition: background-color 120ms ease;
-  }
-  .lu-side-link:hover { background: var(--surface-hover); }
-  .lu-side-link.active { background: var(--text); color: var(--bg) !important; }
-  .lu-side-icon { width: 1.2rem; text-align: center; opacity: 0.75; flex-shrink: 0; }
-  .lu-side-link.active .lu-side-icon { opacity: 1; }
-
-  .lu-side-foot { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.9rem; border-top: 1px solid var(--rule); }
-  .lu-side-row { display: flex; align-items: center; gap: 0.4rem; padding-left: 0.4rem; }
-  .lu-side-row .theme-toggle { border-radius: 50%; background: none; cursor: pointer; color: var(--text); }
-  .lu-side-user {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 0.15rem 0.6rem;
-    align-items: center;
-    padding: 0.6rem 0.5rem 0.2rem;
-  }
-  .lu-side-user .lu-avatar-btn { cursor: default; grid-row: span 2; }
-  .lu-side-user-text { display: flex; flex-direction: column; min-width: 0; }
-  .lu-side-user-text strong { font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .lu-side-user-text span { font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .lu-side-signout { grid-column: 2; justify-self: start; padding: 0.15em 0 !important; font-size: 0.82rem; color: var(--text-muted); text-decoration: underline; }
-  .lu-side-signout:hover { color: #d23c42; background: none !important; }
 
   /* Content starts right beside the sidebar instead of floating in the middle */
   .lu-main {
@@ -1013,3 +944,109 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-palette-foot { margin: 0; padding: 0.55rem 1rem; border-top: 1px solid var(--rule); font-size: 0.78rem; color: var(--text-muted); }
 @media (min-width: 980px) { .lu-topbar-search { display: none; } }
 .lu-cover-tag { align-self: center; margin-right: 0.2rem; cursor: help; }
+
+/* ---------- SIDEBAR CONTENTS (desktop sidebar and phone/tablet menu) ---------- */
+.lu-sidebar .lu-brand { align-self: flex-start; margin-left: 0.4rem; }
+.lu-side-nav { display: flex; flex-direction: column; gap: 1.1rem; flex: 1; }
+.lu-side-group { display: flex; flex-direction: column; gap: 0.15rem; }
+.lu-side-title {
+  margin: 0 0 0.25rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.lu-side-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.97rem;
+  text-decoration: none;
+  color: var(--text);
+  transition: background-color 120ms ease;
+}
+.lu-side-link:hover { background: var(--surface-hover); }
+.lu-side-link.active { background: var(--text); color: var(--bg) !important; }
+.lu-side-icon { width: 1.2rem; text-align: center; opacity: 0.75; flex-shrink: 0; }
+.lu-side-link.active .lu-side-icon { opacity: 1; }
+
+.lu-side-foot { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.9rem; border-top: 1px solid var(--rule); }
+.lu-side-row { display: flex; align-items: center; gap: 0.4rem; padding-left: 0.4rem; }
+.lu-side-row .theme-toggle { border-radius: 50%; background: none; cursor: pointer; color: var(--text); }
+.lu-side-user {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.15rem 0.6rem;
+  align-items: center;
+  padding: 0.6rem 0.5rem 0.2rem;
+}
+.lu-side-user .lu-avatar-btn { cursor: default; grid-row: span 2; }
+.lu-side-user-text { display: flex; flex-direction: column; min-width: 0; }
+.lu-side-user-text strong { font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-side-user-text span { font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-side-signout { grid-column: 2; justify-self: start; padding: 0.15em 0 !important; font-size: 0.82rem; color: var(--text-muted); text-decoration: underline; }
+.lu-side-signout:hover { color: #d23c42; background: none !important; }
+
+/* ---------- PHONES & TABLETS: the sidebar slides in as the menu ---------- */
+.lu-menu-btn {
+  position: relative;
+  width: 2.6rem; height: 2.6rem;
+  border: 1.5px solid var(--text);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.lu-menu-btn span, .lu-menu-btn span::before, .lu-menu-btn span::after {
+  position: absolute; left: 50%; top: 50%;
+  width: 1.05rem; height: 2px; margin-left: -0.525rem;
+  background: var(--text); border-radius: 2px; content: '';
+  transition: transform 200ms ease, opacity 150ms ease;
+}
+.lu-menu-btn span::before { transform: translateY(-6px); margin-left: 0; left: 0; top: 0; }
+.lu-menu-btn span::after { transform: translateY(6px); margin-left: 0; left: 0; top: 0; }
+.lu-menu-btn[aria-expanded="true"] span { background: transparent; }
+.lu-menu-btn[aria-expanded="true"] span::before { transform: rotate(45deg); background: var(--text); }
+.lu-menu-btn[aria-expanded="true"] span::after { transform: rotate(-45deg); background: var(--text); }
+
+@media (max-width: 979px) {
+  .lu-topbar { justify-content: space-between; }
+  .lu-topbar-search { width: 2.6rem; height: 2.6rem; padding: 0; display: grid; place-items: center; }
+  .lu-nav-backdrop {
+    position: fixed; inset: 0; z-index: 90;
+    background: rgba(0, 0, 0, 0.35);
+    animation: lu-fade 150ms ease;
+  }
+  .lu-sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 95;
+    width: min(18rem, 86vw);
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    padding: 1.2rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    background: var(--bg);
+    border-right: 1.5px solid var(--text);
+    box-shadow: 6px 0 0 var(--pop);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(calc(-100% - 12px));
+    visibility: hidden;
+    transition: transform 220ms ease, visibility 0s linear 220ms;
+  }
+  .lu-sidebar.is-open { transform: none; visibility: visible; transition: transform 220ms ease; }
+}
+@keyframes lu-fade { from { opacity: 0; } }
+
+/* Long titles wrap instead of pushing the page wider than the screen */
+.lu-columns > * { min-width: 0; }
+.lu-list-main { min-width: 0; }
+.lu-list-main strong, .lu-list-main span { overflow-wrap: anywhere; }
+.lu-main { min-width: 0; }
+.lu-side-search svg { flex-shrink: 0; }
+@media (max-width: 979px) { .lu-side-search kbd { display: none; } }

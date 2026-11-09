@@ -17,13 +17,11 @@ export default function AdminLayout() {
   const location = useLocation();
   const { s, locale, prefix } = useAdminT();
   const { user, logout, sessionExpired, login } = useAuth();
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
-  const accountRef = useRef<HTMLDivElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => { setMoreOpen(false); setAccountOpen(false); setPaletteOpen(false); }, [location.pathname]);
+  useEffect(() => { setNavOpen(false); setPaletteOpen(false); }, [location.pathname]);
   // ⌘K / Ctrl+K: search everything. Text boxes that use ⌘K themselves
   // (the link button in notes) handle it first and stop it here.
   useEffect(() => {
@@ -36,38 +34,18 @@ export default function AdminLayout() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-  // Close either menu on a click outside it, or on Escape
+  // Phone/tablet menu: Esc closes it; the page behind doesn't scroll while open
   useEffect(() => {
-    if (!moreOpen && !accountOpen) return;
-    const onDown = (e: MouseEvent) => {
-      if (!moreRef.current?.contains(e.target as Node)) setMoreOpen(false);
-      if (!accountRef.current?.contains(e.target as Node)) setAccountOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setMoreOpen(false); setAccountOpen(false); } };
-    document.addEventListener('mousedown', onDown);
+    if (!navOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setNavOpen(false); menuButton.current?.focus(); } };
     document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
-  }, [moreOpen, accountOpen]);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = overflow; };
+  }, [navOpen]);
 
   const otherLocale = locale === 'en' ? 'ja' : 'en';
   const otherPath = location.pathname.replace(`/${locale}/admin`, `/${otherLocale}/admin`) + location.search;
-
-  const main = [
-    { to: prefix, label: s.home, end: true, icon: '⌂' },
-    { to: `${prefix}/events`, label: s.shows, icon: '♪' },
-    { to: `${prefix}/news`, label: s.news, icon: '✎' },
-    { to: `${prefix}/blog`, label: s.blog, icon: '◎' },
-  ];
-  const more = [
-    { to: `${prefix}/releases`, label: s.releases },
-    { to: `${prefix}/songs`, label: s.songs },
-    { to: `${prefix}/people`, label: s.people },
-    { to: `${prefix}/venues`, label: s.venues },
-    { to: `${prefix}/areas`, label: s.areas },
-    { to: `${prefix}/photos`, label: s.photos },
-    { to: `${prefix}/messages`, label: s.messages },
-  ];
-  const inMore = more.some(m => location.pathname.startsWith(m.to));
 
   // Sidebar: everything, grouped
   const groups: { title?: string; links: { to: string; label: string; icon: string; end?: boolean }[] }[] = [
@@ -93,10 +71,11 @@ export default function AdminLayout() {
   return (
     <div className="admin-shell lu-shell">
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
-      <aside className="lu-sidebar" aria-label="Admin">
+      {navOpen && <div className="lu-nav-backdrop" onClick={() => setNavOpen(false)} aria-hidden="true" />}
+      <aside id="lu-menu" className={`lu-sidebar${navOpen ? ' is-open' : ''}`} aria-label="Admin">
         <Link to={prefix} className="lu-brand band-name">{s.brand}</Link>
-        <button type="button" className="lu-side-search" onClick={() => setPaletteOpen(true)}>
-          <span aria-hidden="true">⌕</span> {s.searchEverythingShort}
+        <button type="button" className="lu-side-search" onClick={() => { setNavOpen(false); setPaletteOpen(true); }}>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg> {s.searchEverythingShort}
           <kbd>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
         </button>
         <nav className="lu-side-nav">
@@ -139,69 +118,22 @@ export default function AdminLayout() {
         </div>
       </aside>
 
+      {/* Phones and tablets: logo, search and a menu button; the sidebar slides in as the menu */}
       <header className="lu-topbar">
         <Link to={prefix} className="lu-brand band-name">{s.brand}</Link>
-
-        <nav className="lu-nav" aria-label="Admin">
-          {main.map(l => (
-            <NavLink key={l.to} to={l.to} end={l.end} className="lu-nav-link">
-              <span className="lu-nav-icon" aria-hidden="true">{l.icon}</span>
-              <span>{l.label}</span>
-            </NavLink>
-          ))}
-          <div className="lu-more" ref={moreRef}>
-            <button
-              type="button"
-              className={`lu-nav-link${inMore ? ' active' : ''}`}
-              aria-expanded={moreOpen}
-              onClick={() => setMoreOpen(o => !o)}
-            >
-              <span className="lu-nav-icon" aria-hidden="true">⋯</span>
-              <span>{s.more}</span>
-            </button>
-            {moreOpen && (
-              <div className="lu-more-menu">
-                {more.map(l => <NavLink key={l.to} to={l.to}>{l.label}</NavLink>)}
-              </div>
-            )}
-          </div>
-        </nav>
-
         <div className="lu-topbar-right">
-          <button type="button" className="lu-pill lu-topbar-search" onClick={() => setPaletteOpen(true)} aria-label={s.searchEverything}>⌕</button>
-          <Link to={otherPath} className="lu-pill" lang={otherLocale}>
-            {otherLocale === 'ja' ? '日本語' : 'English'}
-          </Link>
-          <ThemeToggle locale={locale} />
-          <Link to={`/${locale}`} className="lu-pill lu-hide-phone">{s.viewSite} ↗</Link>
-          {user && (
-            <div className="lu-account" ref={accountRef}>
-              <button
-                type="button"
-                className="lu-avatar-btn"
-                aria-label={s.accountMenu}
-                aria-expanded={accountOpen}
-                aria-haspopup="menu"
-                onClick={() => setAccountOpen(o => !o)}
-              >
-                {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" /> : <span>{user.name.slice(0, 1)}</span>}
-              </button>
-              {accountOpen && (
-                <div className="lu-account-menu" role="menu">
-                  <div className="lu-account-who">
-                    <span className="lu-eyebrow">{s.signedInAs}</span>
-                    <strong>{user.name}</strong>
-                    <span>{user.email}</span>
-                  </div>
-                  <hr />
-                  {/* Room for Help / documentation links later */}
-                  <Link role="menuitem" to={`/${locale}`}>{s.viewSite} ↗</Link>
-                  <hr />
-                  <button role="menuitem" type="button" className="is-danger" onClick={logout}>{s.signOut}</button>
-                </div>
-              )}
-            </div>
-          )}
+          <button type="button" className="lu-pill lu-topbar-search" onClick={() => setPaletteOpen(true)} aria-label={s.searchEverything}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg></button>
+          <button
+            ref={menuButton}
+            type="button"
+            className="lu-menu-btn"
+            aria-label={s.menu}
+            aria-expanded={navOpen}
+            aria-controls="lu-menu"
+            onClick={() => setNavOpen(o => !o)}
+          >
+            <span aria-hidden="true" />
+          </button>
         </div>
       </header>
 
