@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useSetlists } from '../hooks/useSheetData';
@@ -29,7 +29,14 @@ export default function Events({ locale }: Props) {
   const prefix = `/${locale}`;
   const { events, loading } = useEvents();
   const { setlists } = useSetlists();
-  const [search, setSearch] = useState('');
+  // The search lives in the address, so links like /events?q=Shimokitazawa work
+  const [params, setParams] = useSearchParams();
+  const search = params.get('q') || '';
+  const setSearch = (q: string) => {
+    const next = new URLSearchParams(params);
+    if (q) next.set('q', q); else next.delete('q');
+    setParams(next, { replace: true });
+  };
 
   const today = todayInJapan();
 

@@ -120,10 +120,18 @@ export default function EventDetail({ locale }: Props) {
           <dl className="event-meta evd-facts">
                 <dt>{s.events.venue}</dt>
               <dd>
-                {event.venue_url
-                  ? <a className="evd-venue-link" href={event.venue_url} target="_blank" rel="noopener noreferrer">{venue}</a>
+                {event.venue_id
+                  ? <Link className="evd-venue-link" to={`${prefix}/venues/${event.venue_id}`}>{venue}</Link>
                   : venue}
-                {area && <span className="evd-area">{area}</span>}
+                {event.venue_url && (
+                  <a className="evd-venue-site" href={event.venue_url} target="_blank" rel="noopener noreferrer" aria-label={s.venues.website}>↗</a>
+                )}
+                {area && (
+                  <span className="evd-area">
+                    {city ? <Link to={`${prefix}/events?q=${encodeURIComponent(city)}`}>{city}</Link> : null}
+                    {area.slice(city.length)}
+                  </span>
+                )}
               </dd>
               {event.doors && (<><dt>{s.events.doors}</dt><dd className="is-number">{event.doors}</dd></>)}
               {event.start && (<><dt>{s.events.start}</dt><dd className="is-number">{event.start}</dd></>)}

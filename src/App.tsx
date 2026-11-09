@@ -8,6 +8,7 @@ import Music from './pages/Music';
 import About from './pages/About';
 import AlbumDetail from './pages/AlbumDetail';
 import SongDetail from './pages/SongDetail';
+import VenueDetail from './pages/VenueDetail';
 import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
 import News from './pages/News';
@@ -108,6 +109,7 @@ export default function App() {
         <Route path="releases" element={<Music locale="en" />} />
         <Route path="releases/:id" element={<AlbumDetail locale="en" />} />
         <Route path="songs/:id" element={<SongDetail locale="en" />} />
+        <Route path="venues/:id" element={<VenueDetail locale="en" />} />
         <Route path="news" element={<News locale="en" />} />
         <Route path="news/:id" element={<NewsDetail locale="en" />} />
         <Route path="blog" element={<Blog locale="en" />} />
@@ -125,6 +127,7 @@ export default function App() {
         <Route path="releases" element={<Music locale="ja" />} />
         <Route path="releases/:id" element={<AlbumDetail locale="ja" />} />
         <Route path="songs/:id" element={<SongDetail locale="ja" />} />
+        <Route path="venues/:id" element={<VenueDetail locale="ja" />} />
         <Route path="news" element={<News locale="ja" />} />
         <Route path="news/:id" element={<NewsDetail locale="ja" />} />
         <Route path="blog" element={<Blog locale="ja" />} />

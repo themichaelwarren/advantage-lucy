@@ -78,6 +78,13 @@ export const translations = {
       unreleased: 'Unreleased',
       types: { album: 'Album', lp: 'LP', ep: 'EP', single: 'Single', compilation: 'Compilation' } as Record<string, string>,
     },
+    venues: {
+      website: 'Venue website',
+      showsHere: 'Shows here',
+      noShows: 'No past shows here yet.',
+      notFound: 'Venue not found.',
+      allShowsAt: 'Every show here',
+    },
     songs: {
       title: 'Song',
       musicBy: 'Music',
@@ -246,6 +253,13 @@ export const translations = {
       trackMatch: '収録',
       unreleased: '未収録',
       types: { album: 'アルバム', lp: 'LP', ep: 'EP', single: 'シングル', compilation: 'コンピレーション' } as Record<string, string>,
+    },
+    venues: {
+      website: '会場のウェブサイト',
+      showsHere: 'この会場でのライブ',
+      noShows: 'この会場での過去のライブはまだありません。',
+      notFound: '会場が見つかりません。',
+      allShowsAt: 'この会場でのライブ一覧',
     },
     songs: {
       title: '楽曲',
