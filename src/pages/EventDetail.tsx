@@ -4,7 +4,7 @@ import { normalize } from '../utils/text';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useSetlists, useSongs } from '../hooks/useSheetData';
-import { formatDateWithDay, formatPrice } from '../utils/format';
+import { formatPrice } from '../utils/format';
 import PageLoader from '../components/PageLoader';
 import { setlistIsPublic } from '../utils/showDates';
 import { useFitsViewport } from '../hooks/useFitsViewport';
@@ -53,7 +53,19 @@ export default function EventDetail({ locale }: Props) {
   const body = pick(event.body_en, event.body_ja);
   const bodyLang = (locale === 'ja' ? event.body_ja : event.body_en) ? locale : (locale === 'ja' ? 'en' : 'ja');
 
-  const dateStr = formatDateWithDay(event.date, locale);
+  const longDay = (iso: string) =>
+    new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
+  const shortDay = (iso: string) => {
+    const e = new Date(`${iso}T00:00:00Z`);
+    const wd = new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { weekday: 'short', timeZone: 'UTC' }).format(e);
+    return locale === 'ja'
+      ? `${e.getUTCMonth() + 1}.${e.getUTCDate()}（${wd}）`
+      : new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(e);
+  };
+  // "日曜日" / "Sunday", or for multi-day shows "日曜日 〜 11.30（月）"
+  const weekdayLine = event.end_date && event.end_date !== event.date
+    ? `${longDay(event.date)} ${locale === 'ja' ? '〜' : '–'} ${shortDay(event.end_date)}`
+    : longDay(event.date);
   const d = new Date(event.date + 'T00:00:00');
   const area = [
     city,
@@ -102,7 +114,8 @@ export default function EventDetail({ locale }: Props) {
                 <span className="next-show-year">{d.getFullYear()}</span>
               </div>
             )}
-            <time className="evd-weekday" dateTime={event.date}>{dateStr}</time>
+            {/* The badge already shows the date: add what it doesn't (weekday, last day) */}
+            <time className="evd-weekday" dateTime={event.date}>{weekdayLine}</time>
           </div>
 
           <header className="evd-title-block">

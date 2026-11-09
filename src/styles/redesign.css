@@ -1849,3 +1849,4 @@ time,
 }
 .admin-shortcut:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--pop); }
 @media print { .admin-shortcut { display: none; } }
+.evd-weekday { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--text); }
