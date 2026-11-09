@@ -1160,3 +1160,19 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
   .lu-task { padding-inline: 0.15rem; }
   .lu-task .lu-task-short { font-size: min(0.74rem, 2.9vw); letter-spacing: -0.02em; }
 }
+
+/* Login drawing: white paper melts into the page (multiply). In dark mode
+   the drawing is flipped to chalk-on-dark (invert, hues turned back so the
+   purple stays purple) and its black background melts away (screen). */
+.lu-login-art {
+  display: block;
+  width: min(220px, 55vw);
+  height: auto;
+  margin: 0 auto -0.4rem;
+  mix-blend-mode: multiply;
+  transform: rotate(-3deg);
+}
+:root[data-theme="dark"] .lu-login-art { filter: invert(1) hue-rotate(180deg); mix-blend-mode: screen; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lu-login-art { filter: invert(1) hue-rotate(180deg); mix-blend-mode: screen; }
+}

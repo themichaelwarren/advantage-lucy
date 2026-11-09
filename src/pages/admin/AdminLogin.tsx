@@ -8,6 +8,7 @@ export default function AdminLogin() {
   return (
     <div className="admin-shell lu-shell">
       <div className="lu-login">
+        <img className="lu-login-art" src="/img/lucy-drum.png" alt="" width="220" height="220" />
         <span className="lu-brand band-name">{s.brand}</span>
         <h1>{s.signInTitle}</h1>
         <p>{s.signInBody}</p>
