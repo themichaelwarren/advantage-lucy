@@ -918,3 +918,5 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-added-songs { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; margin-top: 0.6rem; }
 .lu-added-songs a { font-weight: 600; }
 .lu-added-songs .lu-hint { margin: 0; font-size: 0.82rem; }
+.lu-leave-actions { flex-wrap: wrap; }
+.lu-usage { max-height: 28rem; overflow: auto; }

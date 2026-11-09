@@ -47,7 +47,7 @@ export default function AdminVenueForm() {
   }, [isNew, id, loading, venues, areas.length]);
 
   const dirty = baseline !== '' && JSON.stringify([form, areaText]) !== baseline;
-  useUnsavedWarning(dirty);
+  const leaveGuard = useUnsavedWarning(dirty, saving);
   const set = (k: keyof Form, v: string) => { setForm(f => ({ ...f, [k]: v })); setNameError(''); };
   const usedBy = events.filter(e => e.venue_id === form.id).length;
 
@@ -78,6 +78,7 @@ export default function AdminVenueForm() {
 
   return (
     <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      {leaveGuard}
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? s.venuesTitle : s.editVenue}</p>
@@ -114,7 +115,7 @@ export default function AdminVenueForm() {
         )}
       </Section>
 
-      <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} onCancel={() => navigate(`${prefix}/venues`)} />
+      <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} backHref={`${prefix}/venues`} />
     </form>
   );
 }

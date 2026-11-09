@@ -45,14 +45,15 @@ export function useAlbums() {
 export function useTracklists() {
   const [tracklists, setTracklists] = useState<TracklistEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     getTracklists()
       .then(setTracklists)
       .finally(() => setLoading(false));
-  }, []);
+  }, [tick]);
 
-  return { tracklists, loading };
+  return { tracklists, loading, refresh: () => setTick(t => t + 1) };
 }
 
 export function useSongs() {
@@ -73,14 +74,15 @@ export function useSongs() {
 export function useAllSetlists() {
   const [setlists, setSetlists] = useState<SetlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     getAllSetlists()
       .then(setSetlists)
       .finally(() => setLoading(false));
-  }, []);
+  }, [tick]);
 
-  return { setlists, loading };
+  return { setlists, loading, refresh: () => setTick(t => t + 1) };
 }
 
 /** Setlists the public may see (published, show already played). */

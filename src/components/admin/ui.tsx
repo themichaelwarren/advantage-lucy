@@ -5,8 +5,9 @@
  */
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { uploadFile, AuthExpiredError } from '../../services/adminService';
+import { useAdminT } from '../../i18n/admin';
 import type { AdminStrings } from '../../i18n/admin';
 
 export function Section({ title, children, aside, id }: { title: string; children: ReactNode; aside?: ReactNode; id?: string }) {
@@ -77,14 +78,15 @@ export function Switch({ checked, onChange, label, hint }: {
 }
 
 /** Bottom bar with the one Save button and what happened. */
-export function SaveBar({ s, saving, savedAt, error, dirty, viewHref, onCancel }: {
+export function SaveBar({ s, saving, savedAt, error, dirty, viewHref, backHref }: {
   s: AdminStrings;
   saving: boolean;
   savedAt: number | null;
   error: string;
   dirty: boolean;
   viewHref?: string;
-  onCancel?: () => void;
+  /** Where Back goes (a link, so unsaved edits are guarded). */
+  backHref?: string;
 }) {
   // Show "Saved ✓" for a few seconds after each save
   const [showSaved, setShowSaved] = useState(false);
@@ -111,7 +113,7 @@ export function SaveBar({ s, saving, savedAt, error, dirty, viewHref, onCancel }
         ) : null}
       </div>
       <div className="lu-savebar-actions">
-        {onCancel && <button type="button" className="lu-btn" onClick={onCancel}>{s.back}</button>}
+        {backHref && <Link to={backHref} className="lu-btn">{s.back}</Link>}
         <button type="submit" className="lu-btn lu-btn-primary lu-btn-lg" disabled={saving}>
           {saving ? s.saving : s.save}
         </button>
@@ -222,14 +224,80 @@ export function DeleteButton({ s, onConfirm, label }: { s: AdminStrings; onConfi
   );
 }
 
-/** Warn before leaving a page with unsaved edits. */
-export function useUnsavedWarning(dirty: boolean) {
+/**
+ * Don't lose unsaved edits.
+ * - Closing or reloading the tab: the browser's own "Leave site?" warning.
+ * - Clicking a link inside the admin (sidebar, Back, links on the page):
+ *   asks "Save and go", "Leave without saving" or "Stay". "Save and go"
+ *   submits the page's form and only moves on if the save worked.
+ * Render the returned element anywhere in the page.
+ */
+export function useUnsavedWarning(dirty: boolean, saving = false): ReactNode {
+  const { s } = useAdminT();
+  const navigate = useNavigate();
+  const [target, setTarget] = useState<string | null>(null);
+  const pending = useRef<string | null>(null);
+  const sawSaving = useRef(false);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+
   useEffect(() => {
     if (!dirty) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    // Capture phase on document runs before React Router's link handler
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin) return;
+      if (url.pathname === location.pathname && url.search === location.search) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setTarget(url.pathname + url.search + url.hash);
+    };
     window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    document.addEventListener('click', onClick, true);
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      document.removeEventListener('click', onClick, true);
+    };
   }, [dirty]);
+
+  // "Save and go": move on once the save finishes, if nothing is left unsaved
+  useEffect(() => {
+    if (saving) { sawSaving.current = true; return; }
+    if (sawSaving.current && pending.current) {
+      const to = pending.current;
+      pending.current = null;
+      if (!dirtyRef.current) navigate(to);
+    }
+    sawSaving.current = false;
+  }, [saving, navigate]);
+
+  function saveAndGo(to: string) {
+    setTarget(null);
+    pending.current = to;
+    sawSaving.current = false;
+    document.querySelector<HTMLFormElement>('form.lu-form')?.requestSubmit();
+    // Save didn't start (e.g. a required field is empty): stay and show why
+    window.setTimeout(() => { if (!sawSaving.current) pending.current = null; }, 300);
+  }
+
+  if (!target) return null;
+  return (
+    <div className="lu-modal-overlay" onClick={() => setTarget(null)}>
+      <div className="lu-modal" role="dialog" aria-modal="true" aria-labelledby="lu-leave-title" onClick={e => e.stopPropagation()}>
+        <h3 id="lu-leave-title">{s.leaveTitle}</h3>
+        <p>{s.leaveBody}</p>
+        <div className="lu-modal-actions lu-leave-actions">
+          <button type="button" className="lu-btn" onClick={() => setTarget(null)}>{s.leaveStay}</button>
+          <button type="button" className="lu-btn lu-btn-danger-quiet" onClick={() => { const to = target; setTarget(null); navigate(to); }}>{s.leaveDiscard}</button>
+          <button type="button" className="lu-btn lu-btn-primary" autoFocus onClick={() => saveAndGo(target)}>{s.leaveSave}</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** "2025-11-30" + "Shimokitazawa" → "2025-11-30-shimokitazawa"; adds -2, -3… if taken. */

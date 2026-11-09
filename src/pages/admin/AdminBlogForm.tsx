@@ -51,7 +51,7 @@ export default function AdminBlogForm() {
   }, [isNew, id, loading, blog]);
 
   const dirty = baseline !== '' && JSON.stringify(form) !== baseline;
-  useUnsavedWarning(dirty);
+  const leaveGuard = useUnsavedWarning(dirty, saving);
   const set = (field: BlogField, value: string) => { setForm(f => ({ ...f, [field]: value })); if (field === 'instagram_url') setUrlError(''); };
   const code = instagramCode(form.instagram_url);
 
@@ -82,6 +82,7 @@ export default function AdminBlogForm() {
 
   return (
     <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      {leaveGuard}
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? s.blogTitle : s.editBlog}</p>
@@ -131,7 +132,7 @@ export default function AdminBlogForm() {
       <SaveBar
         s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty}
         viewHref={!isNew ? `/${locale}/blog/${form.id}` : undefined}
-        onCancel={() => navigate(`${prefix}/blog`)}
+        backHref={`${prefix}/blog`}
       />
     </form>
   );

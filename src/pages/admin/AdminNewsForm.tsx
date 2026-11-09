@@ -46,7 +46,7 @@ export default function AdminNewsForm() {
   }, [isNew, id, loading, news]);
 
   const dirty = baseline !== '' && JSON.stringify(form) !== baseline;
-  useUnsavedWarning(dirty);
+  const leaveGuard = useUnsavedWarning(dirty, saving);
   const set = (field: NewsField, value: string) => { setForm(f => ({ ...f, [field]: value })); if (field.startsWith('title')) setTitleError(''); };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -76,6 +76,7 @@ export default function AdminNewsForm() {
 
   return (
     <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      {leaveGuard}
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? s.newsTitle : s.editNews}</p>
@@ -123,7 +124,7 @@ export default function AdminNewsForm() {
       <SaveBar
         s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty}
         viewHref={!isNew ? `/${locale}/news/${form.id}` : undefined}
-        onCancel={() => navigate(`${prefix}/news`)}
+        backHref={`${prefix}/news`}
       />
     </form>
   );

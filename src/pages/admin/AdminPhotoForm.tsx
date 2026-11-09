@@ -47,7 +47,7 @@ export default function AdminPhotoForm() {
   }, [isNew, id, loading, photos]);
 
   const dirty = baseline !== '' && JSON.stringify(form) !== baseline;
-  useUnsavedWarning(dirty);
+  const leaveGuard = useUnsavedWarning(dirty, saving);
   const set = (k: PhotoField, v: string) => { setForm(f => ({ ...f, [k]: v })); if (k === 'image_url') setPhotoError(''); };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -90,6 +90,7 @@ export default function AdminPhotoForm() {
 
   return (
     <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      {leaveGuard}
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? s.photosTitle : s.editPhoto}</p>
@@ -123,7 +124,7 @@ export default function AdminPhotoForm() {
         )}
       </Section>
 
-      <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} onCancel={() => navigate(`${prefix}/photos`)} />
+      <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} backHref={`${prefix}/photos`} />
     </form>
   );
 }

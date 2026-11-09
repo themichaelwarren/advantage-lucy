@@ -76,7 +76,7 @@ export default function AdminEventForm() {
   }, [location.hash, baseline]);
 
   const dirty = baseline !== '' && snapshot(form, setlist) !== baseline;
-  useUnsavedWarning(dirty);
+  const leaveGuard = useUnsavedWarning(dirty, saving);
 
   const set = (field: EventField, value: string) => {
     setForm(f => ({ ...f, [field]: value }));
@@ -148,6 +148,7 @@ export default function AdminEventForm() {
 
   return (
     <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      {leaveGuard}
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? s.shows : s.editShow}</p>
@@ -260,7 +261,7 @@ export default function AdminEventForm() {
         error={error}
         dirty={dirty}
         viewHref={!isNew ? `/${locale}/events/${form.id}` : undefined}
-        onCancel={() => navigate(`${prefix}/events`)}
+        backHref={`${prefix}/events`}
       />
     </form>
   );

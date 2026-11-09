@@ -72,7 +72,7 @@ export default function AdminAlbumForm() {
   }, [isNew, id, loading, albums, tracklists]);
 
   const dirty = baseline !== '' && snapshot(form, tracks) !== baseline;
-  useUnsavedWarning(dirty);
+  const leaveGuard = useUnsavedWarning(dirty, saving);
   const set = (k: AlbumField, v: string) => { setForm(f => ({ ...f, [k]: v })); if (k === 'title') setTitleError(''); };
 
   function moveTrack(i: number, dir: -1 | 1) {
@@ -126,6 +126,7 @@ export default function AdminAlbumForm() {
 
   return (
     <form className="lu-form" onSubmit={handleSubmit} noValidate>
+      {leaveGuard}
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? s.releasesTitle : s.editRelease}</p>
@@ -239,7 +240,7 @@ export default function AdminAlbumForm() {
       <SaveBar
         s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty}
         viewHref={!isNew ? `/${locale}/releases/${form.id}` : undefined}
-        onCancel={() => navigate(`${prefix}/releases`)}
+        backHref={`${prefix}/releases`}
       />
     </form>
   );

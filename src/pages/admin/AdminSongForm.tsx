@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useSongs, usePeople } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow } from '../../services/adminService';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useSongs, usePeople, useAllSetlists, useAllEvents, useTracklists, useAlbums } from '../../hooks/useSheetData';
+import { createRow, updateRow, deleteRow, replaceRows } from '../../services/adminService';
+import { normalize } from '../../components/admin/SuggestInput';
 import { createDriveDoc } from '../../services/driveService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
@@ -27,6 +28,10 @@ export default function AdminSongForm() {
   const { songs, loading } = useSongs();
   const { people } = usePeople();
   const { accessToken } = useAuth();
+  const { setlists, refresh: refreshSetlists } = useAllSetlists();
+  const { events } = useAllEvents();
+  const { tracklists, refresh: refreshTracklists } = useTracklists();
+  const { albums } = useAlbums();
 
   const [form, setForm] = useState<Form>(emptyForm);
   const [baseline, setBaseline] = useState('');
@@ -50,8 +55,30 @@ export default function AdminSongForm() {
   }, [isNew, id, loading, songs]);
 
   const dirty = baseline !== '' && JSON.stringify(form) !== baseline;
-  useUnsavedWarning(dirty);
+  const leaveGuard = useUnsavedWarning(dirty, saving);
   const set = (k: SongField, v: string) => { setForm(f => ({ ...f, [k]: v })); if (k === 'title') setTitleError(''); };
+
+  // Where this song appears, matched by its saved title like the public site
+  const savedTitle = baseline ? (JSON.parse(baseline) as Form).title : '';
+  const usage = useMemo(() => {
+    const key = normalize(savedTitle);
+    if (!key) return { shows: [], releases: [] };
+    const eventById = new Map(events.map(e => [e.id, e]));
+    const shows = setlists
+      .filter(r => normalize(r.song || '') === key)
+      .map(r => ({ row: r, event: eventById.get(r.event) }))
+      .sort((a, b) => (b.event?.date || '').localeCompare(a.event?.date || ''));
+    const albumByTitle = new Map(albums.map(a => [a.title, a]));
+    const releases = tracklists
+      .filter(t => normalize(t.title || '') === key)
+      .map(t => ({ track: t, album: albumByTitle.get(t.release) }))
+      .sort((a, b) => (b.album?.date || b.album?.year || '').localeCompare(a.album?.date || a.album?.year || ''));
+    return { shows, releases };
+  }, [savedTitle, setlists, events, tracklists, albums]);
+  const showCount = new Set(usage.shows.map(x => x.row.event)).size;
+  const releaseCount = new Set(usage.releases.map(x => x.track.release)).size;
+  const renaming = !isNew && !!savedTitle && form.title.trim() !== '' && form.title.trim() !== savedTitle;
+  const setLabel = (set: string) => set === 'e' ? s.encore : set.startsWith('e') ? `${s.encore} ${set.slice(1)}` : `${s.set} ${set}`;
 
   async function save(next: Form): Promise<Form | null> {
     if (!next.title.trim()) { setTitleError(s.songTitleMissing); return null; }
@@ -64,6 +91,29 @@ export default function AdminSongForm() {
       const fields = { ...next, id: songId };
       if (isNew && !next.id) await createRow('Songs', fields);
       else await updateRow('Songs', songId, fields);
+
+      // Setlists and tracklists refer to songs by title: carry a rename over
+      if (renaming) {
+        const oldKey = normalize(savedTitle);
+        const newTitle = fields.title.trim();
+        const events = [...new Set(setlists.filter(r => normalize(r.song || '') === oldKey).map(r => r.event))];
+        for (const ev of events) {
+          const rows = setlists.filter(r => r.event === ev).map(r => ({
+            event: r.event, song: normalize(r.song || '') === oldKey ? newTitle : r.song,
+            set: r.set, order: String(r.order), notes: r.notes || '', status: r.status || '',
+          }));
+          await replaceRows('Setlists', ev, rows);
+        }
+        const releases = [...new Set(tracklists.filter(t => normalize(t.title || '') === oldKey).map(t => t.release))];
+        for (const rel of releases) {
+          const rows = tracklists.filter(t => t.release === rel).map(t => ({
+            release: t.release, track: String(t.track), title: normalize(t.title || '') === oldKey ? newTitle : t.title,
+          }));
+          await replaceRows('Tracklists', rel, rows);
+        }
+        if (events.length) refreshSetlists();
+        if (releases.length) refreshTracklists();
+      }
       setForm(fields);
       setBaseline(JSON.stringify(fields));
       setSavedAt(Date.now());
@@ -97,6 +147,7 @@ export default function AdminSongForm() {
 
   return (
     <form className="lu-form" onSubmit={e => { e.preventDefault(); save(form); }} noValidate>
+      {leaveGuard}
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? s.songsTitle : s.editSongItem}</p>
@@ -108,6 +159,9 @@ export default function AdminSongForm() {
         <Field label={s.songTitle} error={titleError}>
           {fid => <input id={fid} value={form.title} onChange={e => set('title', e.target.value)} />}
         </Field>
+        {renaming && (showCount > 0 || releaseCount > 0) && (
+          <p className="lu-note">{s.renameCascade.replace('{shows}', String(showCount)).replace('{releases}', String(releaseCount))}</p>
+        )}
         <div className="lu-grid-2">
           <Field label={s.musicBy} optional s={s}>
             {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.music_by} onChange={v => set('music_by', v)} people={people} />}
@@ -117,6 +171,57 @@ export default function AdminSongForm() {
           </Field>
         </div>
       </Section>
+
+      {!isNew && (
+        <Section title={`${s.songPlayedAt} · ${showCount}`}>
+          {usage.shows.length === 0 ? <p className="lu-hint">{s.songNotPlayed}</p> : (
+            <ul className="lu-list lu-usage">
+              {usage.shows.map(({ row, event }) => {
+                const name = event ? (locale === 'ja' ? event.title_ja || event.venue_ja || event.title_en || event.venue_en : event.title_en || event.venue_en || event.title_ja || event.venue_ja) : row.event;
+                return (
+                  <li key={`${row.event}-${row.set}-${row.order}`}>
+                    <Link to={`${prefix}/events/${row.event}`} className="lu-list-row">
+                      <time>{event?.date || '—'}</time>
+                      <span className="lu-list-main">
+                        <strong>{name}</strong>
+                        <span>{setLabel(row.set)} · #{row.order}</span>
+                      </span>
+                      <span className="lu-list-tags">
+                        {row.notes && <span className="lu-tag">{row.notes}</span>}
+                        {row.status === 'private' && <span className="lu-tag is-muted">{s.hidden}</span>}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Section>
+      )}
+
+      {!isNew && (
+        <Section title={`${s.songOnReleases} · ${releaseCount}`}>
+          {usage.releases.length === 0 ? <p className="lu-hint">{s.songNoReleases}</p> : (
+            <ul className="lu-list lu-usage">
+              {usage.releases.map(({ track, album }) => (
+                <li key={`${track.release}-${track.track}`}>
+                  {album ? (
+                    <Link to={`${prefix}/releases/${album.id}`} className="lu-list-row">
+                      {album.coverUrl ? <img className="lu-thumb" src={album.coverUrl} alt="" loading="lazy" /> : <span className="lu-thumb" />}
+                      <span className="lu-list-main">
+                        <strong>{album.title}</strong>
+                        <span>{[album.date || album.year, s.trackN.replace('{n}', String(track.track))].filter(Boolean).join(' · ')}</span>
+                      </span>
+                    </Link>
+                  ) : (
+                    <span className="lu-list-row"><span className="lu-list-main"><strong>{track.release}</strong></span></span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      )}
 
       <Section title={s.secLyrics}>
         <Field label={s.lyricsDoc} hint={s.lyricsDocHint} optional s={s}>
@@ -153,7 +258,7 @@ export default function AdminSongForm() {
       <SaveBar
         s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty}
         viewHref={!isNew ? `/${locale}/songs/${form.id}` : undefined}
-        onCancel={() => navigate(`${prefix}/songs`)}
+        backHref={`${prefix}/songs`}
       />
     </form>
   );
