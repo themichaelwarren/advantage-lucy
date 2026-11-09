@@ -1824,3 +1824,27 @@ time,
   color: var(--text);
 }
 .evd-area a { color: var(--text); }
+
+/* Signed-in admins only: jump from the page you're on to editing it */
+.admin-shortcut {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.95rem;
+  border: 1.5px solid var(--text);
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  box-shadow: 3px 3px 0 var(--pop);
+  transition: transform 160ms var(--ease-bounce, ease), box-shadow 160ms ease;
+}
+.admin-shortcut:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--pop); }
+@media print { .admin-shortcut { display: none; } }

@@ -3,13 +3,11 @@ import type { ReactNode } from 'react';
 import { setAdminToken, setOnAuthExpired } from '../services/adminService';
 
 /**
- * Allowed admin emails. This client-side check only decides what UI to show;
- * the server re-checks every admin request (functions/lib/adminAuth.ts).
+ * Who may use the admin is decided only on the server (VITE_ADMIN_EMAILS,
+ * checked in functions/lib/adminAuth.ts). The list is never in the browser
+ * code, so the band's addresses aren't published; after Google sign-in we
+ * just ask the server (/api/admin/whoami).
  */
-const ALLOWED_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
-  .split(',')
-  .map((e: string) => e.trim().toLowerCase())
-  .filter(Boolean);
 
 const SESSION_KEY = 'admin-session';
 
@@ -112,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       const info = await res.json();
 
-      if (ALLOWED_EMAILS.length > 0 && !ALLOWED_EMAILS.includes(info.email?.toLowerCase())) {
+      const who = await fetch('/api/admin/whoami', { headers: { Authorization: `Bearer ${response.access_token}` } });
+      if (!who.ok) {
         setAuthError(`${info.email} is not authorized for admin access.`);
         google.accounts.oauth2.revoke(response.access_token);
         setIsLoading(false);

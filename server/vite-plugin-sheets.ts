@@ -183,6 +183,14 @@ export default function sheetsPlugin(): Plugin {
         }
       });
 
+      // GET /api/admin/whoami: is this token an admin? (same check as production)
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url !== '/api/admin/whoami' || req.method !== 'GET') return next();
+        if (!(await requireAdmin(req, res))) return;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ok: true }));
+      });
+
       // Admin write routes: POST/PUT/DELETE /api/admin/:tab
       server.middlewares.use(async (req, res, next) => {
         const match = req.url?.match(/^\/api\/admin\/([a-zA-Z]+)/);

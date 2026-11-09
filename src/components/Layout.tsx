@@ -5,6 +5,7 @@ import { t } from '../i18n/translations';
 
 import { pickAccent } from '../utils/palette';
 import ThemeToggle from './ThemeToggle';
+import AdminShortcut from './AdminShortcut';
 
 interface Props {
   locale: Locale;
@@ -136,6 +137,7 @@ export default function Layout({ locale }: Props) {
           </div>
         </div>
       </footer>
+      <AdminShortcut locale={locale} />
     </>
   );
 }

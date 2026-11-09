@@ -100,6 +100,7 @@ export default function App() {
     <Routes>
       {/* Root: straight into the site in the browser's language */}
       <Route path="/" element={<Navigate to={navigator.language.startsWith('ja') ? '/ja' : '/en'} replace />} />
+      <Route path="/admin/*" element={<Navigate to={navigator.language.startsWith('ja') ? '/ja/admin' : '/en/admin'} replace />} />
 
       {/* English routes */}
       <Route path="/en" element={<Layout locale="en" />}>
