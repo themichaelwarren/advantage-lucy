@@ -86,6 +86,7 @@ export const translations = {
       noLyrics: '♪ la la la...',
       appearsOn: 'Appears on',
       performedAt: 'Performed at',
+      coverOf: '{artist} cover',
       noSong: 'Song not found.',
     },
     setlist: {
@@ -254,6 +255,7 @@ export const translations = {
       noLyrics: '♪ らららー...',
       appearsOn: '収録作品',
       performedAt: '演奏イベント',
+      coverOf: '{artist}のカバー',
       noSong: '楽曲が見つかりません。',
     },
     setlist: {

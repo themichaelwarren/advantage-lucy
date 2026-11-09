@@ -132,10 +132,12 @@ export async function fetchTracklists(sheetId: string, email: string, key: strin
 }
 
 export async function fetchSongs(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'Songs!A:E', email, key);
+  const rows = await fetchSheet(sheetId, 'Songs!A:Z', email, key);
   return rowsToObjects(rows).map(r => ({
     id: r.id, title: r.title, music_by: r.music_by || undefined,
     lyrics_by: r.lyrics_by || undefined, lyrics_doc_id: r.lyrics_doc_id || undefined,
+    // Covers: who did it first ("The Smiths"); blank for the band's own songs
+    original_artist: r.original_artist || undefined,
   }));
 }
 

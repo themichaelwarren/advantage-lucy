@@ -1781,3 +1781,14 @@ time,
 }
 .song-row:hover .song-lyrics-tag { background: #3fcf8e; color: var(--on-pop); }
 .disco-track-match { display: block; margin-top: 0.2rem; font-size: 0.82rem; color: var(--text-muted); }
+.song-cover-of {
+  display: block;
+  width: fit-content;
+  margin-top: 0.8rem;
+  padding: 0.25rem 0.8rem;
+  border: 1.5px solid var(--text);
+  border-radius: var(--pill);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+}

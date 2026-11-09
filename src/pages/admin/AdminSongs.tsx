@@ -23,7 +23,7 @@ export default function AdminSongs() {
     const q = ui.query.trim().toLowerCase();
     return songs
       .filter(x => ui.filter === 'all' ? true : ui.filter === 'has' ? !!x.lyrics_doc_id : !x.lyrics_doc_id)
-      .filter(x => !q || [x.title, names(x.music_by), names(x.lyrics_by)].some(t => t.toLowerCase().includes(q)))
+      .filter(x => !q || [x.title, x.original_artist || '', names(x.music_by), names(x.lyrics_by)].some(t => t.toLowerCase().includes(q)))
       .sort((a, b) => (ui.sort === 'za' ? -1 : 1) * a.title.localeCompare(b.title, locale));
   }, [songs, ui.query, ui.filter, ui.sort, locale, names]);
 
@@ -52,7 +52,9 @@ export default function AdminSongs() {
               <Link to={x.id ? `${prefix}/songs/${x.id}` : prefix} className="lu-list-row">
                 <span className="lu-list-main">
                   <strong>{x.title}</strong>
-                  {credits.length > 0 && <span>{[...new Set(credits)].join(' · ')}</span>}
+                  {(x.original_artist || credits.length > 0) && (
+                    <span>{[x.original_artist && s.coverOf.replace('{artist}', x.original_artist), ...new Set(credits)].filter(Boolean).join(' · ')}</span>
+                  )}
                 </span>
                 <span className="lu-list-tags">
                   {!x.id && <span className="lu-tag is-todo">⚠ {s.songNoId}</span>}

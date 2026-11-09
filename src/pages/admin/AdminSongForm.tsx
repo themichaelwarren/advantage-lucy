@@ -11,7 +11,7 @@ import { Section, Field, SaveBar, DeleteButton, useUnsavedWarning, makeId, error
 import PeoplePicker from '../../components/admin/PeoplePicker';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
-const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id'] as const;
+const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist'] as const;
 type SongField = typeof SONG_COLUMNS[number];
 type Form = Record<SongField, string>;
 const emptyForm = (): Form => Object.fromEntries(SONG_COLUMNS.map(c => [c, ''])) as Form;
@@ -50,6 +50,7 @@ export default function AdminSongForm() {
     const f: Form = {
       id: song.id, title: song.title || '', lyrics_by: song.lyrics_by || '',
       music_by: song.music_by || '', lyrics_doc_id: song.lyrics_doc_id || '',
+      original_artist: song.original_artist || '',
     };
     setForm(f);
     setBaseline(JSON.stringify(f));
@@ -147,6 +148,9 @@ export default function AdminSongForm() {
         {renaming && (showCount > 0 || releaseCount > 0) && (
           <p className="lu-note">{s.renameCascade.replace('{shows}', String(showCount)).replace('{releases}', String(releaseCount))}</p>
         )}
+        <Field label={s.originalArtist} hint={s.originalArtistHint} optional s={s}>
+          {fid => <input id={fid} placeholder="The Smiths" value={form.original_artist} onChange={e => set('original_artist', e.target.value)} />}
+        </Field>
         <div className="lu-grid-2">
           <Field label={s.musicBy} optional s={s}>
             {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.music_by} onChange={v => set('music_by', v)} people={people} personHref={pid => `${prefix}/people/${pid}`} />}

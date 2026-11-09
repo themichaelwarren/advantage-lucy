@@ -294,13 +294,14 @@ export async function fetchSongs(
   email: string,
   privateKey: string
 ): Promise<Song[]> {
-  const rows = await fetchSheet(sheetId, 'Songs!A:E', email, privateKey);
+  const rows = await fetchSheet(sheetId, 'Songs!A:Z', email, privateKey);
   return rowsToObjects(rows).map(row => ({
     id: row.id,
     title: row.title,
     music_by: row.music_by || undefined,
     lyrics_by: row.lyrics_by || undefined,
     lyrics_doc_id: row.lyrics_doc_id || undefined,
+    original_artist: row.original_artist || undefined,
   }));
 }
 

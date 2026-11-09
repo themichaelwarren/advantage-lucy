@@ -109,6 +109,9 @@ export default function SongDetail({ locale }: Props) {
           <div className="song-head">
             <header className="song-detail-header">
               <h1 className="song-detail-title">{song.title}</h1>
+              {song.original_artist && (
+                <p className="song-cover-of">{s.songs.coverOf.replace('{artist}', song.original_artist)}</p>
+              )}
             </header>
             {(song.music_by || song.lyrics_by) && (
               <dl className="event-meta">

@@ -62,7 +62,7 @@ export default function Music({ locale }: Props) {
   );
 
   const songMatches = useMemo(
-    () => (q ? sortedSongs.filter(x => normalize(x.title).includes(q)) : sortedSongs),
+    () => (q ? sortedSongs.filter(x => normalize(x.title).includes(q) || normalize(x.original_artist || '').includes(q)) : sortedSongs),
     [q, sortedSongs],
   );
   const releaseMatches = useMemo(() => {
@@ -87,7 +87,11 @@ export default function Music({ locale }: Props) {
         <Link to={`${prefix}/songs/${x.id}`} className="tl-row song-row">
           <span className="tl-main">
             <strong>{x.title}</strong>
-            <span>{first ? `${first.title}${first.year ? ` · ${first.year}` : ''}` : s.music.unreleased}</span>
+            <span>
+              {x.original_artist
+                ? s.songs.coverOf.replace('{artist}', x.original_artist)
+                : first ? `${first.title}${first.year ? ` · ${first.year}` : ''}` : s.music.unreleased}
+            </span>
           </span>
           {x.lyrics_doc_id && <span className="song-lyrics-tag">{s.music.lyricsTag}</span>}
         </Link>

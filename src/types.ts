@@ -80,6 +80,7 @@ export interface Song {
   music_by?: string;     // People ID
   lyrics_by?: string;    // People ID
   lyrics_doc_id?: string;
+  original_artist?: string;  // covers: who did it first, e.g. "The Smiths"
 }
 
 export interface SetlistEntry {

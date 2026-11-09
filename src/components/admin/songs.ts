@@ -28,7 +28,7 @@ export async function addMissingSongs(titles: string[], songs: Song[]) {
     const key = normalize(title);
     if (!title || byKey.has(key) || isPlaceholderTitle(title)) continue;
     const id = makeId([/^[\x20-\x7e]+$/.test(title) ? title : `song-${Date.now().toString(36)}-${added.length}`], taken);
-    const song: Song = { id, title, music_by: '', lyrics_by: '', lyrics_doc_id: '' };
+    const song: Song = { id, title, music_by: '', lyrics_by: '', lyrics_doc_id: '', original_artist: '' };
     await createRow('Songs', { ...song });
     taken.add(id);
     byKey.set(key, title);
