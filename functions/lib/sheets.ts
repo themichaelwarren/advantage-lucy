@@ -209,12 +209,33 @@ const OPTIONAL_COLUMNS: Record<string, string[]> = {
   Songs: ['original_artist'],
 };
 
+/** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */
+async function widenTab(sheetId: string, tab: string, columns: number, token: string): Promise<void> {
+  const meta = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties(sheetId,title,gridProperties.columnCount)`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!meta.ok) throw new Error(`Failed to get sheet metadata: ${meta.status}`);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sheet = ((await meta.json()) as any).sheets?.find((x: any) => x.properties.title === tab)?.properties;
+  if (!sheet) throw new Error(`Tab "${tab}" not found`);
+  const have = sheet.gridProperties?.columnCount ?? 0;
+  if (have >= columns) return;
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requests: [{ appendDimension: { sheetId: sheet.sheetId, dimension: 'COLUMNS', length: columns - have } }] }),
+  });
+  if (!res.ok) throw new Error(`Couldn't widen ${tab}: ${res.status} ${await res.text()}`);
+}
+
 async function ensureColumns(sheetId: string, tab: string, fields: Record<string, string>, email: string, key: string): Promise<string[]> {
   const headers = await fetchHeaders(sheetId, tab, email, key);
   const missing = (OPTIONAL_COLUMNS[tab] || []).filter(c => fields[c]?.trim() && !headers.includes(c));
   if (!missing.length) return headers;
   const token = await getToken(email, key);
   const from = headers.length + 1;
+  await widenTab(sheetId, tab, from + missing.length - 1, token);
   const range = encodeURIComponent(`${tab}!${colLetter(from)}1:${colLetter(from + missing.length - 1)}1`);
   const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?valueInputOption=RAW`, {
     method: 'PUT',
