@@ -12,6 +12,9 @@ import LinkTextarea from '../../components/admin/LinkTextarea';
 import { setlistIsPublic } from '../../utils/showDates';
 import { EVENT_COLUMNS, eventToRow } from '../../utils/adminRows';
 import SetlistEditor, { newItem, type SetlistItem } from '../../components/admin/SetlistEditor';
+import { addMissingSongs } from '../../components/admin/songs';
+import AddedSongs from '../../components/admin/AddedSongs';
+import type { Song } from '../../types';
 
 type EventField = typeof EVENT_COLUMNS[number];
 type Form = Record<EventField, string>;
@@ -33,7 +36,8 @@ export default function AdminEventForm() {
   const { venues, refresh: refreshVenues } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
   const { setlists } = useAllSetlists();
-  const { songs } = useSongs();
+  const { songs, refresh: refreshSongs } = useSongs();
+  const [addedSongs, setAddedSongs] = useState<Song[]>([]);
 
   const [form, setForm] = useState<Form>(emptyForm);
   const [setlist, setSetlist] = useState<SetlistItem[]>([]);
@@ -108,19 +112,27 @@ export default function AdminEventForm() {
       if (isNew) await createRow('Events', fields);
       else await updateRow('Events', eventId, fields);
 
+      // New song titles go into Songs too (like new venues); typed titles
+      // that match an existing song are saved with its exact spelling
+      const filled = setlist.filter(r => r.song.trim());
+      const { added, canonical } = await addMissingSongs(filled.map(r => r.song), songs);
+      const cleaned = setlist.map(r => (r.song.trim() ? { ...r, song: canonical(r.song) } : r));
+
       // Setlist: the order on screen becomes the order numbers
       const counters: Record<string, number> = {};
-      const rows = setlist
+      const rows = cleaned
         .filter(r => r.song.trim())
         .map(r => {
           counters[r.set] = (counters[r.set] || 0) + 1;
-          return { event: eventId, song: r.song.trim(), set: r.set, order: String(counters[r.set]), notes: r.notes, status: r.status };
+          return { event: eventId, song: r.song, set: r.set, order: String(counters[r.set]), notes: r.notes, status: r.status };
         });
       const hadSetlist = setlists.some(x => x.event === eventId);
       if (rows.length || hadSetlist) await replaceRows('Setlists', eventId, rows);
 
+      if (added.length) { setAddedSongs(added); refreshSongs(); }
+      setSetlist(cleaned);
       setForm(fields);
-      setBaseline(snapshot(fields, setlist));
+      setBaseline(snapshot(fields, cleaned));
       setSavedAt(Date.now());
       if (isNew) navigate(`${prefix}/events/${eventId}`, { replace: true });
     } catch (err) {
@@ -204,6 +216,7 @@ export default function AdminEventForm() {
           <p className="lu-note">🔒 {s.setlistAfterShow}</p>
         )}
         <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} />
+        <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
       </Section>
 
       <Section title={s.secTickets}>

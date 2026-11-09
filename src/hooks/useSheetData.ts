@@ -58,14 +58,15 @@ export function useTracklists() {
 export function useSongs() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     getSongs()
       .then(setSongs)
       .finally(() => setLoading(false));
-  }, []);
+  }, [tick]);
 
-  return { songs, loading };
+  return { songs, loading, refresh: () => setTick(t => t + 1) };
 }
 
 /** Every setlist row, including hidden and not-yet-played ones. Admin only. */

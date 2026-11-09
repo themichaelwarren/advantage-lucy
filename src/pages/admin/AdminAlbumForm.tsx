@@ -3,6 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAlbums, useTracklists, useSongs } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, replaceRows } from '../../services/adminService';
 import SuggestInput from '../../components/admin/SuggestInput';
+import { addMissingSongs } from '../../components/admin/songs';
+import AddedSongs from '../../components/admin/AddedSongs';
+import type { Song } from '../../types';
 import LinkTextarea from '../../components/admin/LinkTextarea';
 import { useAdminT } from '../../i18n/admin';
 import {
@@ -31,7 +34,8 @@ export default function AdminAlbumForm() {
   const navigate = useNavigate();
   const { albums, loading } = useAlbums();
   const { tracklists } = useTracklists();
-  const { songs } = useSongs();
+  const { songs, refresh: refreshSongs } = useSongs();
+  const [addedSongs, setAddedSongs] = useState<Song[]>([]);
 
   const [form, setForm] = useState<Form>(emptyForm);
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -93,16 +97,22 @@ export default function AdminAlbumForm() {
       if (isNew) await createRow('Albums', fields);
       else await updateRow('Albums', albumId, fields);
 
+      // New track titles go into Songs too; matching titles use the song's exact spelling
+      const { added, canonical } = await addMissingSongs(tracks.map(t => t.title), songs);
+      const cleaned = tracks.map(t => (t.title.trim() ? { ...t, title: canonical(t.title) } : t));
+
       // Tracklist rows are keyed by the release title: move them if it was renamed
-      const rows = tracks
+      const rows = cleaned
         .filter(t => t.title.trim())
-        .map((t, i) => ({ release: fields.title, track: String(i + 1), title: t.title.trim() }));
+        .map((t, i) => ({ release: fields.title, track: String(i + 1), title: t.title }));
       if (savedTitle && savedTitle !== fields.title) await replaceRows('Tracklists', savedTitle, []);
       if (rows.length || savedTitle) await replaceRows('Tracklists', fields.title, rows);
 
       setForm(fields);
       setSavedTitle(fields.title);
-      setBaseline(snapshot(fields, tracks));
+      if (added.length) { setAddedSongs(added); refreshSongs(); }
+      setTracks(cleaned);
+      setBaseline(snapshot(fields, cleaned));
       setSavedAt(Date.now());
       if (isNew) navigate(`${prefix}/releases/${albumId}`, { replace: true });
     } catch (err) {
@@ -205,6 +215,7 @@ export default function AdminAlbumForm() {
               })}
             </ol>
             <button type="button" className="lu-btn lu-btn-quiet" onClick={() => setTracks([...tracks, track()])}>+ {s.addTrack}</button>
+            <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
           </div>
           <p className="lu-hint">{s.tracklistHint}</p>
         </div>
