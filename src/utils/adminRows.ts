@@ -18,7 +18,7 @@ export const EVENT_COLUMNS = [
   'id', 'title_en', 'title_ja', 'date', 'end_date',
   'venue', 'doors', 'start', 'end', 'adv_price',
   'door_price', 'ticket_url', 'poster_url', 'performers',
-  'featured', 'body_en', 'body_ja', 'status',
+  'featured', 'body_en', 'body_ja', 'status', 'setlist_at',
 ] as const;
 export type EventRow = Record<typeof EVENT_COLUMNS[number], string>;
 
@@ -42,27 +42,29 @@ export function eventToRow(ev: Event): EventRow {
     body_en: ev.body_en || '',
     body_ja: ev.body_ja || '',
     status: ev.status || 'published',
+    setlist_at: ev.setlist_at || '',
   };
 }
 
-export const NEWS_COLUMNS = ['id', 'date', 'title_en', 'title_ja', 'body_en', 'body_ja', 'image_url', 'status'] as const;
+export const NEWS_COLUMNS = ['id', 'date', 'title_en', 'title_ja', 'body_en', 'body_ja', 'image_url', 'status', 'publish_at'] as const;
 export type NewsRow = Record<typeof NEWS_COLUMNS[number], string>;
 
 export function newsToRow(p: NewsPost): NewsRow {
   return {
     id: p.id, date: p.date || '', title_en: p.title_en || '', title_ja: p.title_ja || '',
     body_en: p.body_en || '', body_ja: p.body_ja || '', image_url: p.image_url || '',
-    status: p.status || 'published',
+    status: p.status || 'published', publish_at: p.publish_at || '',
   };
 }
 
-export const BLOG_COLUMNS = ['id', 'instagram_url', 'date', 'title_en', 'title_ja', 'status'] as const;
+export const BLOG_COLUMNS = ['id', 'instagram_url', 'date', 'title_en', 'title_ja', 'status', 'publish_at'] as const;
 export type BlogRow = Record<typeof BLOG_COLUMNS[number], string>;
 
 export function blogToRow(p: BlogPost): BlogRow {
   return {
     id: p.id, instagram_url: p.instagram_url || '', date: p.date || '',
     title_en: p.title_en || '', title_ja: p.title_ja || '', status: p.status || 'published',
+    publish_at: p.publish_at || '',
   };
 }
 

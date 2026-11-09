@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAllBlog } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
+import PublishControl from '../../components/admin/PublishControl';
 import {
-  Section, Field, BilingualRow, Switch, SaveBar, DeleteButton,
+  Section, Field, BilingualRow, SaveBar, DeleteButton,
   useUnsavedWarning, makeId, errorText,
 } from '../../components/admin/ui';
 import { BLOG_COLUMNS, blogToRow } from '../../utils/adminRows';
@@ -118,7 +119,12 @@ export default function AdminBlogForm() {
       </Section>
 
       <Section title={s.visible}>
-        <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
+        <PublishControl
+          s={s}
+          status={form.status}
+          publishAt={form.publish_at}
+          onChange={v => { set('status', v.status); set('publish_at', v.publish_at); }}
+        />
         {!isNew && (
           <div className="lu-danger-row">
             <DeleteButton s={s} onConfirm={async () => {

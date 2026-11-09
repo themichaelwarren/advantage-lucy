@@ -2,6 +2,7 @@
  * Google Sheets helpers for Cloudflare Workers.
  * Mirrors server/sheets.ts but uses shared auth and no Node.js deps.
  */
+import { normDateTime } from './visibility';
 import { getAccessToken } from './auth';
 
 const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
@@ -77,7 +78,7 @@ export async function fetchVenues(sheetId: string, email: string, key: string) {
 
 export async function fetchEvents(sheetId: string, email: string, key: string) {
   const [eventRows, venues, areas, prefectures, countries] = await Promise.all([
-    fetchSheet(sheetId, 'Events!A:R', email, key),
+    fetchSheet(sheetId, 'Events!A:Z', email, key),
     fetchVenues(sheetId, email, key),
     fetchAreas(sheetId, email, key),
     fetchPrefectures(sheetId, email, key),
@@ -112,6 +113,8 @@ export async function fetchEvents(sheetId: string, email: string, key: string) {
         featured: row.featured === 'TRUE' || row.featured === 'true',
         status: row.status || 'published',
         body_en: row.body_en || undefined, body_ja: row.body_ja || undefined,
+        // When the setlist goes public (Japan time); blank = the day after the show
+        setlist_at: normDateTime(row.setlist_at) || undefined,
       };
     });
 }
@@ -159,20 +162,22 @@ export async function fetchSetlists(sheetId: string, email: string, key: string)
 }
 
 export async function fetchNews(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'News!A:H', email, key);
+  const rows = await fetchSheet(sheetId, 'News!A:Z', email, key);
   return rowsToObjects(rows).map(r => ({
     id: r.id, date: r.date, title_en: r.title_en || '', title_ja: r.title_ja || '',
     body_en: r.body_en || undefined, body_ja: r.body_ja || undefined,
     image_url: r.image_url || undefined, status: r.status || 'published',
+    publish_at: normDateTime(r.publish_at) || undefined,   // scheduled: goes live then (Japan time)
   }));
 }
 
 export async function fetchBlog(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'Blog!A:F', email, key);
+  const rows = await fetchSheet(sheetId, 'Blog!A:Z', email, key);
   return rowsToObjects(rows).map(r => ({
     id: r.id, instagram_url: r.instagram_url || '', date: r.date,
     title_en: r.title_en || '', title_ja: r.title_ja || '',
     status: r.status || 'published',
+    publish_at: normDateTime(r.publish_at) || undefined,
   }));
 }
 
@@ -207,6 +212,9 @@ export async function fetchHeaders(sheetId: string, tab: string, email: string, 
  */
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
   Songs: ['original_artist'],
+  Events: ['setlist_at'],
+  News: ['publish_at'],
+  Blog: ['publish_at'],
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */

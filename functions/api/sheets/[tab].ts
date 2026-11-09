@@ -7,6 +7,7 @@ import {
   fetchVenues, fetchAreas, fetchPrefectures, fetchCountries,
 } from '../../lib/sheets';
 import { EDGE_TTL_SECONDS, sheetCacheKey } from '../../lib/edgeCache';
+import { publicView } from '../../lib/visibility';
 
 const fetchers: Record<string, (id: string, e: string, k: string) => Promise<unknown>> = {
   events: fetchEvents,
@@ -40,7 +41,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, params, env, w
   try {
     const { sheetId, email, privateKey } = getCredentials(env);
     const data = await fetcher(sheetId, email, privateKey);
-    const res = Response.json(data, {
+    // Public: hidden, scheduled-for-later and not-yet-public setlists never leave the server
+    const events = tab === 'setlists' ? await fetchEvents(sheetId, email, privateKey) : undefined;
+    const res = Response.json(publicView(tab, data, events as never), {
       headers: { 'Cache-Control': `public, max-age=0, s-maxage=${EDGE_TTL_SECONDS}` },
     });
     waitUntil(cache.put(key, res.clone()));

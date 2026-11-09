@@ -1,24 +1,20 @@
 /** Client-side helpers for admin write operations. */
 
 import { cache } from './sheetsService';
+import { getAdminToken, setAdminTokenValue, setOnAdminAuthExpired, adminAuthExpired } from './adminToken';
 
 // The signed-in admin's Google access token, kept in sync by AuthContext.
 // Every admin request carries it; the server checks it with Google.
-let accessToken: string | null = null;
-export function setAdminToken(token: string | null) {
-  accessToken = token;
-}
+export const setAdminToken = (token: string | null) => setAdminTokenValue(token);
 
 // Called when the server rejects our sign-in, so the UI can offer "sign in again"
-let onAuthExpired: (() => void) | null = null;
-export function setOnAuthExpired(fn: (() => void) | null) {
-  onAuthExpired = fn;
-}
+export const setOnAuthExpired = (fn: (() => void) | null) => setOnAdminAuthExpired(fn);
 
 export class AuthExpiredError extends Error {}
 
 function withAuth(options: RequestInit = {}): RequestInit {
   const headers = new Headers(options.headers);
+  const accessToken = getAdminToken();
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
   return { ...options, headers };
 }
@@ -26,7 +22,7 @@ function withAuth(options: RequestInit = {}): RequestInit {
 async function adminFetch(url: string, options?: RequestInit) {
   const res = await fetch(url, withAuth(options));
   if (res.status === 401) {
-    onAuthExpired?.();
+    adminAuthExpired();
     const body = await res.json().catch(() => ({}));
     throw new AuthExpiredError(body.error || 'Please sign in again.');
   }
@@ -85,7 +81,7 @@ export async function getMessages(): Promise<Record<string, string>[]> {
 /** A private photo attached to a message, as a temporary object URL (admin only). */
 export async function getAttachmentUrl(name: string): Promise<string> {
   const res = await fetch(`/api/admin/attachment/${encodeURIComponent(name)}`, withAuth());
-  if (res.status === 401) { onAuthExpired?.(); throw new AuthExpiredError('Please sign in again.'); }
+  if (res.status === 401) { adminAuthExpired(); throw new AuthExpiredError('Please sign in again.'); }
   if (!res.ok) throw new Error(`Couldn’t load photo (${res.status})`);
   return URL.createObjectURL(await res.blob());
 }
@@ -106,7 +102,7 @@ export async function uploadFile(file: File): Promise<string> {
   }));
 
   if (res.status === 401) {
-    onAuthExpired?.();
+    adminAuthExpired();
     throw new AuthExpiredError('Please sign in again.');
   }
   if (!res.ok) {
@@ -122,4 +118,5 @@ export async function uploadFile(file: File): Promise<string> {
 function invalidateCache(tab: string) {
   const key = tab.toLowerCase();
   delete (cache as Record<string, unknown>)[key];
+  delete (cache as Record<string, unknown>)[`admin:${key}`];
 }

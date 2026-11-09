@@ -1,4 +1,5 @@
-import { setlistIsPublic } from '../utils/showDates';
+import { setlistIsPublic, isLive } from '../utils/showDates';
+import { getAdminToken, adminAuthExpired } from './adminToken';
 import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -20,26 +21,53 @@ async function fetchWithCache<T>(key: string, fetcher: () => Promise<T>): Promis
   return data;
 }
 
+/**
+ * Full data for admin pages (hidden, scheduled, not-yet-public setlists).
+ * Needs the admin's sign-in; if it has run out, falls back to the public
+ * view for now (not cached) and asks the admin to sign in again. Admin
+ * pages refetch once they do.
+ */
+async function fetchAdminTab<T>(tab: string): Promise<T> {
+  const key = `admin:${tab}`;
+  const cached = cache[key];
+  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached.data as T;
+  const token = getAdminToken();
+  const res = await fetch(`/api/admin/sheets/${tab}`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
+  if (res.status === 401) {
+    adminAuthExpired();
+    return fetchJson<T>(`/api/sheets/${tab}`);
+  }
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const data = (await res.json()) as T;
+  cache[key] = { data, fetchedAt: Date.now() };
+  return data;
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
 
-/** All events (including drafts) — used by admin pages. */
+/** All events (including hidden ones) — admin pages. */
 export async function getAllEvents(): Promise<Event[]> {
   try {
-    return await fetchWithCache('events', () => fetchJson<Event[]>('/api/sheets/events'));
+    return await fetchAdminTab<Event[]>('events');
   } catch (err) {
     console.error('Failed to fetch events:', err);
     return [];
   }
 }
 
-/** Published events only — used by public-facing pages. */
+/** Events the public may see (the server already leaves hidden ones out). */
 export async function getEvents(): Promise<Event[]> {
-  const all = await getAllEvents();
-  return all.filter(e => e.status !== 'private');
+  try {
+    const all = await fetchWithCache('events', () => fetchJson<Event[]>('/api/sheets/events'));
+    return all.filter(e => e.status !== 'private');
+  } catch (err) {
+    console.error('Failed to fetch events:', err);
+    return [];
+  }
 }
 
 export async function getAlbums(): Promise<Album[]> {
@@ -69,10 +97,10 @@ export async function getSongs(): Promise<Song[]> {
   }
 }
 
-/** All setlists (including drafts). */
+/** All setlists, including ones not public yet — admin pages. */
 export async function getAllSetlists(): Promise<SetlistEntry[]> {
   try {
-    return await fetchWithCache('setlists', () => fetchJson<SetlistEntry[]>('/api/sheets/setlists'));
+    return await fetchAdminTab<SetlistEntry[]>('setlists');
   } catch (err) {
     console.warn('Failed to fetch setlists from API:', err);
     return [];
@@ -84,9 +112,18 @@ export async function getAllSetlists(): Promise<SetlistEntry[]> {
  * (Japan time), so a setlist can be entered ahead of time without spoilers.
  */
 export async function getSetlists(): Promise<SetlistEntry[]> {
-  const [all, events] = await Promise.all([getAllSetlists(), getAllEvents()]);
-  const played = new Set(events.filter(e => setlistIsPublic(e)).map(e => e.id));
-  return all.filter(s => s.status !== 'private' && played.has(s.event));
+  try {
+    // The server only sends public setlists (see functions/lib/visibility.ts)
+    const [all, events] = await Promise.all([
+      fetchWithCache('setlists', () => fetchJson<SetlistEntry[]>('/api/sheets/setlists')),
+      getEvents(),
+    ]);
+    const open = new Set(events.filter(e => setlistIsPublic(e)).map(e => e.id));
+    return all.filter(x => x.status !== 'private' && open.has(x.event));
+  } catch (err) {
+    console.warn('Failed to fetch setlists from API:', err);
+    return [];
+  }
 }
 
 export async function getVenues(): Promise<Venue[]> {
@@ -128,7 +165,7 @@ export async function getCountries(): Promise<Country[]> {
 /** All news posts (including drafts). */
 export async function getAllNews(): Promise<NewsPost[]> {
   try {
-    return await fetchWithCache('news', () => fetchJson<NewsPost[]>('/api/sheets/news'));
+    return await fetchAdminTab<NewsPost[]>('news');
   } catch (err) {
     console.warn('Failed to fetch news from API:', err);
     return [];
@@ -137,14 +174,19 @@ export async function getAllNews(): Promise<NewsPost[]> {
 
 /** Published news only. */
 export async function getNews(): Promise<NewsPost[]> {
-  const all = await getAllNews();
-  return all.filter(n => n.status !== 'private');
+  try {
+    const all = await fetchWithCache('news', () => fetchJson<NewsPost[]>('/api/sheets/news'));
+    return all.filter(n => isLive(n));
+  } catch (err) {
+    console.warn('Failed to fetch news from API:', err);
+    return [];
+  }
 }
 
 /** All blog posts (including drafts). */
 export async function getAllBlog(): Promise<BlogPost[]> {
   try {
-    return await fetchWithCache('blog', () => fetchJson<BlogPost[]>('/api/sheets/blog'));
+    return await fetchAdminTab<BlogPost[]>('blog');
   } catch (err) {
     console.warn('Failed to fetch blog from API:', err);
     return [];
@@ -153,14 +195,19 @@ export async function getAllBlog(): Promise<BlogPost[]> {
 
 /** Published blog posts only. */
 export async function getBlog(): Promise<BlogPost[]> {
-  const all = await getAllBlog();
-  return all.filter(b => b.status !== 'private');
+  try {
+    const all = await fetchWithCache('blog', () => fetchJson<BlogPost[]>('/api/sheets/blog'));
+    return all.filter(b => isLive(b));
+  } catch (err) {
+    console.warn('Failed to fetch blog from API:', err);
+    return [];
+  }
 }
 
 /** All splash photos (including drafts). */
 export async function getAllPhotos(): Promise<SplashPhoto[]> {
   try {
-    return await fetchWithCache('photos', () => fetchJson<SplashPhoto[]>('/api/sheets/photos'));
+    return await fetchAdminTab<SplashPhoto[]>('photos');
   } catch (err) {
     console.warn('Failed to fetch photos from API:', err);
     return [];
@@ -169,8 +216,13 @@ export async function getAllPhotos(): Promise<SplashPhoto[]> {
 
 /** Published splash photos only. */
 export async function getPhotos(): Promise<SplashPhoto[]> {
-  const all = await getAllPhotos();
-  return all.filter(p => p.status !== 'private');
+  try {
+    const all = await fetchWithCache('photos', () => fetchJson<SplashPhoto[]>('/api/sheets/photos'));
+    return all.filter(p => isLive(p));
+  } catch (err) {
+    console.warn('Failed to fetch photos from API:', err);
+    return [];
+  }
 }
 
 export async function getPeople(): Promise<Person[]> {

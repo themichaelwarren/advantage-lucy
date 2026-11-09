@@ -1050,3 +1050,13 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-main { min-width: 0; }
 .lu-side-search svg { flex-shrink: 0; }
 @media (max-width: 979px) { .lu-side-search kbd { display: none; } }
+
+/* ---------- GO LIVE / SCHEDULE ---------- */
+.lu-publish { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.4rem; }
+.lu-publish-label { margin: 0; font-weight: 700; font-size: 0.92rem; }
+.lu-publish-when { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.lu-publish-when input { width: auto; max-width: 100%; }
+.lu-publish-when .lu-hint { margin: 0; }
+.lu-publish-state { margin: 0; }
+.lu-publish-state.is-locked { color: var(--text); }
+.lu-tag.is-scheduled { background: color-mix(in srgb, var(--pop) 35%, var(--surface)); border-color: transparent; color: var(--text); }

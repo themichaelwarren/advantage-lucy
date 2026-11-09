@@ -9,7 +9,11 @@ import {
 } from '../../components/admin/ui';
 import VenuePicker from '../../components/admin/VenuePicker';
 import LinkTextarea from '../../components/admin/LinkTextarea';
-import { setlistIsPublic } from '../../utils/showDates';
+import { setlistIsPublic, todayInJapan, normDateTime } from '../../utils/showDates';
+import { showDateTime } from '../../components/admin/PublishControl';
+
+/** "2026-11-29" → "2026-11-30" */
+const dayAfter = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
 import { EVENT_COLUMNS, eventToRow } from '../../utils/adminRows';
 import SetlistEditor, { newItem, type SetlistItem } from '../../components/admin/SetlistEditor';
 import { addMissingSongs } from '../../components/admin/songs';
@@ -225,9 +229,29 @@ export default function AdminEventForm() {
       </Section>
 
       <Section title={s.secSetlist} id="setlist">
-        {form.date && !setlistIsPublic({ date: form.date, end_date: form.end_date }) && (
-          <p className="lu-note">🔒 {s.setlistAfterShow}</p>
-        )}
+        <div className="lu-publish">
+          <p className="lu-publish-label">{s.setlistGoesLive}</p>
+          <div className="lu-chips" role="radiogroup" aria-label={s.setlistGoesLive}>
+            <button type="button" role="radio" aria-checked={!form.setlist_at} className={`lu-pill${!form.setlist_at ? ' is-on' : ''}`} onClick={() => set('setlist_at', '')}>{s.setlistDayAfter}</button>
+            <button type="button" role="radio" aria-checked={!!form.setlist_at} className={`lu-pill${form.setlist_at ? ' is-on' : ''}`}
+              onClick={() => set('setlist_at', form.setlist_at || `${form.date || todayInJapan()}T21:00`)}>{s.goLiveLater}</button>
+          </div>
+          {form.setlist_at && (
+            <label className="lu-publish-when">
+              <input type="datetime-local" value={normDateTime(form.setlist_at)} onChange={e => set('setlist_at', e.target.value)} aria-label={s.goLiveLater} />
+              <span className="lu-hint">{s.japanTime}</span>
+            </label>
+          )}
+          {form.date && (
+            <p className={`lu-hint lu-publish-state${setlistIsPublic({ date: form.date, end_date: form.end_date, setlist_at: form.setlist_at }) ? '' : ' is-locked'}`}>
+              {setlistIsPublic({ date: form.date, end_date: form.end_date, setlist_at: form.setlist_at })
+                ? s.setlistPublicNow
+                : form.setlist_at
+                  ? `🔒 ${s.setlistAtHint.replace('{at}', showDateTime(form.setlist_at))}`
+                  : `🔒 ${s.setlistDefaultHint.replace('{at}', `${dayAfter(form.end_date || form.date)} 00:00`)}`}
+            </p>
+          )}
+        </div>
         <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} songCover={songCover} />
         <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
       </Section>

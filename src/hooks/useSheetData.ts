@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
+import { subscribeAdminToken, getAdminTokenVersion } from '../services/adminToken';
+
+/** Changes whenever the admin signs in (again), so admin data reloads with full access. */
+const useAdminTokenVersion = () => useSyncExternalStore(subscribeAdminToken, getAdminTokenVersion);
 import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
 import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPrefectures, getCountries, getPeople } from '../services/sheetsService';
 
@@ -19,12 +23,13 @@ export function useEvents() {
 export function useAllEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const signedIn = useAdminTokenVersion();
 
   useEffect(() => {
     getAllEvents()
       .then(setEvents)
       .finally(() => setLoading(false));
-  }, []);
+  }, [signedIn]);
 
   return { events, loading };
 }
@@ -74,13 +79,14 @@ export function useSongs() {
 export function useAllSetlists() {
   const [setlists, setSetlists] = useState<SetlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const signedIn = useAdminTokenVersion();
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     getAllSetlists()
       .then(setSetlists)
       .finally(() => setLoading(false));
-  }, [tick]);
+  }, [tick, signedIn]);
 
   return { setlists, loading, refresh: () => setTick(t => t + 1) };
 }
@@ -129,12 +135,13 @@ export function useNews() {
 export function useAllNews() {
   const [news, setNews] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const signedIn = useAdminTokenVersion();
 
   useEffect(() => {
     getAllNews()
       .then(setNews)
       .finally(() => setLoading(false));
-  }, []);
+  }, [signedIn]);
 
   return { news, loading };
 }
@@ -155,12 +162,13 @@ export function useBlog() {
 export function useAllBlog() {
   const [blog, setBlog] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const signedIn = useAdminTokenVersion();
 
   useEffect(() => {
     getAllBlog()
       .then(setBlog)
       .finally(() => setLoading(false));
-  }, []);
+  }, [signedIn]);
 
   return { blog, loading };
 }
@@ -181,12 +189,13 @@ export function usePhotos() {
 export function useAllPhotos() {
   const [photos, setPhotos] = useState<SplashPhoto[]>([]);
   const [loading, setLoading] = useState(true);
+  const signedIn = useAdminTokenVersion();
 
   useEffect(() => {
     getAllPhotos()
       .then(setPhotos)
       .finally(() => setLoading(false));
-  }, []);
+  }, [signedIn]);
 
   return { photos, loading };
 }

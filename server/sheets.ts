@@ -2,6 +2,7 @@
  * Server-side Google Sheets fetcher.
  * Used by the Vite dev server plugin and can be adapted for Cloudflare Workers in production.
  */
+import { normDateTime } from '../functions/lib/visibility';
 import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person, NewsPost, BlogPost, SplashPhoto } from '../src/types';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
@@ -200,7 +201,7 @@ export async function fetchEvents(
 ): Promise<Event[]> {
   // Fetch events and all reference tables in parallel
   const [eventRows, venues, areas, prefectures, countries] = await Promise.all([
-    fetchSheet(sheetId, 'Events!A:R', email, privateKey),
+    fetchSheet(sheetId, 'Events!A:Z', email, privateKey),
     fetchVenues(sheetId, email, privateKey),
     fetchAreas(sheetId, email, privateKey),
     fetchPrefectures(sheetId, email, privateKey),
@@ -250,6 +251,7 @@ export async function fetchEvents(
         status: row.status || 'published',
         body_en: row.body_en || undefined,
         body_ja: row.body_ja || undefined,
+        setlist_at: normDateTime(row.setlist_at) || undefined,
       };
     });
 }
@@ -341,7 +343,7 @@ export async function fetchNews(
   email: string,
   privateKey: string
 ): Promise<NewsPost[]> {
-  const rows = await fetchSheet(sheetId, 'News!A:H', email, privateKey);
+  const rows = await fetchSheet(sheetId, 'News!A:Z', email, privateKey);
   return rowsToObjects(rows).map(row => ({
     id: row.id,
     date: row.date,
@@ -351,6 +353,7 @@ export async function fetchNews(
     body_ja: row.body_ja || undefined,
     image_url: row.image_url || undefined,
     status: row.status || 'published',
+    publish_at: normDateTime(row.publish_at) || undefined,
   }));
 }
 
@@ -359,7 +362,7 @@ export async function fetchBlog(
   email: string,
   privateKey: string
 ): Promise<BlogPost[]> {
-  const rows = await fetchSheet(sheetId, 'Blog!A:F', email, privateKey);
+  const rows = await fetchSheet(sheetId, 'Blog!A:Z', email, privateKey);
   return rowsToObjects(rows).map(row => ({
     id: row.id,
     instagram_url: row.instagram_url || '',
@@ -367,6 +370,7 @@ export async function fetchBlog(
     title_en: row.title_en || '',
     title_ja: row.title_ja || '',
     status: row.status || 'published',
+    publish_at: normDateTime(row.publish_at) || undefined,
   }));
 }
 
@@ -408,6 +412,9 @@ function colLetter(n: number): string {
  */
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
   Songs: ['original_artist'],
+  Events: ['setlist_at'],
+  News: ['publish_at'],
+  Blog: ['publish_at'],
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */

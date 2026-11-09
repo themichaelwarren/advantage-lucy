@@ -70,6 +70,9 @@ function writeSession(s: StoredSession | null) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const initial = readSession();
   const initialValid = initial && initial.expiresAt > Date.now() + 30_000 ? initial : null;
+  // Hand the saved token to the data layer right away, before any page asks
+  // for admin data (child effects run before ours)
+  useState(() => { setAdminToken(initialValid?.token ?? null); return null; });
 
   // Dev-only UI preview: `?preview-admin` on the local dev server shows the
   // admin screens without Google sign-in. import.meta.env.DEV is false in

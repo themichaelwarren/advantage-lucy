@@ -56,6 +56,7 @@ export interface Event {
   posterUrl?: string;
   featured?: boolean;
   status?: string;         // 'published' | 'private' — private = draft, hidden from public site
+  setlist_at?: string;     // setlist goes public then (Japan time, YYYY-MM-DDTHH:mm); blank = day after the show
   body_en?: string;
   body_ja?: string;
 }
@@ -101,6 +102,7 @@ export interface NewsPost {
   body_ja?: string;
   image_url?: string;
   status?: string;        // 'published' | 'private'
+  publish_at?: string;    // scheduled: goes live then (Japan time, YYYY-MM-DDTHH:mm)
 }
 
 export interface BlogPost {
@@ -110,6 +112,7 @@ export interface BlogPost {
   title_en: string;
   title_ja: string;
   status?: string;        // 'published' | 'private'
+  publish_at?: string;    // scheduled: goes live then (Japan time, YYYY-MM-DDTHH:mm)
 }
 
 export interface SplashPhoto {

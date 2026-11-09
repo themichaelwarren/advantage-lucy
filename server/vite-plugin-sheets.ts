@@ -10,6 +10,7 @@ import { checkContact, saveMessage, listMessages, verifyTurnstile, showForEmail 
 import { notifyBand } from '../functions/lib/notify';
 import { checkFiles, attachmentNames, isAttachmentName } from '../functions/lib/attachments';
 import type { IncomingMessage, ServerResponse } from 'http';
+import { publicView } from '../functions/lib/visibility';
 
 /** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
 async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -103,8 +104,14 @@ export default function sheetsPlugin(): Plugin {
       });
 
       // Sheets API routes
+      // /api/sheets/:tab is the public view (hidden, scheduled and not-yet-public
+      // setlists removed, as in production); /api/admin/sheets/:tab is the full
+      // data for the admin. Dev only: admin reads don't need sign-in here, so
+      // the ?preview-admin screens still show data (this server is local).
       server.middlewares.use(async (req, res, next) => {
-        if (!req.url?.startsWith('/api/sheets')) return next();
+        const isAdminRead = !!req.url?.startsWith('/api/admin/sheets/');
+        if (!req.url?.startsWith('/api/sheets') && !isAdminRead) return next();
+        if (isAdminRead) req.url = req.url!.replace('/api/admin/sheets/', '/api/sheets/');
 
         const sheetId = process.env.VITE_GOOGLE_SHEET_ID;
         const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -149,6 +156,12 @@ export default function sheetsPlugin(): Plugin {
             res.statusCode = 404;
             res.end(JSON.stringify({ error: 'Not found' }));
             return;
+          }
+
+          if (!isAdminRead) {
+            const tab = req.url.replace('/api/sheets/', '').split(/[/?]/)[0].toLowerCase();
+            const events = tab === 'setlists' ? await fetchEvents(sheetId, email, privateKey) : undefined;
+            data = publicView(tab, data, events as never);
           }
 
           res.setHeader('Content-Type', 'application/json');

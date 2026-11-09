@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import type { AdminStrings } from '../../i18n/admin';
 import ListToolbar, { useListPrefs, SwitchCell, SaveStateCell } from './ListToolbar';
 import { useQuickEdit } from './useQuickEdit';
+import { liveState } from '../../utils/showDates';
+import { showDateTime } from './PublishControl';
 
 type Filter = 'all' | 'onsite' | 'hidden';
 type Sort = 'newest' | 'oldest' | 'title';
@@ -12,7 +14,7 @@ type View = 'list' | 'table';
  * News and Blog lists: search, filter, sort, and a table view with an
  * "On site" switch that saves straight away (full rows via `toRow`).
  */
-export default function PostList<T extends { id: string; date: string; status?: string }>({
+export default function PostList<T extends { id: string; date: string; status?: string; publish_at?: string }>({
   s, page, title, addLabel, base, items: loaded, loading, tab, toRow, titleOf,
 }: {
   s: AdminStrings;
@@ -73,7 +75,10 @@ export default function PostList<T extends { id: string; date: string; status?: 
               {list.map(r => (
                 <tr key={r.id} className={r.status === 'private' ? 'is-hidden' : ''}>
                   <td className="lu-td-date">{r.date}</td>
-                  <td className="lu-td-title"><Link to={`${base}/${r.id}`}>{titleOf(r)}</Link></td>
+                  <td className="lu-td-title">
+                    <Link to={`${base}/${r.id}`}>{titleOf(r)}</Link>
+                    {liveState(r) === 'scheduled' && <> <span className="lu-tag is-scheduled">🕒 {showDateTime(r.publish_at || '')}</span></>}
+                  </td>
                   <td className="lu-td-center">
                     <SwitchCell
                       checked={r.status !== 'private'}
@@ -94,7 +99,10 @@ export default function PostList<T extends { id: string; date: string; status?: 
               <Link to={`${base}/${r.id}`} className="lu-list-row">
                 <time>{r.date}</time>
                 <span className="lu-list-main"><strong>{titleOf(r)}</strong></span>
-                {r.status === 'private' && <span className="lu-list-tags"><span className="lu-tag is-muted">{s.hidden}</span></span>}
+                {liveState(r) === 'hidden' && <span className="lu-list-tags"><span className="lu-tag is-muted">{s.hidden}</span></span>}
+                {liveState(r) === 'scheduled' && (
+                  <span className="lu-list-tags"><span className="lu-tag is-scheduled">🕒 {s.scheduledTag.replace('{at}', showDateTime(r.publish_at || ''))}</span></span>
+                )}
               </Link>
             </li>
           ))}
