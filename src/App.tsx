@@ -38,6 +38,7 @@ import AdminPhotos from './pages/admin/AdminPhotos';
 import AdminPhotoForm from './pages/admin/AdminPhotoForm';
 import AdminMessages from './pages/admin/AdminMessages';
 import AdminMessage from './pages/admin/AdminMessage';
+import AdminReservations, { AdminShowReservations } from './pages/admin/AdminReservations';
 import RequireAuth from './components/RequireAuth';
 
 import { ACCENTS, pickAccent } from './utils/palette';
@@ -167,6 +168,8 @@ export default function App() {
           <Route path="photos/:id" element={<AdminPhotoForm />} />
           <Route path="messages" element={<AdminMessages />} />
           <Route path="messages/:id" element={<AdminMessage />} />
+          <Route path="reservations" element={<AdminReservations />} />
+          <Route path="reservations/:id" element={<AdminShowReservations />} />
         </Route>
       </Route>
 

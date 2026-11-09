@@ -8,6 +8,7 @@ import { fetchDocText, createDoc } from './docs';
 import { checkAdmin } from '../functions/lib/adminAuth';
 import { checkContact, saveMessage, listMessages, setMessageStatus, verifyTurnstile, showForEmail } from '../functions/lib/messages';
 import { notifyBand } from '../functions/lib/notify';
+import { handleReserveGet, handleReservePost, handleAdminReservations } from '../functions/lib/reservations';
 import { checkFiles, attachmentNames, isAttachmentName } from '../functions/lib/attachments';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { publicView } from '../functions/lib/visibility';
@@ -30,6 +31,41 @@ export default function sheetsPlugin(): Plugin {
   return {
     name: 'sheets-api',
     configureServer(server) {
+      // Ticket reservations (same code as production: functions/lib/reservations.ts)
+      server.middlewares.use(async (req, res, next) => {
+        const isPublic = req.url?.startsWith('/api/reserve') && (req.method === 'GET' || req.method === 'POST');
+        const isAdmin = req.url?.startsWith('/api/admin/reservations');
+        if (!isPublic && !isAdmin) return next();
+        if (isAdmin && !(await requireAdmin(req, res))) return;
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) chunks.push(chunk as Buffer);
+        const url = new URL(req.url!, `http://${req.headers.host}`);
+        const request = new Request(url, {
+          method: req.method,
+          headers: { 'content-type': String(req.headers['content-type'] || 'application/json') },
+          body: req.method === 'GET' || req.method === 'HEAD' ? undefined : Buffer.concat(chunks),
+        });
+        const ctx = {
+          sheetId: process.env.VITE_GOOGLE_SHEET_ID!,
+          saEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!,
+          saKey: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
+          env: process.env,
+          siteUrl: process.env.SITE_URL || `http://${req.headers.host}`,
+        };
+        try {
+          const out = isAdmin
+            ? await handleAdminReservations(request, ctx)
+            : req.method === 'GET' ? await handleReserveGet(url, ctx) : await handleReservePost(request, ctx, null);
+          res.statusCode = out.status;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(await out.text());
+        } catch (err) {
+          console.error('[reserve]', err);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: 'server' }));
+        }
+      });
+
       // Contact form + admin message list (same code as production: functions/lib/messages.ts)
       server.middlewares.use(async (req, res, next) => {
         const isContact = req.url === '/api/contact' && req.method === 'POST';

@@ -57,6 +57,10 @@ export interface Event {
   featured?: boolean;
   status?: string;         // 'published' | 'private' — private = draft, hidden from public site
   setlist_at?: string;     // setlist goes public then (Japan time, YYYY-MM-DDTHH:mm); blank = day after the show
+  reserve?: boolean;       // takes ticket reservations through the site
+  reserve_cap?: string;    // total tickets that can be reserved (blank = no limit)
+  reserve_max?: string;    // most tickets per booking (blank = 4)
+  reserve_until?: string;  // reservations close then (Japan time); blank = 23:59 the day before
   body_en?: string;
   body_ja?: string;
 }

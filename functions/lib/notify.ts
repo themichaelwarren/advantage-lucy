@@ -41,3 +41,25 @@ export async function notifyBand(env: NotifyEnv, m: ContactMessage, ctx: EmailCo
   if (!res.ok) throw new Error(`Resend error ${res.status}: ${await res.text()}`);
   return true;
 }
+
+/** Send any email through Resend. Returns false (sends nothing) when email isn't configured. */
+export async function sendEmail(env: NotifyEnv, mail: { to: string[]; subject: string; text: string; html: string; replyTo?: string }): Promise<boolean> {
+  if (!env.RESEND_API_KEY || !env.CONTACT_FROM || !mail.to.length) {
+    console.log('[email] not configured; not sent:', mail.subject);
+    return false;
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: env.CONTACT_FROM,
+      to: mail.to,
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+      ...(mail.replyTo ? { reply_to: mail.replyTo } : {}),
+    }),
+  });
+  if (!res.ok) throw new Error(`Resend error ${res.status}: ${await res.text()}`);
+  return true;
+}

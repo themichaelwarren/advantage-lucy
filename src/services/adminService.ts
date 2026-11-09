@@ -135,3 +135,44 @@ function invalidateCache(tab: string) {
   delete (cache as Record<string, unknown>)[key];
   delete (cache as Record<string, unknown>)[`admin:${key}`];
 }
+
+export type Reservation = {
+  id: string; event: string; received_at: string; locale: string; name: string; email: string;
+  tickets: string; note: string; status: string; emailed: string; arrived: string; source: string;
+};
+
+/** Every ticket reservation, oldest first (admin only). */
+export async function getReservations(): Promise<Reservation[]> {
+  const data = await adminFetch('/api/admin/reservations');
+  return data.reservations || [];
+}
+
+/** Change a reservation: name, email, tickets, note, status ('' | 'cancelled') or arrived ('TRUE' | ''). */
+export async function updateReservation(id: string, fields: Partial<Reservation>): Promise<Reservation> {
+  const data = await adminFetch('/api/admin/reservations', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, fields }),
+  });
+  return data.reservation;
+}
+
+/** Add a reservation by hand (DM, phone…); optionally email them the confirmation. */
+export async function addReservation(fields: Partial<Reservation>, sendEmail: boolean): Promise<Reservation> {
+  const data = await adminFetch('/api/admin/reservations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields, send_email: sendEmail }),
+  });
+  return data.reservation;
+}
+
+/** Send the confirmation email again. */
+export async function resendReservation(id: string): Promise<Reservation> {
+  const data = await adminFetch('/api/admin/reservations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resend: id }),
+  });
+  return data.reservation;
+}

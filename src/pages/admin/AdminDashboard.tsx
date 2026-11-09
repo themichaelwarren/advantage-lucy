@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
 import NeedsLook from '../../components/admin/NeedsLook';
 import NewMessages from '../../components/admin/NewMessages';
+import UpcomingReservations from '../../components/admin/UpcomingReservations';
 
 /** Admin home: the four everyday jobs as big buttons, plus what needs doing. */
 export default function AdminDashboard() {
@@ -53,6 +54,8 @@ export default function AdminDashboard() {
       </div>
 
       <NewMessages />
+
+      {!loading && <UpcomingReservations events={events} />}
 
       {!loading && (
         <div className="lu-columns">

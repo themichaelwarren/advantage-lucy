@@ -87,3 +87,37 @@ export function publicView(tab: string, data: unknown, events?: Row[]): unknown 
       return rows;
   }
 }
+
+// ── Ticket reservations (see reservations.ts) ──
+
+export const DEFAULT_MAX_PER_BOOKING = 4;
+
+const dayBefore = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) - 86400000).toISOString().slice(0, 10);
+
+/** When the form closes (Japan time, YYYY-MM-DDTHH:mm). */
+export function reserveCloses(show: { date: string; reserve_until?: string }): string {
+  return normDateTime(show.reserve_until) || `${dayBefore(show.date)}T23:59`;
+}
+
+
+export type ReserveState = 'off' | 'closed' | 'full' | 'open';
+
+/**
+ * Whether a show is taking reservations right now, and how many tickets one
+ * more person may ask for. `taken` = tickets already reserved.
+ */
+export function reserveState(
+  show: { date: string; status?: string; reserve?: boolean | string; reserve_cap?: string; reserve_max?: string; reserve_until?: string },
+  taken: number,
+  now = nowInJapan(),
+): { state: ReserveState; max: number; left: number | null; closes: string } {
+  const closes = reserveCloses(show);
+  const per = parseInt(show.reserve_max || '', 10) || DEFAULT_MAX_PER_BOOKING;
+  const cap = parseInt(show.reserve_cap || '', 10);
+  const left = cap > 0 ? Math.max(0, cap - taken) : null;
+  const on = show.reserve === true || show.reserve === 'TRUE' || show.reserve === 'true';
+  if (!on || show.status === 'private') return { state: 'off', max: 0, left, closes };
+  if (now >= closes) return { state: 'closed', max: 0, left, closes };
+  if (left === 0) return { state: 'full', max: 0, left, closes };
+  return { state: 'open', max: left === null ? per : Math.min(per, left), left, closes };
+}

@@ -66,6 +66,7 @@ export default function AdminLayout() {
     { links: [
       { to: prefix, label: s.home, icon: '⌂', end: true },
       { to: `${prefix}/messages`, label: s.messages, icon: '✉', badge: newMessages },
+      { to: `${prefix}/reservations`, label: s.reservations, icon: '🎫' },
     ] },
     { title: s.groupContent, links: [
       { to: `${prefix}/events`, label: s.shows, icon: '♪' },

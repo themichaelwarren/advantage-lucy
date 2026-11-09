@@ -268,6 +268,25 @@ export default function AdminEventForm() {
         <Field label={s.ticketUrl} optional s={s}>
           {fid => <input id={fid} type="url" inputMode="url" value={form.ticket_url} placeholder="https://" onChange={e => set('ticket_url', e.target.value)} />}
         </Field>
+        <div className="lu-reserve-settings">
+          <Switch checked={form.reserve === 'TRUE'} onChange={v => set('reserve', v ? 'TRUE' : '')} label={s.reserveOn} hint={s.reserveOnHint} />
+          {form.reserve === 'TRUE' && (
+            <>
+              <div className="lu-grid-3">
+                <Field label={s.reserveCap} hint={s.reserveCapHint} optional s={s}>
+                  {fid => <input id={fid} type="number" inputMode="numeric" min={1} value={form.reserve_cap} onChange={e => set('reserve_cap', e.target.value)} />}
+                </Field>
+                <Field label={s.reserveMax} hint={s.reserveMaxHint} optional s={s}>
+                  {fid => <input id={fid} type="number" inputMode="numeric" min={1} max={20} value={form.reserve_max} placeholder="4" onChange={e => set('reserve_max', e.target.value)} />}
+                </Field>
+                <Field label={s.reserveUntil} hint={s.reserveUntilHint} optional s={s}>
+                  {fid => <input id={fid} type="datetime-local" value={normDateTime(form.reserve_until)} onChange={e => set('reserve_until', e.target.value)} />}
+                </Field>
+              </div>
+              {!isNew && <Link to={`${prefix}/reservations/${form.id}`} className="lu-related-link">🎫 {s.openReservations} →</Link>}
+            </>
+          )}
+        </div>
       </Section>
 
       <Section title={s.secPoster}>

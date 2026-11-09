@@ -78,7 +78,7 @@ export async function fetchVenues(sheetId: string, email: string, key: string) {
 
 export async function fetchEvents(sheetId: string, email: string, key: string) {
   const [eventRows, venues, areas, prefectures, countries] = await Promise.all([
-    fetchSheet(sheetId, 'Events!A:Z', email, key),
+    fetchSheet(sheetId, 'Events', email, key),
     fetchVenues(sheetId, email, key),
     fetchAreas(sheetId, email, key),
     fetchPrefectures(sheetId, email, key),
@@ -115,6 +115,11 @@ export async function fetchEvents(sheetId: string, email: string, key: string) {
         body_en: row.body_en || undefined, body_ja: row.body_ja || undefined,
         // When the setlist goes public (Japan time); blank = the day after the show
         setlist_at: normDateTime(row.setlist_at) || undefined,
+        // Ticket reservations through the site (functions/lib/reservations.ts)
+        reserve: row.reserve === 'TRUE' || row.reserve === 'true',
+        reserve_cap: row.reserve_cap || undefined,
+        reserve_max: row.reserve_max || undefined,
+        reserve_until: normDateTime(row.reserve_until) || undefined,
       };
     });
 }
@@ -135,7 +140,7 @@ export async function fetchTracklists(sheetId: string, email: string, key: strin
 }
 
 export async function fetchSongs(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'Songs!A:Z', email, key);
+  const rows = await fetchSheet(sheetId, 'Songs', email, key);
   return rowsToObjects(rows).map(r => ({
     id: r.id, title: r.title, music_by: r.music_by || undefined,
     lyrics_by: r.lyrics_by || undefined, lyrics_doc_id: r.lyrics_doc_id || undefined,
@@ -162,7 +167,7 @@ export async function fetchSetlists(sheetId: string, email: string, key: string)
 }
 
 export async function fetchNews(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'News!A:Z', email, key);
+  const rows = await fetchSheet(sheetId, 'News', email, key);
   return rowsToObjects(rows).map(r => ({
     id: r.id, date: r.date, title_en: r.title_en || '', title_ja: r.title_ja || '',
     body_en: r.body_en || undefined, body_ja: r.body_ja || undefined,
@@ -172,7 +177,7 @@ export async function fetchNews(sheetId: string, email: string, key: string) {
 }
 
 export async function fetchBlog(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'Blog!A:Z', email, key);
+  const rows = await fetchSheet(sheetId, 'Blog', email, key);
   return rowsToObjects(rows).map(r => ({
     id: r.id, instagram_url: r.instagram_url || '', date: r.date,
     title_en: r.title_en || '', title_ja: r.title_ja || '',
@@ -212,7 +217,7 @@ export async function fetchHeaders(sheetId: string, tab: string, email: string, 
  */
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
   Songs: ['original_artist'],
-  Events: ['setlist_at'],
+  Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until'],
   News: ['publish_at'],
   Blog: ['publish_at'],
 };

@@ -9,6 +9,8 @@ import PageLoader from '../components/PageLoader';
 import { setlistIsPublic, todayInJapan } from '../utils/showDates';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import SetlistTip from '../components/SetlistTip';
+import ReserveForm from '../components/ReserveForm';
+import { useState } from 'react';
 
 
 interface Props {
@@ -25,6 +27,9 @@ export default function EventDetail({ locale }: Props) {
   const event = events.find(e => e.id === id);
   // The left panel only sticks when it fits on screen (otherwise its bottom would be unreachable)
   const panel = useFitsViewport<HTMLElement>();
+  // Reservations: the form says whether the show is still taking them
+  const [reserveOpen, setReserveOpen] = useState(false);      // still taking reservations
+  const [reserveWindow, setReserveWindow] = useState(false);  // the booking window is open
 
   if (loading) return <PageLoader locale={locale} />;
 
@@ -88,6 +93,9 @@ export default function EventDetail({ locale }: Props) {
   }
 
   const hasPrice = (v?: string) => v != null && v !== '';
+  // Local dev only: ?preview-reserve shows the form on any upcoming show without saving anything
+  const previewReserve = import.meta.env.DEV && new URLSearchParams(window.location.search).has('preview-reserve');
+  const isPast = (event.end_date || event.date) < todayInJapan();
 
   const shortWeekday = new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { weekday: 'short', timeZone: 'UTC' })
     .format(new Date(`${event.date}T00:00:00Z`));
@@ -161,10 +169,32 @@ export default function EventDetail({ locale }: Props) {
               {s.events.tickets} →
             </a>
           )}
+          {reserveOpen && (
+            <button type="button" className="ticket-btn evd-tickets evd-reserve-btn" onClick={() => setReserveWindow(true)}>
+              🎫 {s.reserve.title} →
+            </button>
+          )}
         </div>
         </aside>
 
         <div className="evd-main">
+            {(event.reserve || previewReserve) && !isPast && (
+              <ReserveForm
+                locale={locale} eventId={event.id} preview={previewReserve}
+                show={{
+                  title: title || venue,
+                  date: `${event.date.replace(/-/g, '.')}（${locale === 'ja' ? longDay(event.date) : shortWeekday}）`,
+                  times: [event.doors && `${s.events.doors} ${event.doors}`, event.start && `${s.events.start} ${event.start}`].filter(Boolean).join(' / '),
+                  venue: area ? `${venue}（${area}）` : venue,
+                  price: [
+                    hasPrice(event.adv_price) && `${s.events.advPrice} ${formatPrice(event.adv_price!, locale, event.country_en)}`,
+                    hasPrice(event.door_price) && `${s.events.doorPrice} ${formatPrice(event.door_price!, locale, event.country_en)}`,
+                  ].filter(Boolean).join(' / '),
+                }}
+                open={reserveWindow} onOpenChange={setReserveWindow}
+                onState={st => setReserveOpen(st === 'open')}
+              />
+            )}
             {setGroups.size === 0 && (
               <section className="evd-section">
                 <h2 className="section-label">{s.setlist.title}</h2>
