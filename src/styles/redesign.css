@@ -1420,9 +1420,6 @@ time,
 .evd-layout { display: flex; flex-direction: column; gap: 2.25rem; margin-bottom: 2.75rem; }
 .evd-aside { display: flex; flex-direction: column; gap: 1.2rem; min-width: 0; }
 .evd-head { display: flex; align-items: center; gap: 0.9rem; margin-top: 1rem; }
-.evd-head .next-show-date { width: 4.6rem; padding: 0.45rem 0.3rem; align-self: auto; box-shadow: 3px 3px 0 var(--text); }
-.evd-head .next-show-day { font-size: 2rem; }
-.evd-weekday { font-family: var(--font-main); font-size: 0.85rem; color: var(--text-muted); }
 /* Title keeps its highlighter hugging the words, not the whole column */
 .evd-title-block { display: block; }
 .evd-title { display: inline; font-size: clamp(1.8rem, 5vw, 2.4rem); line-height: 1.12; }
@@ -1587,8 +1584,6 @@ time,
 }
 
 /* Japanese date blocks (e.g. 11.29) need a little more room */
-.evd-head .next-show-date-ja { width: auto; min-width: 4.6rem; padding: 0.45rem 0.65rem; }
-.evd-head .next-show-date-ja .next-show-monthday { font-size: 1.7rem; }
 
 /* ============================================================
    HOME ON PHONES: calmer photo, compact next-show card
@@ -1849,4 +1844,11 @@ time,
 }
 .admin-shortcut:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--pop); }
 @media print { .admin-shortcut { display: none; } }
-.evd-weekday { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--text); }
+
+/* ---- Show page date header: date + weekday on one line, then a countdown for upcoming shows ---- */
+.evd-date-type { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.6rem; }
+.evd-date-line { display: inline-flex; align-items: center; gap: 0.6rem; white-space: nowrap; }
+.evd-date-big { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.6rem, 5.2vw, 2.2rem); line-height: 1; letter-spacing: -0.02em; }
+.evd-day-pill { padding: 0.22rem 0.7rem; border: 1.5px solid var(--text); border-radius: var(--pill); background: var(--dot-3, var(--pop)); color: var(--on-pop); font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; }
+.evd-date-until { font-family: var(--font-display); font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.evd-countdown { padding: 0.22rem 0.7rem; border-radius: var(--pill); background: var(--text); color: var(--bg); font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; white-space: nowrap; }

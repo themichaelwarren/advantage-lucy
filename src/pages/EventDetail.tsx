@@ -6,11 +6,10 @@ import { t } from '../i18n/translations';
 import { useEvents, useSetlists, useSongs } from '../hooks/useSheetData';
 import { formatPrice } from '../utils/format';
 import PageLoader from '../components/PageLoader';
-import { setlistIsPublic } from '../utils/showDates';
+import { setlistIsPublic, todayInJapan } from '../utils/showDates';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import SetlistTip from '../components/SetlistTip';
 
-const MONTHS_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 interface Props {
   locale: Locale;
@@ -62,11 +61,6 @@ export default function EventDetail({ locale }: Props) {
       ? `${e.getUTCMonth() + 1}.${e.getUTCDate()}（${wd}）`
       : new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(e);
   };
-  // "日曜日" / "Sunday", or for multi-day shows "日曜日 〜 11.30（月）"
-  const weekdayLine = event.end_date && event.end_date !== event.date
-    ? `${longDay(event.date)} ${locale === 'ja' ? '〜' : '–'} ${shortDay(event.end_date)}`
-    : longDay(event.date);
-  const d = new Date(event.date + 'T00:00:00');
   const area = [
     city,
     event.prefecture_en && (locale === 'ja' ? event.prefecture_ja : event.prefecture_en),
@@ -95,6 +89,19 @@ export default function EventDetail({ locale }: Props) {
 
   const hasPrice = (v?: string) => v != null && v !== '';
 
+  const shortWeekday = new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { weekday: 'short', timeZone: 'UTC' })
+    .format(new Date(`${event.date}T00:00:00Z`));
+  // Upcoming shows: "今日！" / "明日" / "あと20日" ("Today!" / "Tomorrow" / "In 20 days")
+  const countdown = (() => {
+    const days = Math.round((Date.parse(`${event.end_date || event.date}T00:00:00Z`) - Date.parse(`${todayInJapan()}T00:00:00Z`)) / 86400000);
+    const toStart = Math.round((Date.parse(`${event.date}T00:00:00Z`) - Date.parse(`${todayInJapan()}T00:00:00Z`)) / 86400000);
+    if (days < 0) return '';                       // over
+    const ja = locale === 'ja';
+    if (toStart <= 0) return ja ? '今日！' : 'Today!';   // today, or during a multi-day show
+    if (toStart === 1) return ja ? '明日' : 'Tomorrow';
+    return ja ? `あと${toStart}日` : `In ${toStart} days`;
+  })();
+
   return (
     <article className="event-detail">
       {/* Wide screens: date, title and flyer in a sticky panel on the left;
@@ -102,20 +109,15 @@ export default function EventDetail({ locale }: Props) {
       <div className="evd-layout">
         <aside ref={panel.ref} className={`evd-aside${panel.fits ? ' is-sticky' : ''}`}>
           <div className="evd-head">
-            {locale === 'ja' ? (
-              <div className="next-show-date next-show-date-ja">
-                <span className="next-show-year">{d.getFullYear()}</span>
-                <span className="next-show-monthday">{d.getMonth() + 1}.{d.getDate()}</span>
-              </div>
-            ) : (
-              <div className="next-show-date">
-                <span className="next-show-month">{MONTHS_EN[d.getMonth()]}</span>
-                <span className="next-show-day">{d.getDate()}</span>
-                <span className="next-show-year">{d.getFullYear()}</span>
-              </div>
-            )}
-            {/* The badge already shows the date: add what it doesn't (weekday, last day) */}
-            <time className="evd-weekday" dateTime={event.date}>{weekdayLine}</time>
+            {/* One line: the date, its weekday, and for upcoming shows how far away it is */}
+            <div className="evd-date-type">
+              <span className="evd-date-line">
+                <time dateTime={event.date} className="evd-date-big">{event.date.replace(/-/g, '.')}</time>
+                <span className="evd-day-pill">{locale === 'ja' ? longDay(event.date) : shortWeekday.toUpperCase()}</span>
+              </span>
+              {event.end_date && event.end_date !== event.date && <span className="evd-date-until">〜 {shortDay(event.end_date)}</span>}
+              {countdown && <span className="evd-countdown">{countdown}</span>}
+            </div>
           </div>
 
           <header className="evd-title-block">
