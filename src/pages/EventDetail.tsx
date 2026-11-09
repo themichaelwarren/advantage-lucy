@@ -170,7 +170,13 @@ export default function EventDetail({ locale }: Props) {
                         return (
                           <li key={`${setKey}-${i}`} value={entry.order}>
                             {song ? <Link to={`${prefix}/songs/${song.id}`}>{entry.song}</Link> : entry.song}
-                            {entry.notes && <span className="setlist-note">({entry.notes})</span>}
+                            {/* Covers say so automatically (from Songs); a note that only says "… cover" would repeat it */}
+                            {song?.original_artist && (
+                              <span className="setlist-note setlist-cover">({s.songs.coverOf.replace('{artist}', song.original_artist)})</span>
+                            )}
+                            {entry.notes && !(song?.original_artist && /cover|カバー|カヴァー/i.test(entry.notes)) && (
+                              <span className="setlist-note">({entry.notes})</span>
+                            )}
                           </li>
                         );
                       })}

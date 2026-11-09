@@ -1012,3 +1012,4 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-palette-empty { padding: 1rem; margin: 0; color: var(--text-muted); }
 .lu-palette-foot { margin: 0; padding: 0.55rem 1rem; border-top: 1px solid var(--rule); font-size: 0.78rem; color: var(--text-muted); }
 @media (min-width: 980px) { .lu-topbar-search { display: none; } }
+.lu-cover-tag { align-self: center; margin-right: 0.2rem; cursor: help; }

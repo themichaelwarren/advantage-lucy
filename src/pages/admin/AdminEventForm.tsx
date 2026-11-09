@@ -89,6 +89,10 @@ export default function AdminEventForm() {
     const m = new Map(songs.filter(x => x.title).map(x => [normalize(x.title), x.id]));
     return (title: string) => { const id = m.get(normalize(title)); return id ? `${prefix}/songs/${id}` : undefined; };
   }, [songs, prefix]);
+  const songCover = useMemo(() => {
+    const m = new Map(songs.filter(x => x.title && x.original_artist).map(x => [normalize(x.title), x.original_artist as string]));
+    return (title: string) => m.get(normalize(title));
+  }, [songs]);
 
   /** e.g. 2025-11-30-tokyo, like the existing IDs (date + prefecture). */
   function newEventId(): string {
@@ -224,7 +228,7 @@ export default function AdminEventForm() {
         {form.date && !setlistIsPublic({ date: form.date, end_date: form.end_date }) && (
           <p className="lu-note">🔒 {s.setlistAfterShow}</p>
         )}
-        <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} />
+        <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} songCover={songCover} />
         <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
       </Section>
 

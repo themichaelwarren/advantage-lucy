@@ -20,13 +20,15 @@ export const newItem = (set: string, song = ''): SetlistItem =>
  * handle (or use the arrows) to move songs, including between sets. No
  * order numbers to type.
  */
-export default function SetlistEditor({ s, items, onChange, songTitles, songHref }: {
+export default function SetlistEditor({ s, items, onChange, songTitles, songHref, songCover }: {
   s: AdminStrings;
   items: SetlistItem[];
   onChange: (items: SetlistItem[]) => void;
   songTitles: string[];
   /** Link to a song's page, if the title matches one in Songs. */
   songHref?: (title: string) => string | undefined;
+  /** Original artist, if the song is a cover. */
+  songCover?: (title: string) => string | undefined;
 }) {
   const [dragKey, setDragKey] = useState<string | null>(null);
   const lastAdded = useRef<string | null>(null);
@@ -132,6 +134,10 @@ export default function SetlistEditor({ s, items, onChange, songTitles, songHref
                       onChange={e => update(row.key, { notes: e.target.value })}
                     />
                     <span className="lu-song-actions">
+                      {(() => {
+                        const artist = row.song.trim() ? songCover?.(row.song) : undefined;
+                        return artist ? <span className="lu-tag lu-cover-tag" title={s.coverOf.replace('{artist}', artist)}>{s.coverTag}</span> : null;
+                      })()}
                       {(() => {
                         const href = row.song.trim() ? songHref?.(row.song) : undefined;
                         return href
