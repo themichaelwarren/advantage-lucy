@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useVenues, useAreas, useAllEvents } from '../../hooks/useSheetData';
+import { useVenues, useAreas, useAllEvents, usePrefectures, useCountries } from '../../hooks/useSheetData';
+import { prefectureSuggestions } from '../../components/admin/places';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
 import { Section, Field, BilingualRow, SaveBar, DeleteButton, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
-import { resolveArea, areaSuggestions } from '../../components/admin/VenuePicker';
+import { resolveArea, areaSuggestions, isKnownArea } from '../../components/admin/VenuePicker';
 import SuggestInput from '../../components/admin/SuggestInput';
 
 interface Form { id: string; name_en: string; name_ja: string; area: string; url: string }
@@ -18,6 +19,13 @@ export default function AdminVenueForm() {
   const { venues, loading } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
   const areaList = useMemo(() => areaSuggestions(areas, locale), [areas, locale]);
+  const { prefectures } = usePrefectures();
+  const { countries } = useCountries();
+  const prefList = useMemo(() => {
+    const cn = new Map(countries.map(c => [c.id, locale === 'ja' ? c.name_ja || c.name_en : c.name_en || c.name_ja]));
+    return prefectureSuggestions(prefectures, locale, id => cn.get(id) || '');
+  }, [prefectures, countries, locale]);
+  const [newAreaPrefecture, setNewAreaPrefecture] = useState('');
   const { events } = useAllEvents();
 
   // `areaText` is what's typed in the area box: a name in either language
@@ -63,7 +71,7 @@ export default function AdminVenueForm() {
     setSaving(true);
     setError('');
     try {
-      const area = await resolveArea(areaText, areas);
+      const area = await resolveArea(areaText, areas, newAreaPrefecture, prefectures);
       if (area && !areas.some(a => a.id === area.id)) refreshAreas();
       const venueId = isNew ? makeId([form.name_en || form.name_ja], new Set(venues.map(v => v.id))) : form.id;
       const fields = { ...form, id: venueId, area: area?.id || '' };
@@ -108,6 +116,11 @@ export default function AdminVenueForm() {
             <SuggestInput id={fid} value={areaText} onChange={setAreaText} suggestions={areaList} newLabel={s.newArea} />
           )}
         </Field>
+        {!isKnownArea(areaText, areas) && (
+          <Field label={s.prefectureForNewArea} hint={s.prefectureHint} optional s={s}>
+            {fid => <SuggestInput id={fid} value={newAreaPrefecture} onChange={setNewAreaPrefecture} suggestions={prefList} newLabel={s.newPrefecture} />}
+          </Field>
+        )}
         {form.area && areas.some(a => a.id === form.area) && areaText === areaLabel(form.area) && (
           <Link to={`${prefix}/areas/${form.area}`} className="lu-related-link">{s.openArea} →</Link>
         )}

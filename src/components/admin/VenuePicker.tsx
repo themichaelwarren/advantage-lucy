@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import type { Area, Venue } from '../../types';
+import type { Area, Prefecture, Venue } from '../../types';
+import { usePrefectures, useCountries } from '../../hooks/useSheetData';
+import { prefectureSuggestions, resolvePrefecture } from './places';
 import type { AdminLocale, AdminStrings } from '../../i18n/admin';
 import { createRow } from '../../services/adminService';
 import { errorText, makeId } from './ui';
@@ -17,11 +19,16 @@ export function areaSuggestions(areas: Area[], locale: AdminLocale): Suggestion[
     .sort((x, y) => x.value.localeCompare(y.value, locale));
 }
 
+/** Is this typed area one we already have? */
+export const isKnownArea = (typed: string, areas: Area[]) =>
+  !typed.trim() || areas.some(a => [a.name_en, a.name_ja, a.id].some(n => n && n.toLowerCase() === typed.trim().toLowerCase()));
+
 /**
  * Find the area whose name (either language) or ID matches what was typed,
- * or create it. Returns undefined for an empty string.
+ * or create it, in the typed prefecture (found, or created; see places.ts).
+ * Returns undefined for an empty string.
  */
-export async function resolveArea(typed: string, areas: Area[]): Promise<Area | undefined> {
+export async function resolveArea(typed: string, areas: Area[], prefectureTyped = '', prefectures: Prefecture[] = []): Promise<Area | undefined> {
   const t = typed.trim();
   if (!t) return undefined;
   const found = areas.find(a => [a.name_en, a.name_ja, a.id].some(n => n && n.toLowerCase() === t.toLowerCase()));
@@ -31,7 +38,7 @@ export async function resolveArea(typed: string, areas: Area[]): Promise<Area | 
     id: makeId([ascii ? t : `area-${Date.now().toString(36)}`], new Set(areas.map(a => a.id))),
     name_en: ascii ? t : '',
     name_ja: ascii ? '' : t,
-    prefecture: '',
+    prefecture: await resolvePrefecture(prefectureTyped, prefectures),
   };
   await createRow('Areas', { ...area });
   return area;
@@ -65,7 +72,13 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [creating, setCreating] = useState(false);
-  const [draft, setDraft] = useState({ name_en: '', name_ja: '', area: '' });
+  const [draft, setDraft] = useState({ name_en: '', name_ja: '', area: '', prefecture: '' });
+  const { prefectures } = usePrefectures();
+  const { countries } = useCountries();
+  const prefList = useMemo(() => {
+    const cn = new Map(countries.map(c => [c.id, locale === 'ja' ? c.name_ja || c.name_en : c.name_en || c.name_ja]));
+    return prefectureSuggestions(prefectures, locale, id => cn.get(id) || '');
+  }, [prefectures, countries, locale]);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -86,13 +99,13 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
     if (!draft.name_en.trim() && !draft.name_ja.trim()) return;
     setBusy(true);
     try {
-      const area = await resolveArea(draft.area, areas);
+      const area = await resolveArea(draft.area, areas, draft.prefecture, prefectures);
       const venueId = makeId([draft.name_en || draft.name_ja], new Set(venues.map(v => v.id)));
       await createRow('Venues', { id: venueId, name_en: draft.name_en.trim(), name_ja: draft.name_ja.trim(), area: area?.id || '' });
       onChange(venueId);
       onCreated();
       setCreating(false);
-      setDraft({ name_en: '', name_ja: '', area: '' });
+      setDraft({ name_en: '', name_ja: '', area: '', prefecture: '' });
     } catch (err) {
       onError(errorText(err));
     } finally {
@@ -115,6 +128,16 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
           suggestions={areaList}
           newLabel={s.newArea}
         />
+        {!isKnownArea(draft.area, areas) && (
+          <SuggestInput
+            placeholder={s.prefectureForNewArea}
+            aria-label={s.prefectureForNewArea}
+            value={draft.prefecture}
+            onChange={v => setDraft(d => ({ ...d, prefecture: v }))}
+            suggestions={prefList}
+            newLabel={s.newPrefecture}
+          />
+        )}
         <div className="lu-row">
           <button type="button" className="lu-btn" onClick={() => setCreating(false)}>{s.cancel}</button>
           <button type="button" className="lu-btn lu-btn-primary" disabled={busy || (!draft.name_en.trim() && !draft.name_ja.trim())} onClick={createVenue}>

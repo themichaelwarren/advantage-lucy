@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAreas, useVenues, usePrefectures, useAllEvents } from '../../hooks/useSheetData';
+import { useAreas, useVenues, usePrefectures, useCountries, useAllEvents } from '../../hooks/useSheetData';
+import SuggestInput from '../../components/admin/SuggestInput';
+import { prefectureSuggestions, prefectureName, resolvePrefecture } from '../../components/admin/places';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
 import { Section, Field, BilingualRow, SaveBar, DeleteButton, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
@@ -16,10 +18,12 @@ export default function AdminAreaForm() {
   const navigate = useNavigate();
   const { areas, loading } = useAreas();
   const { venues } = useVenues();
-  const { prefectures } = usePrefectures();
+  const { prefectures, refresh: refreshPrefectures } = usePrefectures();
+  // What's typed in the prefecture box: a name in either language
   const { events } = useAllEvents();
 
   const [form, setForm] = useState<Form>(empty);
+  const [prefText, setPrefText] = useState('');
   const [baseline, setBaseline] = useState('');
   const [nameError, setNameError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -27,16 +31,18 @@ export default function AdminAreaForm() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isNew) { setBaseline(JSON.stringify(empty)); return; }
+    if (isNew) { setBaseline(JSON.stringify([empty, ''])); return; }
     if (loading) return;
     const a = areas.find(x => x.id === id);
     if (!a) return;
     const f: Form = { id: a.id, name_en: a.name_en || '', name_ja: a.name_ja || '', prefecture: a.prefecture || '' };
     setForm(f);
-    setBaseline(JSON.stringify(f));
-  }, [isNew, id, loading, areas]);
+    setPrefText(f.prefecture ? prefectureName(f.prefecture, prefectures, locale) : '');
+    setBaseline(JSON.stringify([f, f.prefecture ? prefectureName(f.prefecture, prefectures, locale) : '']));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, id, loading, areas, prefectures.length]);
 
-  const dirty = baseline !== '' && JSON.stringify(form) !== baseline;
+  const dirty = baseline !== '' && JSON.stringify([form, prefText]) !== baseline;
   const leaveGuard = useUnsavedWarning(dirty, saving);
   const set = (k: keyof Form, v: string) => { setForm(f => ({ ...f, [k]: v })); setNameError(''); };
 
@@ -49,12 +55,11 @@ export default function AdminAreaForm() {
       .sort((a, b) => b.shows - a.shows || a.name.localeCompare(b.name, locale));
   }, [venues, events, form.id, locale]);
 
-  const prefOptions = useMemo(
-    () => prefectures
-      .map(p => ({ id: p.id, name: (locale === 'ja' ? p.name_ja || p.name_en : p.name_en || p.name_ja) || p.id }))
-      .sort((a, b) => a.name.localeCompare(b.name, locale)),
-    [prefectures, locale],
-  );
+  const { countries } = useCountries();
+  const prefList = useMemo(() => {
+    const cn = new Map(countries.map(c => [c.id, locale === 'ja' ? c.name_ja || c.name_en : c.name_en || c.name_ja]));
+    return prefectureSuggestions(prefectures, locale, id => cn.get(id) || '');
+  }, [prefectures, countries, locale]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,11 +71,13 @@ export default function AdminAreaForm() {
       const areaId = isNew
         ? makeId([en && /^[\x20-\x7e]+$/.test(en) ? en : `area-${Date.now().toString(36)}`], new Set(areas.map(a => a.id)))
         : form.id;
-      const fields = { ...form, id: areaId, name_en: form.name_en.trim(), name_ja: form.name_ja.trim() };
+      const prefecture = await resolvePrefecture(prefText, prefectures);
+      if (prefecture && !prefectures.some(p => p.id === prefecture)) refreshPrefectures();
+      const fields = { ...form, id: areaId, name_en: form.name_en.trim(), name_ja: form.name_ja.trim(), prefecture };
       if (isNew) await createRow('Areas', { ...fields });
       else await updateRow('Areas', areaId, { ...fields });
       setForm(fields);
-      setBaseline(JSON.stringify(fields));
+      setBaseline(JSON.stringify([fields, prefText]));
       setSavedAt(Date.now());
       if (isNew) navigate(`${prefix}/areas/${areaId}`, { replace: true });
     } catch (err) {
@@ -103,17 +110,11 @@ export default function AdminAreaForm() {
             {fid => <input id={fid} lang="ja" value={form.name_ja} onChange={e => set('name_ja', e.target.value)} />}
           </Field>
         </BilingualRow>
-        <Field label={s.prefecture} optional s={s}>
-          {fid => (
-            <select id={fid} value={form.prefecture} onChange={e => set('prefecture', e.target.value)}>
-              <option value="">{s.prefectureNone}</option>
-              {prefOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              {form.prefecture && !prefOptions.some(p => p.id === form.prefecture) && <option value={form.prefecture}>{form.prefecture}</option>}
-            </select>
-          )}
+        <Field label={s.prefecture} hint={s.prefectureHint} optional s={s}>
+          {fid => <SuggestInput id={fid} value={prefText} onChange={setPrefText} suggestions={prefList} newLabel={s.newPrefecture} />}
         </Field>
-        {form.prefecture && prefOptions.some(p => p.id === form.prefecture) && (
-          <Link to={`${prefix}/prefectures/${form.prefecture}`} className="lu-related-link">{prefOptions.find(p => p.id === form.prefecture)!.name} →</Link>
+        {form.prefecture && prefectures.some(p => p.id === form.prefecture) && prefText === prefectureName(form.prefecture, prefectures, locale) && (
+          <Link to={`${prefix}/prefectures/${form.prefecture}`} className="lu-related-link">{prefText} →</Link>
         )}
       </Section>
 

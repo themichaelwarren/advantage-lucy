@@ -300,7 +300,11 @@ export function useUnsavedWarning(dirty: boolean, saving = false): ReactNode {
   );
 }
 
-/** "2025-11-30" + "Shimokitazawa" → "2025-11-30-shimokitazawa"; adds -2, -3… if taken. */
+/**
+ * "2025-11-30" + "Shimokitazawa" → "2025-11-30-shimokitazawa"; adds -2, -3… if taken.
+ * Names with no letters or digits we can use (e.g. only Japanese) get a short
+ * unique code instead, like "id-mw8o1mgv".
+ */
 export function makeId(parts: (string | undefined)[], taken: Set<string>): string {
   const base = parts
     .filter(Boolean)
@@ -310,7 +314,7 @@ export function makeId(parts: (string | undefined)[], taken: Set<string>): strin
     .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'item';
+    .slice(0, 60) || `id-${Date.now().toString(36)}`;
   if (!taken.has(base)) return base;
   let n = 2;
   while (taken.has(`${base}-${n}`)) n++;
