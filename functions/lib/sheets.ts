@@ -199,8 +199,34 @@ export async function fetchHeaders(sheetId: string, tab: string, email: string, 
   return rows[0]?.map(h => h.trim()) || [];
 }
 
-async function fieldsToRow(sheetId: string, tab: string, fields: Record<string, string>, email: string, key: string): Promise<string[]> {
+/**
+ * Columns added after the sheet was first set up. If a save fills one in
+ * and the tab doesn't have that heading yet, the heading is added (next
+ * free column) instead of the value being silently dropped. Only these
+ * known names, never arbitrary fields.
+ */
+const OPTIONAL_COLUMNS: Record<string, string[]> = {
+  Songs: ['original_artist'],
+};
+
+async function ensureColumns(sheetId: string, tab: string, fields: Record<string, string>, email: string, key: string): Promise<string[]> {
   const headers = await fetchHeaders(sheetId, tab, email, key);
+  const missing = (OPTIONAL_COLUMNS[tab] || []).filter(c => fields[c]?.trim() && !headers.includes(c));
+  if (!missing.length) return headers;
+  const token = await getToken(email, key);
+  const from = headers.length + 1;
+  const range = encodeURIComponent(`${tab}!${colLetter(from)}1:${colLetter(from + missing.length - 1)}1`);
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?valueInputOption=RAW`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values: [missing] }),
+  });
+  if (!res.ok) throw new Error(`Couldn't add column ${missing.join(', ')} to ${tab}: ${res.status} ${await res.text()}`);
+  return [...headers, ...missing];
+}
+
+async function fieldsToRow(sheetId: string, tab: string, fields: Record<string, string>, email: string, key: string): Promise<string[]> {
+  const headers = await ensureColumns(sheetId, tab, fields, email, key);
   return headers.map(h => fields[h] ?? '');
 }
 
