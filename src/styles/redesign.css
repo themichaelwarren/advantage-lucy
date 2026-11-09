@@ -616,12 +616,13 @@ main {
   height: 1.15rem;
   transition: transform 500ms var(--ease-bounce), opacity 250ms ease;
 }
-/* The sun sets below the button as the moon rises, and vice versa */
-.theme-toggle .icon-moon { transform: translateY(140%) rotate(-90deg); opacity: 0; }
-:root[data-theme="dark"] .theme-toggle .icon-sun { transform: translateY(-140%) rotate(90deg); opacity: 0; }
-:root[data-theme="dark"] .theme-toggle .icon-moon { transform: none; opacity: 1; }
-.theme-toggle:hover .icon-sun { transform: rotate(45deg); }
-:root[data-theme="dark"] .theme-toggle:hover .icon-moon { transform: rotate(-20deg); }
+/* The icon shows where a click takes you (as the label says): the moon in
+   light mode, the sun in dark mode. One sets as the other rises. */
+.theme-toggle .icon-sun { transform: translateY(140%) rotate(-90deg); opacity: 0; }
+:root[data-theme="dark"] .theme-toggle .icon-moon { transform: translateY(-140%) rotate(90deg); opacity: 0; }
+:root[data-theme="dark"] .theme-toggle .icon-sun { transform: none; opacity: 1; }
+.theme-toggle:hover .icon-moon { transform: rotate(-20deg); }
+:root[data-theme="dark"] .theme-toggle:hover .icon-sun { transform: rotate(45deg); }
 .theme-toggle:hover { color: var(--on-pop); }
 @media (prefers-reduced-motion: reduce) {
   .theme-toggle svg { transition: opacity 150ms ease; }
