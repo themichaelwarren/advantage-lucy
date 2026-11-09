@@ -34,6 +34,8 @@ async function fetchAdminTab<T>(tab: string): Promise<T> {
   const token = getAdminToken();
   const res = await fetch(`/api/admin/sheets/${tab}`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
   if (res.status === 401) {
+    // The sign-in changed while this was in flight: ask again with the new token
+    if (getAdminToken() && getAdminToken() !== token) return fetchAdminTab<T>(tab);
     adminAuthExpired();
     return fetchJson<T>(`/api/sheets/${tab}`);
   }

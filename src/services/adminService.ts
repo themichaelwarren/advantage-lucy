@@ -19,9 +19,13 @@ function withAuth(options: RequestInit = {}): RequestInit {
   return { ...options, headers };
 }
 
-async function adminFetch(url: string, options?: RequestInit) {
+async function adminFetch(url: string, options?: RequestInit, retried = false): Promise<any> {
+  const sentWith = getAdminToken();
   const res = await fetch(url, withAuth(options));
   if (res.status === 401) {
+    // Sent with an older token (or none) and the sign-in has changed since:
+    // try once more with the current one instead of crying "expired"
+    if (!retried && getAdminToken() && getAdminToken() !== sentWith) return adminFetch(url, options, true);
     adminAuthExpired();
     const body = await res.json().catch(() => ({}));
     throw new AuthExpiredError(body.error || 'Please sign in again.');

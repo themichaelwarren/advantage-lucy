@@ -120,6 +120,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const signedIn: User = { email: info.email, name: info.name || info.email, picture: info.picture || '' };
       const expiresAt = Date.now() + Number(response.expires_in) * 1000;
+      // Give the data layer the token now: the admin pages appear on the next
+      // render and fetch straight away, before any effect of ours would run
+      setAdminToken(response.access_token);
       setUser(signedIn);
       setAccessToken(response.access_token);
       setAuthError(null);
