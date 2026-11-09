@@ -1744,3 +1744,40 @@ time,
   vertical-align: 0.1em;
 }
 .contact-optional { margin-left: 0.25rem; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+
+/* ============================================================
+   MUSIC: search + Releases | Songs
+   ============================================================ */
+.music-toolbar { margin-bottom: 1.6rem; }
+.music-tabs-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; }
+.music-tabs { display: inline-flex; gap: 0.3rem; padding: 0.25rem; border: 1.5px solid var(--border); border-radius: var(--pill); background: var(--surface); }
+.music-tabs button {
+  font: inherit;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.45rem 1.1rem;
+  border: none;
+  border-radius: var(--pill);
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.music-tabs button:hover { background: color-mix(in srgb, var(--pop) 30%, transparent); }
+.music-tabs button.active { background: var(--text); color: var(--bg); }
+.music-count { margin-left: 0.4rem; font-weight: 500; opacity: 0.6; font-size: 0.85em; }
+.music-results { margin-bottom: 2.4rem; }
+.music-results .section-label { margin-bottom: 0.6rem; }
+.song-row { padding-block: 0.7rem; }
+.song-lyrics-tag {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--pill);
+  background: color-mix(in srgb, #3fcf8e 30%, transparent);
+}
+.song-row:hover .song-lyrics-tag { background: #3fcf8e; color: var(--on-pop); }
+.disco-track-match { display: block; margin-top: 0.2rem; font-size: 0.82rem; color: var(--text-muted); }

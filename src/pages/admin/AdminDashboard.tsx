@@ -24,7 +24,7 @@ export default function AdminDashboard() {
 
   const tasks = [
     { to: `${prefix}/events/new`, title: s.taskAddShow, hint: s.taskAddShowHint, icon: '♪', tone: 'sun' },
-    { to: needsSetlist[0] ? `${prefix}/events/${needsSetlist[0].id}#setlist` : `${prefix}/events`, title: s.taskSetlist, hint: s.taskSetlistHint, icon: '☰', tone: 'mint' },
+    { to: `${prefix}/events?filter=nosetlist`, title: s.taskSetlist, hint: s.taskSetlistHint, icon: '☰', tone: 'mint' },
     { to: `${prefix}/news/new`, title: s.taskNews, hint: s.taskNewsHint, icon: '✎', tone: 'tomato' },
     { to: `${prefix}/blog/new`, title: s.taskBlog, hint: s.taskBlogHint, icon: '◎', tone: 'lilac' },
   ];
@@ -76,7 +76,7 @@ export default function AdminDashboard() {
                     <Link to={`${prefix}/events/${e.id}#setlist`} className="lu-list-row">
                       <time>{e.date}</time>
                       <span className="lu-list-main"><strong>{name(e)}</strong></span>
-                      <span className="lu-list-tags"><span className="lu-tag is-todo">+ {s.taskSetlist}</span></span>
+                      <span className="lu-row-cta">+ {s.taskSetlist} <span className="lu-row-cta-arrow" aria-hidden="true">→</span></span>
                     </Link>
                   </li>
                 ))}

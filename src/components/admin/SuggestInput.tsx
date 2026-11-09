@@ -1,5 +1,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
+import { normalize } from '../../utils/text';
+
+export { normalize };
 
 export interface Suggestion {
   /** What goes into the field when picked. */
@@ -9,9 +12,6 @@ export interface Suggestion {
   /** Extra text that should also match (IDs, readings…). */
   keywords?: string;
 }
-
-/** Lowercase, full-width → half-width, no spaces: "Ｋｉｃｈｉ ｊｏｊｉ" ≈ "kichijoji". */
-export const normalize = (t: string) => t.normalize('NFKC').toLowerCase().replace(/[\s　·・]/g, '');
 
 /** Starts-with matches first, then contains; same order as given otherwise. */
 export function rankMatches<T>(items: T[], query: string, texts: (item: T) => (string | undefined)[]): T[] {

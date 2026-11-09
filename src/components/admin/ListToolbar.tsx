@@ -16,7 +16,9 @@ export function useListPrefs<F extends string, S extends string, V extends strin
   const [prefs, setPrefs] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(key) || '{}');
-      return { ...defaults, ...saved } as { filter: F; sort: S; view?: V };
+      // A link can pick the filter: /admin/events?filter=nosetlist
+      const fromLink = new URLSearchParams(location.search).get('filter');
+      return { ...defaults, ...saved, ...(fromLink ? { filter: fromLink } : {}) } as { filter: F; sort: S; view?: V };
     } catch { return defaults; }
   });
   const [query, setQuery] = useState('');

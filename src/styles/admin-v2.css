@@ -941,3 +941,25 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-placeholders summary { cursor: pointer; }
 .lu-placeholders ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
 .lu-placeholders a { text-decoration: underline; }
+
+/* Row call-to-action: looks like a button; the whole row is the click */
+.lu-row-cta {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35em 0.9em;
+  border: 1.5px solid var(--text);
+  border-radius: var(--pill);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--text);
+  background: var(--surface);
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.lu-row-cta-arrow { display: inline-block; transition: transform 200ms var(--ease-bounce, ease); }
+.lu-list-row:hover .lu-row-cta, .lu-list-row:focus-visible .lu-row-cta { background: var(--text); color: var(--bg); }
+.lu-list-row:hover .lu-row-cta-arrow, .lu-list-row:focus-visible .lu-row-cta-arrow { transform: translateX(3px); }
+@media (max-width: 520px) { .lu-row-cta { order: 2; } }
