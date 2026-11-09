@@ -1149,3 +1149,14 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
   .lu-song-actions .lu-icon-btn.is-placeholder { display: none; }
   .lu-song-actions .lu-cover-tag { display: none; }
 }
+/* Home tiles: full labels on wide screens, short one-line labels on phones */
+.lu-task-short { display: none; }
+@media (max-width: 560px) {
+  .lu-task .lu-task-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .lu-task .lu-task-short { display: block; white-space: nowrap; font-size: 0.74rem; }
+  .lu-task { position: relative; }
+}
+@media (max-width: 560px) {
+  .lu-task { padding-inline: 0.15rem; }
+  .lu-task .lu-task-short { font-size: min(0.74rem, 2.9vw); letter-spacing: -0.02em; }
+}
