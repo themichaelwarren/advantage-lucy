@@ -8,10 +8,9 @@ export default function AdminLogin() {
   return (
     <div className="admin-shell lu-shell">
       <div className="lu-login">
-        <img className="lu-login-art" src="/img/lucy-drum.png" alt="" width="220" height="220" />
-        <span className="lu-brand band-name">{s.brand}</span>
-        <h1>{s.signInTitle}</h1>
-        <p>{s.signInBody}</p>
+        <img className="lu-login-art" src="/img/lucy-drum.png" alt="advantage Lucy" width="220" height="220" />
+        {/* Just the drum and the button; the title stays for screen readers */}
+        <h1 className="lu-visually-hidden">{s.brand}: {s.signInTitle}</h1>
         {authError && <div className="lu-alert">{authError}</div>}
         <button className="lu-btn lu-btn-primary lu-btn-lg" onClick={login} disabled={isLoading}>
           {isLoading ? s.loading : s.signIn}

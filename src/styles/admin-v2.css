@@ -1176,3 +1176,4 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .lu-login-art { filter: invert(1) hue-rotate(180deg); mix-blend-mode: screen; }
 }
+.lu-login .lu-login-art { margin-bottom: 1.6rem; width: min(260px, 62vw); }
