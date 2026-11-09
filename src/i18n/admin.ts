@@ -189,7 +189,9 @@ const en = {
   linkText: 'Text to show (optional)',
   linkUrl: 'Web address',
   linkInsert: 'Add link',
-  linkHint: 'Or select some words and paste a web address.',
+  linkHint: 'Select words first. Pasting a web address over selected words also makes a link.',
+  boldAdd: 'Bold',
+  boldPlaceholder: 'bold text',
   releaseTitleMissing: 'Add the release title.',
 
   // Songs
@@ -457,7 +459,9 @@ const ja: AdminStrings = {
   linkText: '表示する文字（任意）',
   linkUrl: 'URL',
   linkInsert: 'リンクを追加',
-  linkHint: '文字を選んでURLを貼り付けてもリンクになります。',
+  linkHint: '先に文字を選んでください。選んだ文字にURLを貼り付けてもリンクになります。',
+  boldAdd: '太字',
+  boldPlaceholder: '太字',
   releaseTitleMissing: 'タイトルを入力してください。',
 
   songsTitle: '楽曲',

@@ -9,6 +9,7 @@ const isUrl = (t: string) => /^https?:\/\/\S+$/.test(t.trim());
  * stored as Markdown, [text](https://…), and the site shows them as links.
  * - "🔗 Link" button: link the selected words (or add a new link).
  * - Select some words and paste a web address: they become a link.
+ * - "B" button or ⌘B / Ctrl+B: **bold** (press again to undo).
  */
 export default function LinkTextarea({ s, value, onChange, ...rest }: {
   s: AdminStrings;
@@ -32,6 +33,28 @@ export default function LinkTextarea({ s, value, onChange, ...rest }: {
     setForm(isUrl(selected) ? { text: '', url: selected.trim(), start, end } : { text: selected, url: '', start, end });
   }
 
+  /** Wrap the selection in **…**, or unwrap the bold part the cursor is in. */
+  function toggleBold() {
+    const el = ref.current;
+    if (!el) return;
+    let start = el.selectionStart, end = el.selectionEnd;
+    // Already bold? (cursor or selection inside, or on, a **…** on this line)
+    for (const m of value.matchAll(/\*\*([^*\n]+?)\*\*/g)) {
+      const mStart = m.index ?? 0, mEnd = mStart + m[0].length;
+      if (start >= mStart && end <= mEnd && !(start === mEnd && end === mEnd)) {
+        onChange(value.slice(0, mStart) + m[1] + value.slice(mEnd));
+        requestAnimationFrame(() => { el.focus(); el.setSelectionRange(mStart, mStart + m[1].length); });
+        return;
+      }
+    }
+    // Leave spaces outside the stars (double-click often selects one)
+    while (start < end && /\s/.test(value[start])) start++;
+    while (end > start && /\s/.test(value[end - 1])) end--;
+    const word = value.slice(start, end).replace(/\*\*/g, '') || s.boldPlaceholder;
+    onChange(value.slice(0, start) + `**${word}**` + value.slice(end));
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(start + 2, start + 2 + word.length); });
+  }
+
   function insertLink() {
     if (!form || !isUrl(form.url)) return;
     const text = form.text.trim().replace(/[[\]]/g, '');
@@ -46,6 +69,11 @@ export default function LinkTextarea({ s, value, onChange, ...rest }: {
         ref={ref}
         value={value}
         onChange={e => onChange(e.target.value)}
+        onKeyDown={e => {
+          if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleBold(); }
+          if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') { e.preventDefault(); openForm(); }
+          rest.onKeyDown?.(e);
+        }}
         onPaste={e => {
           const pasted = e.clipboardData.getData('text');
           const el = e.currentTarget;
@@ -80,7 +108,8 @@ export default function LinkTextarea({ s, value, onChange, ...rest }: {
         </div>
       ) : (
         <div className="lu-linkbar">
-          <button type="button" className="lu-btn lu-btn-quiet" onMouseDown={e => e.preventDefault()} onClick={openForm}>🔗 {s.linkAdd}</button>
+          <button type="button" className="lu-btn lu-btn-quiet lu-btn-bold" onMouseDown={e => e.preventDefault()} onClick={toggleBold} title={`${s.boldAdd} (⌘B)`} aria-label={s.boldAdd}>B</button>
+          <button type="button" className="lu-btn lu-btn-quiet" onMouseDown={e => e.preventDefault()} onClick={openForm} title={`${s.linkAdd} (⌘K)`}>🔗 {s.linkAdd}</button>
           <span className="lu-hint">{s.linkHint}</span>
         </div>
       )}
