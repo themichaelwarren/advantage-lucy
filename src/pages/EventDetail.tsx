@@ -107,7 +107,7 @@ export default function EventDetail({ locale }: Props) {
       {/* Wide screens: date, title and flyer in a sticky panel on the left;
           details, tickets, setlist and notes on the right. Phones: stacked. */}
       <div className="evd-layout">
-        <aside ref={panel.ref} className={`evd-aside${panel.fits ? ' is-sticky' : ''}`}>
+        <aside ref={panel.ref} className="evd-aside is-sticky" style={{ top: panel.top }}>
           <div className="evd-head">
             {/* One line: the date, its weekday, and for upcoming shows how far away it is */}
             <div className="evd-date-type">

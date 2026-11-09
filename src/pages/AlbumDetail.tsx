@@ -53,7 +53,7 @@ export default function AlbumDetail({ locale }: Props) {
       {/* Wide screens: title, cover and details in a sticky panel on the left,
           tracklist (and notes) on the right. Phones: stacked in that order. */}
       <div className="album-layout">
-        <aside ref={panel.ref} className={`album-aside${panel.fits ? ' is-sticky' : ''}`}>
+        <aside ref={panel.ref} className="album-aside is-sticky" style={{ top: panel.top }}>
           <header className="album-detail-header">
             <h1 className="album-detail-title">{album.title}</h1>
             <p className="album-detail-subtitle">

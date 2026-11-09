@@ -105,7 +105,7 @@ export default function SongDetail({ locale }: Props) {
       {/* Wide screens: title, credits and releases in a sticky panel on the
           left, lyrics on the right. Phones: title, credits, lyrics, releases. */}
       <div className="song-layout">
-        <aside ref={panel.ref} className={`song-aside${panel.fits ? ' is-sticky' : ''}`}>
+        <aside ref={panel.ref} className="song-aside is-sticky" style={{ top: panel.top }}>
           <div className="song-head">
             <header className="song-detail-header">
               <h1 className="song-detail-title">{song.title}</h1>
