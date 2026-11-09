@@ -6,6 +6,7 @@ import { useAlbums, useSongs, useTracklists } from '../hooks/useSheetData';
 import type { Album, Song } from '../types';
 import PageLoader from '../components/PageLoader';
 import { normalize } from '../utils/text';
+import { useQueryParam } from '../hooks/useQueryParam';
 
 interface Props {
   locale: Locale;
@@ -26,13 +27,15 @@ export default function Music({ locale }: Props) {
   const [view, setView] = useState<'list' | 'card'>('list');
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') === 'songs' ? 'songs' : 'releases';
-  const query = params.get('q') || '';
+  const [query, setQuery] = useQueryParam('q');
   const q = normalize(query);
 
   const setParam = (key: string, value: string) => {
-    const next = new URLSearchParams(params);
-    if (value) next.set(key, value); else next.delete(key);
-    setParams(next, { replace: true });
+    setParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set(key, value); else next.delete(key);
+      return next;
+    }, { replace: true });
   };
 
   // For each song: the release it first appeared on
@@ -151,7 +154,7 @@ export default function Music({ locale }: Props) {
           type="search"
           className="show-search"
           value={query}
-          onChange={e => setParam('q', e.target.value)}
+          onChange={e => setQuery(e.target.value)}
           placeholder={s.music.search}
           aria-label={s.music.search}
         />
