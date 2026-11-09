@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
-import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPrefectures, getPeople } from '../services/sheetsService';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
+import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPrefectures, getCountries, getPeople } from '../services/sheetsService';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -224,11 +224,26 @@ export function usePrefectures() {
   const [prefectures, setPrefectures] = useState<Prefecture[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     getPrefectures()
       .then(setPrefectures)
       .finally(() => setLoading(false));
+  }, [tick]);
+
+  return { prefectures, loading, refresh: () => setTick(t => t + 1) };
+}
+
+export function useCountries() {
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getCountries()
+      .then(setCountries)
+      .finally(() => setLoading(false));
   }, []);
 
-  return { prefectures, loading };
+  return { countries, loading };
 }

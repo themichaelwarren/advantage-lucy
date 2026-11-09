@@ -966,3 +966,5 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-song-problems { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.9rem; }
 .lu-song-problems p { margin: 0; }
 .lu-song-problems a { text-decoration: underline; }
+.lu-places-tabs { margin-bottom: 1rem; }
+.lu-places-tabs .lu-pill { font-size: 0.95rem; padding: 0.45em 1.1em; text-decoration: none; }

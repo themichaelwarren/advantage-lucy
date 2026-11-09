@@ -22,6 +22,7 @@ import AdminPeople from './pages/admin/AdminPeople';
 import AdminPersonForm from './pages/admin/AdminPersonForm';
 import AdminAreas from './pages/admin/AdminAreas';
 import AdminAreaForm from './pages/admin/AdminAreaForm';
+import { AdminPrefectures, AdminPrefectureForm, AdminCountries, AdminCountryForm } from './pages/admin/AdminPlaces';
 import AdminMusic from './pages/admin/AdminMusic';
 import AdminAlbumForm from './pages/admin/AdminAlbumForm';
 import AdminSongs from './pages/admin/AdminSongs';
@@ -143,6 +144,10 @@ export default function App() {
           <Route path="venues/:id" element={<AdminVenueForm />} />
           <Route path="areas" element={<AdminAreas />} />
           <Route path="areas/:id" element={<AdminAreaForm />} />
+          <Route path="prefectures" element={<AdminPrefectures />} />
+          <Route path="prefectures/:id" element={<AdminPrefectureForm />} />
+          <Route path="countries" element={<AdminCountries />} />
+          <Route path="countries/:id" element={<AdminCountryForm />} />
           <Route path="people" element={<AdminPeople />} />
           <Route path="people/:id" element={<AdminPersonForm />} />
           <Route path="releases" element={<AdminMusic />} />

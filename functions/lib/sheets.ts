@@ -205,6 +205,10 @@ async function fieldsToRow(sheetId: string, tab: string, fields: Record<string, 
 }
 
 export async function appendRow(sheetId: string, tab: string, fields: Record<string, string>, email: string, key: string): Promise<string> {
+  // Tabs with an id column need one on every row: a blank ID can't be
+  // linked to, opened in the admin or saved again
+  const headers = await fetchHeaders(sheetId, tab, email, key);
+  if (headers.includes('id') && !fields.id?.trim()) throw new Error(`New ${tab} rows need an ID`);
   const values = await fieldsToRow(sheetId, tab, fields, email, key);
   const token = await getToken(email, key);
   const range = encodeURIComponent(`${tab}!A:A`);

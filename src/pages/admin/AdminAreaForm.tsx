@@ -112,6 +112,9 @@ export default function AdminAreaForm() {
             </select>
           )}
         </Field>
+        {form.prefecture && prefOptions.some(p => p.id === form.prefecture) && (
+          <Link to={`${prefix}/prefectures/${form.prefecture}`} className="lu-related-link">{prefOptions.find(p => p.id === form.prefecture)!.name} →</Link>
+        )}
       </Section>
 
       {!isNew && (

@@ -85,7 +85,10 @@ export default function AdminLayout() {
             <div key={i} className="lu-side-group">
               {g.title && <p className="lu-side-title">{g.title}</p>}
               {g.links.map(l => (
-                <NavLink key={l.to} to={l.to} end={l.end} className="lu-side-link">
+                <NavLink
+                  key={l.to} to={l.to} end={l.end}
+                  className={({ isActive }) => `lu-side-link${isActive || (l.to.endsWith('/areas') && /\/(prefectures|countries)(\/|$)/.test(location.pathname)) ? ' active' : ''}`}
+                >
                   <span className="lu-side-icon" aria-hidden="true">{l.icon}</span>
                   {l.label}
                 </NavLink>

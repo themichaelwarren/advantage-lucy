@@ -1,5 +1,5 @@
 import { setlistIsPublic } from '../utils/showDates';
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -112,6 +112,15 @@ export async function getPrefectures(): Promise<Prefecture[]> {
     return await fetchWithCache('prefectures', () => fetchJson<Prefecture[]>('/api/sheets/prefectures'));
   } catch (err) {
     console.warn('Failed to fetch prefectures from API:', err);
+    return [];
+  }
+}
+
+export async function getCountries(): Promise<Country[]> {
+  try {
+    return await fetchWithCache('countries', () => fetchJson<Country[]>('/api/sheets/countries'));
+  } catch (err) {
+    console.warn('Failed to fetch countries from API:', err);
     return [];
   }
 }

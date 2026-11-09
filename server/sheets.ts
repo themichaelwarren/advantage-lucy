@@ -419,6 +419,9 @@ export async function appendRow(
   email: string,
   privateKey: string
 ): Promise<string> {
+  // Same rule as the live site: tabs with an id column need one on every row
+  const headers = await fetchHeaders(sheetId, tab, email, privateKey);
+  if (headers.includes('id') && !fields.id?.trim()) throw new Error(`New ${tab} rows need an ID`);
   const values = await fieldsToRow(sheetId, tab, fields, email, privateKey);
   const token = await getAccessToken(email, privateKey);
   const range = encodeURIComponent(`${tab}!A:A`);
@@ -463,6 +466,7 @@ export async function updateRow(
   email: string,
   privateKey: string
 ): Promise<void> {
+  if (!id?.trim()) throw new Error(`Can't update a row in ${tab} without an ID`);
   const [rowIdx, values] = await Promise.all([
     findRowIndex(sheetId, tab, id, email, privateKey),
     fieldsToRow(sheetId, tab, fields, email, privateKey),
@@ -495,6 +499,7 @@ export async function deleteRow(
   email: string,
   privateKey: string
 ): Promise<void> {
+  if (!id?.trim()) throw new Error(`Can't delete a row in ${tab} without an ID`);
   // First get the numeric sheet (tab) ID
   const token = await getAccessToken(email, privateKey);
   const metaRes = await fetch(

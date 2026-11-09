@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAreas, useVenues, usePrefectures } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
+import { PlacesTabs } from './AdminPlaces';
 
 type Filter = 'all' | 'unused';
 type Sort = 'venues' | 'az';
@@ -47,6 +48,7 @@ export default function AdminAreas() {
         </div>
         <Link to={`${prefix}/areas/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addArea}</Link>
       </div>
+      <PlacesTabs />
       <ListToolbar
         s={s}
         query={ui.query} onQuery={ui.setQuery}
