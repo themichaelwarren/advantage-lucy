@@ -1808,3 +1808,19 @@ time,
 .evd-venue-link { text-decoration: underline; text-underline-offset: 3px; }
 .evd-venue-site { margin-left: 0.35rem; text-decoration: none; font-weight: 700; }
 .evd-area a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* Venue and city on show pages are two separate links: each reacts on its own */
+.evd-venue-link, .evd-area a, .venue-place a {
+  border-radius: 4px;
+  padding: 0 0.15em;
+  margin: 0 -0.15em;
+  text-decoration-thickness: 1px;
+  transition: background-color 120ms ease, text-decoration-thickness 120ms ease;
+}
+.evd-venue-link:hover, .evd-area a:hover, .venue-place a:hover,
+.evd-venue-link:focus-visible, .evd-area a:focus-visible, .venue-place a:focus-visible {
+  background: color-mix(in srgb, var(--pop) 45%, transparent);
+  text-decoration-thickness: 2px;
+  color: var(--text);
+}
+.evd-area a { color: var(--text); }
