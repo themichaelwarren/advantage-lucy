@@ -1098,3 +1098,54 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-td-people .lu-people { gap: 0.3rem; }
 .lu-td-people .lu-chip { font-size: 0.78rem; padding: 0.15em 0.3em 0.15em 0.6em; }
 .lu-shell .lu-td-people .lu-people select { min-width: 7rem; padding: 0.3rem 0.5rem; font-size: 0.82rem; }
+
+/* ============================================================
+   PHONES (and iOS Safari quirks)
+   ============================================================ */
+/* iOS Safari gives date/time inputs a built-in minimum width that ignores
+   the layout, so they poke out of their boxes. Let them shrink like others. */
+.lu-shell input:is([type="date"], [type="time"], [type="datetime-local"]) {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+  box-sizing: border-box;
+  text-align: left;
+  min-height: 2.9rem;
+}
+.lu-shell input::-webkit-date-and-time-value { text-align: left; margin: 0; }
+.lu-shell .lu-publish-when input { display: inline-block; width: auto; }
+/* Grid columns may shrink below their content's natural width */
+.lu-grid-2 > *, .lu-grid-3 > *, .lu-bilingual > * { min-width: 0; }
+
+@media (max-width: 560px) {
+  .lu-page-head h1 { font-size: 1.55rem; }
+  .lu-section { padding: 1rem 0.9rem; border-radius: var(--radius-sm); }
+
+  /* Home: the four jobs as one compact row */
+  .lu-tasks { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; margin-bottom: 1.8rem; }
+  .lu-task {
+    align-items: center;
+    text-align: center;
+    gap: 0.2rem;
+    padding: 0.75rem 0.3rem 0.65rem;
+    border-radius: var(--radius-sm);
+    box-shadow: 2px 2px 0 var(--text);
+  }
+  .lu-task:nth-child(odd), .lu-task:nth-child(even) { transform: none; }
+  .lu-task-icon { font-size: 1.25rem; margin-bottom: 0.15rem; }
+  .lu-task strong { font-size: 0.74rem; line-height: 1.2; }
+  .lu-task span:last-child:not(.lu-task-icon) { display: none; }
+
+  /* Setlists: title on its own line, then a wide note and a tight cluster of buttons */
+  .lu-set { padding-left: 0.6rem; }
+  .lu-song { gap: 0.3rem; padding: 0.45rem 0; border-bottom: 1px dashed var(--rule); }
+  .lu-song::before { width: 1.1rem; }
+  .lu-shell .lu-setlist .lu-song-title-wrap { flex-basis: calc(100% - 1.6rem); }
+  .lu-shell .lu-setlist .lu-song-note { margin-left: 1.4rem; flex: 1 1 0; min-width: 0; padding: 0.45rem 0.7rem; }
+  .lu-song-actions { gap: 0; }
+  .lu-song-actions .lu-icon-btn { width: 1.85rem; height: 1.85rem; }
+  .lu-song-actions .lu-icon-btn.is-placeholder { display: none; }
+  .lu-song-actions .lu-cover-tag { display: none; }
+}
