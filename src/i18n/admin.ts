@@ -330,6 +330,7 @@ const en = {
   lyricsDocNeedsSignIn: 'Sign in again to create a doc.',
   filterAll: 'All',
   filterNoLyrics: 'No lyrics',
+  filterNoCredits: 'No credits',
 
   // Venues
   venuesTitle: 'Venues',
@@ -715,6 +716,7 @@ const ja: AdminStrings = {
   lyricsDocNeedsSignIn: 'ドキュメントを作成するにはもう一度ログインしてください。',
   filterAll: 'すべて',
   filterNoLyrics: '歌詞なし',
+  filterNoCredits: 'クレジットなし',
 
   venuesTitle: '会場',
   addVenue: '会場を追加',

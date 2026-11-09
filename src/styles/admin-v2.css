@@ -1091,3 +1091,10 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-status-switch .lu-pill.is-on.is-done { background: #3fcf8e; color: #1a1a1a !important; }
 .lu-side-badge { margin-left: auto; min-width: 1.4rem; height: 1.4rem; padding: 0 0.4rem; display: inline-grid; place-items: center; border-radius: 999px; background: var(--pop); color: var(--text); font-size: 0.75rem; font-weight: 700; }
 .lu-side-link.active .lu-side-badge { background: var(--bg); color: var(--text); }
+
+/* Songs table: credits edited in place */
+.lu-songs-table td { vertical-align: middle; }
+.lu-td-people { min-width: 12rem; }
+.lu-td-people .lu-people { gap: 0.3rem; }
+.lu-td-people .lu-chip { font-size: 0.78rem; padding: 0.15em 0.3em 0.15em 0.6em; }
+.lu-shell .lu-td-people .lu-people select { min-width: 7rem; padding: 0.3rem 0.5rem; font-size: 0.82rem; }

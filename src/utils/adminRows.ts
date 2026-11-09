@@ -5,7 +5,7 @@
  * isn't sent, so forms and quick table toggles must both build rows from
  * these helpers. Column lists match the original admin forms exactly.
  */
-import type { Event, NewsPost, BlogPost, SplashPhoto } from '../types';
+import type { Event, NewsPost, BlogPost, SplashPhoto, Song } from '../types';
 
 /** Pad time like "9:30" → "09:30" (also what HTML time inputs expect). */
 export function padTime(t: string | undefined): string {
@@ -75,5 +75,15 @@ export function photoToRow(p: SplashPhoto): PhotoRow {
   return {
     id: p.id, image_url: p.image_url || '', caption_en: p.caption_en || '', caption_ja: p.caption_ja || '',
     status: p.status || 'published', profile_photo: p.profile_photo || '',
+  };
+}
+
+export const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist'] as const;
+export type SongRow = Record<typeof SONG_COLUMNS[number], string>;
+
+export function songToRow(x: Song): SongRow {
+  return {
+    id: x.id, title: x.title || '', lyrics_by: x.lyrics_by || '', music_by: x.music_by || '',
+    lyrics_doc_id: x.lyrics_doc_id || '', original_artist: x.original_artist || '',
   };
 }
