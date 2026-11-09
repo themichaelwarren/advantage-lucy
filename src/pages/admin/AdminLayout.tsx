@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
 import ThemeToggle from '../../components/ThemeToggle';
 import CommandPalette from '../../components/admin/CommandPalette';
+import { getMessages } from '../../services/adminService';
 
 /**
  * Admin shell.
@@ -19,6 +20,17 @@ export default function AdminLayout() {
   const { user, logout, sessionExpired, login } = useAuth();
   const [navOpen, setNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [newMessages, setNewMessages] = useState(0);
+  const lastCount = useRef(0);
+
+  // Count of new messages for the sidebar. Rechecked when you move between
+  // pages, at most once a minute (each check reads the sheet).
+  useEffect(() => {
+    const onMessages = location.pathname.includes('/admin/messages');
+    if (!onMessages && Date.now() - lastCount.current < 60_000) return;
+    lastCount.current = Date.now();
+    getMessages().then(list => setNewMessages(list.filter(m => !m.status).length)).catch(() => {});
+  }, [location.pathname]);
   const menuButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { setNavOpen(false); setPaletteOpen(false); }, [location.pathname]);
@@ -48,23 +60,27 @@ export default function AdminLayout() {
   const otherPath = location.pathname.replace(`/${locale}/admin`, `/${otherLocale}/admin`) + location.search;
 
   // Sidebar: everything, grouped
-  const groups: { title?: string; links: { to: string; label: string; icon: string; end?: boolean }[] }[] = [
-    { links: [{ to: prefix, label: s.home, icon: '⌂', end: true }] },
+  // Ordered by how often the band uses them: home and the inbox first, then
+  // what gets published, the music archive, and where shows happen
+  const groups: { title?: string; links: { to: string; label: string; icon: string; end?: boolean; badge?: number }[] }[] = [
+    { links: [
+      { to: prefix, label: s.home, icon: '⌂', end: true },
+      { to: `${prefix}/messages`, label: s.messages, icon: '✉', badge: newMessages },
+    ] },
     { title: s.groupContent, links: [
       { to: `${prefix}/events`, label: s.shows, icon: '♪' },
       { to: `${prefix}/news`, label: s.news, icon: '✎' },
       { to: `${prefix}/blog`, label: s.blog, icon: '◎' },
+      { to: `${prefix}/photos`, label: s.photos, icon: '▣' },
     ] },
     { title: s.groupMusic, links: [
       { to: `${prefix}/releases`, label: s.releases, icon: '◉' },
       { to: `${prefix}/songs`, label: s.songs, icon: '♫' },
       { to: `${prefix}/people`, label: s.people, icon: '☺' },
     ] },
-    { title: s.groupSite, links: [
+    { title: s.groupPlaces, links: [
       { to: `${prefix}/venues`, label: s.venues, icon: '⌖' },
       { to: `${prefix}/areas`, label: s.areas, icon: '◫' },
-      { to: `${prefix}/photos`, label: s.photos, icon: '▣' },
-      { to: `${prefix}/messages`, label: s.messages, icon: '✉' },
     ] },
   ];
 
@@ -89,6 +105,7 @@ export default function AdminLayout() {
                 >
                   <span className="lu-side-icon" aria-hidden="true">{l.icon}</span>
                   {l.label}
+                  {!!l.badge && <span className="lu-side-badge" aria-label={`${l.badge} ${s.msgNew}`}>{l.badge}</span>}
                 </NavLink>
               ))}
             </div>

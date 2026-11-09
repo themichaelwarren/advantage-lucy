@@ -1089,3 +1089,5 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-status-switch .lu-pill.is-on.is-new { background: var(--pop); color: var(--text) !important; }
 .lu-status-switch .lu-pill.is-on.is-doing { background: #ffd23f; color: #1a1a1a !important; }
 .lu-status-switch .lu-pill.is-on.is-done { background: #3fcf8e; color: #1a1a1a !important; }
+.lu-side-badge { margin-left: auto; min-width: 1.4rem; height: 1.4rem; padding: 0 0.4rem; display: inline-grid; place-items: center; border-radius: 999px; background: var(--pop); color: var(--text); font-size: 0.75rem; font-weight: 700; }
+.lu-side-link.active .lu-side-badge { background: var(--bg); color: var(--text); }
