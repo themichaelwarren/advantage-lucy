@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { Person } from '../../types';
 import type { AdminLocale, AdminStrings } from '../../i18n/admin';
 
@@ -11,13 +12,15 @@ export function personName(p: Person, locale: AdminLocale): string {
  * Chips for the chosen people plus a dropdown to add another.
  * Stored as comma-separated person IDs, as in the existing sheet.
  */
-export default function PeoplePicker({ s, locale, id, value, onChange, people }: {
+export default function PeoplePicker({ s, locale, id, value, onChange, people, personHref }: {
   s: AdminStrings;
   locale: AdminLocale;
   id: string;
   value: string;
   onChange: (v: string) => void;
   people: Person[];
+  /** Link each chosen person to their page. */
+  personHref?: (personId: string) => string;
 }) {
   const chosen = value.split(',').map(x => x.trim()).filter(Boolean);
   const byId = new Map(people.map(p => [p.id, p]));
@@ -29,7 +32,9 @@ export default function PeoplePicker({ s, locale, id, value, onChange, people }:
     <div className="lu-people">
       {chosen.map(pid => (
         <span key={pid} className="lu-chip">
-          {byId.get(pid) ? personName(byId.get(pid)!, locale) : pid}
+          {byId.get(pid) && personHref
+            ? <Link to={personHref(pid)}>{personName(byId.get(pid)!, locale)}</Link>
+            : byId.get(pid) ? personName(byId.get(pid)!, locale) : pid}
           <button type="button" aria-label={s.remove} onClick={() => onChange(chosen.filter(x => x !== pid).join(','))}>✕</button>
         </span>
       ))}

@@ -1,5 +1,5 @@
-import type { Song } from '../../types';
-import { createRow } from '../../services/adminService';
+import type { SetlistEntry, Song, TracklistEntry } from '../../types';
+import { createRow, replaceRows } from '../../services/adminService';
 import { makeId } from './ui';
 import { normalize } from './SuggestInput';
 
@@ -37,4 +37,29 @@ export async function addMissingSongs(titles: string[], songs: Song[]) {
 
   const canonical = (t: string) => byKey.get(normalize(t.trim())) ?? t.trim();
   return { added, canonical };
+}
+
+/**
+ * Change a song title everywhere it's used: every setlist and tracklist
+ * row whose title matches `from` (ignoring case, spaces, full-width) gets
+ * `to`. Setlists and tracklists are rewritten per show / per release, with
+ * all their other rows unchanged. Returns how many shows and releases changed.
+ */
+export async function retitleEverywhere(from: string, to: string, setlists: SetlistEntry[], tracklists: TracklistEntry[]) {
+  const key = normalize(from);
+  const title = to.trim();
+  const events = [...new Set(setlists.filter(r => normalize(r.song || '') === key).map(r => r.event))];
+  for (const ev of events) {
+    await replaceRows('Setlists', ev, setlists.filter(r => r.event === ev).map(r => ({
+      event: r.event, song: normalize(r.song || '') === key ? title : r.song,
+      set: r.set, order: String(r.order), notes: r.notes || '', status: r.status || '',
+    })));
+  }
+  const releases = [...new Set(tracklists.filter(t => normalize(t.title || '') === key).map(t => t.release))];
+  for (const rel of releases) {
+    await replaceRows('Tracklists', rel, tracklists.filter(t => t.release === rel).map(t => ({
+      release: t.release, track: String(t.track), title: normalize(t.title || '') === key ? title : t.title,
+    })));
+  }
+  return { shows: events.length, releases: releases.length };
 }

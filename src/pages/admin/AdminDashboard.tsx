@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAllEvents, useAllSetlists } from '../../hooks/useSheetData';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
+import NeedsLook from '../../components/admin/NeedsLook';
 
 /** Admin home: the four everyday jobs as big buttons, plus what needs doing. */
 export default function AdminDashboard() {
@@ -84,6 +85,8 @@ export default function AdminDashboard() {
           </section>
         </div>
       )}
+
+      <NeedsLook />
     </>
   );
 }

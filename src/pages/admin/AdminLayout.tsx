@@ -47,7 +47,9 @@ export default function AdminLayout() {
   const more = [
     { to: `${prefix}/releases`, label: s.releases },
     { to: `${prefix}/songs`, label: s.songs },
+    { to: `${prefix}/people`, label: s.people },
     { to: `${prefix}/venues`, label: s.venues },
+    { to: `${prefix}/areas`, label: s.areas },
     { to: `${prefix}/photos`, label: s.photos },
     { to: `${prefix}/messages`, label: s.messages },
   ];
@@ -64,9 +66,11 @@ export default function AdminLayout() {
     { title: s.groupMusic, links: [
       { to: `${prefix}/releases`, label: s.releases, icon: '◉' },
       { to: `${prefix}/songs`, label: s.songs, icon: '♫' },
+      { to: `${prefix}/people`, label: s.people, icon: '☺' },
     ] },
     { title: s.groupSite, links: [
       { to: `${prefix}/venues`, label: s.venues, icon: '⌖' },
+      { to: `${prefix}/areas`, label: s.areas, icon: '◫' },
       { to: `${prefix}/photos`, label: s.photos, icon: '▣' },
       { to: `${prefix}/messages`, label: s.messages, icon: '✉' },
     ] },

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import SuggestInput from './SuggestInput';
 import type { AdminStrings } from '../../i18n/admin';
 
@@ -19,11 +20,13 @@ export const newItem = (set: string, song = ''): SetlistItem =>
  * handle (or use the arrows) to move songs, including between sets. No
  * order numbers to type.
  */
-export default function SetlistEditor({ s, items, onChange, songTitles }: {
+export default function SetlistEditor({ s, items, onChange, songTitles, songHref }: {
   s: AdminStrings;
   items: SetlistItem[];
   onChange: (items: SetlistItem[]) => void;
   songTitles: string[];
+  /** Link to a song's page, if the title matches one in Songs. */
+  songHref?: (title: string) => string | undefined;
 }) {
   const [dragKey, setDragKey] = useState<string | null>(null);
   const lastAdded = useRef<string | null>(null);
@@ -129,6 +132,12 @@ export default function SetlistEditor({ s, items, onChange, songTitles }: {
                       onChange={e => update(row.key, { notes: e.target.value })}
                     />
                     <span className="lu-song-actions">
+                      {(() => {
+                        const href = row.song.trim() ? songHref?.(row.song) : undefined;
+                        return href
+                          ? <Link to={href} className="lu-icon-btn" title={s.openSong} aria-label={s.openSong}>↗</Link>
+                          : <span className="lu-icon-btn is-placeholder" aria-hidden="true" />;
+                      })()}
                       <button type="button" className="lu-icon-btn" onClick={() => move(row.key, -1)} disabled={idx === 0} aria-label={s.moveUp}>↑</button>
                       <button type="button" className="lu-icon-btn" onClick={() => move(row.key, 1)} disabled={idx === items.length - 1} aria-label={s.moveDown}>↓</button>
                       <button type="button" className="lu-icon-btn is-danger" onClick={() => onChange(items.filter(i => i.key !== row.key))} aria-label={s.remove}>✕</button>

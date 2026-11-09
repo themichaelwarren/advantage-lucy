@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAllEvents, useVenues, useAreas, useAllSetlists, useSongs } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, replaceRows } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
@@ -13,6 +13,7 @@ import { setlistIsPublic } from '../../utils/showDates';
 import { EVENT_COLUMNS, eventToRow } from '../../utils/adminRows';
 import SetlistEditor, { newItem, type SetlistItem } from '../../components/admin/SetlistEditor';
 import { addMissingSongs } from '../../components/admin/songs';
+import { normalize } from '../../components/admin/SuggestInput';
 import AddedSongs from '../../components/admin/AddedSongs';
 import type { Song } from '../../types';
 
@@ -84,6 +85,10 @@ export default function AdminEventForm() {
   };
 
   const songTitles = useMemo(() => songs.map(x => x.title).filter(Boolean).sort(), [songs]);
+  const songHref = useMemo(() => {
+    const m = new Map(songs.filter(x => x.title).map(x => [normalize(x.title), x.id]));
+    return (title: string) => { const id = m.get(normalize(title)); return id ? `${prefix}/songs/${id}` : undefined; };
+  }, [songs, prefix]);
 
   /** e.g. 2025-11-30-tokyo, like the existing IDs (date + prefecture). */
   function newEventId(): string {
@@ -177,6 +182,9 @@ export default function AdminEventForm() {
             />
           )}
         </Field>
+          {form.venue && venues.some(v => v.id === form.venue) && (
+            <Link to={`${prefix}/venues/${form.venue}`} className="lu-related-link">{s.openVenue} →</Link>
+          )}
         <div className="lu-grid-3">
           <Field label={s.doors} optional s={s}>
             {fid => <input id={fid} type="time" value={form.doors} onChange={e => set('doors', e.target.value)} />}
@@ -216,7 +224,7 @@ export default function AdminEventForm() {
         {form.date && !setlistIsPublic({ date: form.date, end_date: form.end_date }) && (
           <p className="lu-note">🔒 {s.setlistAfterShow}</p>
         )}
-        <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} />
+        <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} />
         <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
       </Section>
 

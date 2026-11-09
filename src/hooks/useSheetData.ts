@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
-import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPeople } from '../services/sheetsService';
+import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
+import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPrefectures, getPeople } from '../services/sheetsService';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -195,13 +195,15 @@ export function usePeople() {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     getPeople()
       .then(setPeople)
       .finally(() => setLoading(false));
-  }, []);
+  }, [tick]);
 
-  return { people, loading };
+  return { people, loading, refresh: () => setTick(t => t + 1) };
 }
 
 export function useAreas() {
@@ -216,4 +218,17 @@ export function useAreas() {
   }, [tick]);
 
   return { areas, loading, refresh: () => setTick(t => t + 1) };
+}
+
+export function usePrefectures() {
+  const [prefectures, setPrefectures] = useState<Prefecture[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getPrefectures()
+      .then(setPrefectures)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { prefectures, loading };
 }

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSongs, usePeople, useAllSetlists, useAllEvents, useTracklists, useAlbums } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, replaceRows } from '../../services/adminService';
+import { createRow, updateRow, deleteRow } from '../../services/adminService';
 import { normalize } from '../../components/admin/SuggestInput';
+import { retitleEverywhere } from '../../components/admin/songs';
 import { createDriveDoc } from '../../services/driveService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
@@ -94,25 +95,9 @@ export default function AdminSongForm() {
 
       // Setlists and tracklists refer to songs by title: carry a rename over
       if (renaming) {
-        const oldKey = normalize(savedTitle);
-        const newTitle = fields.title.trim();
-        const events = [...new Set(setlists.filter(r => normalize(r.song || '') === oldKey).map(r => r.event))];
-        for (const ev of events) {
-          const rows = setlists.filter(r => r.event === ev).map(r => ({
-            event: r.event, song: normalize(r.song || '') === oldKey ? newTitle : r.song,
-            set: r.set, order: String(r.order), notes: r.notes || '', status: r.status || '',
-          }));
-          await replaceRows('Setlists', ev, rows);
-        }
-        const releases = [...new Set(tracklists.filter(t => normalize(t.title || '') === oldKey).map(t => t.release))];
-        for (const rel of releases) {
-          const rows = tracklists.filter(t => t.release === rel).map(t => ({
-            release: t.release, track: String(t.track), title: normalize(t.title || '') === oldKey ? newTitle : t.title,
-          }));
-          await replaceRows('Tracklists', rel, rows);
-        }
-        if (events.length) refreshSetlists();
-        if (releases.length) refreshTracklists();
+        const changed = await retitleEverywhere(savedTitle, fields.title, setlists, tracklists);
+        if (changed.shows) refreshSetlists();
+        if (changed.releases) refreshTracklists();
       }
       setForm(fields);
       setBaseline(JSON.stringify(fields));
@@ -164,10 +149,10 @@ export default function AdminSongForm() {
         )}
         <div className="lu-grid-2">
           <Field label={s.musicBy} optional s={s}>
-            {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.music_by} onChange={v => set('music_by', v)} people={people} />}
+            {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.music_by} onChange={v => set('music_by', v)} people={people} personHref={pid => `${prefix}/people/${pid}`} />}
           </Field>
           <Field label={s.lyricsBy} optional s={s}>
-            {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.lyrics_by} onChange={v => set('lyrics_by', v)} people={people} />}
+            {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.lyrics_by} onChange={v => set('lyrics_by', v)} people={people} personHref={pid => `${prefix}/people/${pid}`} />}
           </Field>
         </div>
       </Section>

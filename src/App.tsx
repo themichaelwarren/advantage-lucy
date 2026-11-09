@@ -18,6 +18,10 @@ import AdminEvents from './pages/admin/AdminEvents';
 import AdminEventForm from './pages/admin/AdminEventForm';
 import AdminVenues from './pages/admin/AdminVenues';
 import AdminVenueForm from './pages/admin/AdminVenueForm';
+import AdminPeople from './pages/admin/AdminPeople';
+import AdminPersonForm from './pages/admin/AdminPersonForm';
+import AdminAreas from './pages/admin/AdminAreas';
+import AdminAreaForm from './pages/admin/AdminAreaForm';
 import AdminMusic from './pages/admin/AdminMusic';
 import AdminAlbumForm from './pages/admin/AdminAlbumForm';
 import AdminSongs from './pages/admin/AdminSongs';
@@ -137,6 +141,10 @@ export default function App() {
           <Route path="events/:id" element={<AdminEventForm />} />
           <Route path="venues" element={<AdminVenues />} />
           <Route path="venues/:id" element={<AdminVenueForm />} />
+          <Route path="areas" element={<AdminAreas />} />
+          <Route path="areas/:id" element={<AdminAreaForm />} />
+          <Route path="people" element={<AdminPeople />} />
+          <Route path="people/:id" element={<AdminPersonForm />} />
           <Route path="releases" element={<AdminMusic />} />
           <Route path="releases/:id" element={<AdminAlbumForm />} />
           <Route path="songs" element={<AdminSongs />} />

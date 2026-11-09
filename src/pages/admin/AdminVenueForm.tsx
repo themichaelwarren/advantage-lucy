@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useVenues, useAreas, useAllEvents } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
@@ -49,7 +49,13 @@ export default function AdminVenueForm() {
   const dirty = baseline !== '' && JSON.stringify([form, areaText]) !== baseline;
   const leaveGuard = useUnsavedWarning(dirty, saving);
   const set = (k: keyof Form, v: string) => { setForm(f => ({ ...f, [k]: v })); setNameError(''); };
-  const usedBy = events.filter(e => e.venue_id === form.id).length;
+  const showsHere = useMemo(
+    () => events.filter(e => form.id && e.venue_id === form.id).sort((a, b) => b.date.localeCompare(a.date)),
+    [events, form.id],
+  );
+  const usedBy = showsHere.length;
+  const showName = (e: typeof events[number]) =>
+    (locale === 'ja' ? e.title_ja || e.title_en : e.title_en || e.title_ja) || '';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,13 +82,15 @@ export default function AdminVenueForm() {
 
   if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
+  const heading = isNew ? s.newVenue : (locale === 'ja' ? form.name_ja || form.name_en : form.name_en || form.name_ja);
+
   return (
     <form className="lu-form" onSubmit={handleSubmit} noValidate>
       {leaveGuard}
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? s.venuesTitle : s.editVenue}</p>
-          <h1>{isNew ? s.newVenue : (locale === 'ja' ? form.name_ja || form.name_en : form.name_en || form.name_ja)}</h1>
+          <h1>{heading}</h1>
         </div>
       </div>
 
@@ -100,13 +108,16 @@ export default function AdminVenueForm() {
             <SuggestInput id={fid} value={areaText} onChange={setAreaText} suggestions={areaList} newLabel={s.newArea} />
           )}
         </Field>
+        {form.area && areas.some(a => a.id === form.area) && areaText === areaLabel(form.area) && (
+          <Link to={`${prefix}/areas/${form.area}`} className="lu-related-link">{s.openArea} →</Link>
+        )}
         <Field label={s.venueUrl} optional s={s}>
           {fid => <input id={fid} type="url" inputMode="url" placeholder="https://" value={form.url} onChange={e => set('url', e.target.value)} />}
         </Field>
         {!isNew && (
           <div className="lu-danger-row">
             {usedBy > 0
-              ? <p className="lu-hint">{usedBy} {s.showsHere}</p>
+              ? <p className="lu-hint">{s.inUseCantDelete}</p>
               : <DeleteButton s={s} onConfirm={async () => {
                   try { await deleteRow('Venues', form.id); navigate(`${prefix}/venues`); }
                   catch (err) { setError(errorText(err)); }
@@ -114,6 +125,24 @@ export default function AdminVenueForm() {
           </div>
         )}
       </Section>
+
+      {!isNew && (
+        <Section title={`${s.showsAtVenue} · ${showsHere.length}`}>
+          {showsHere.length === 0 ? <p className="lu-hint">{s.noShowsAtVenue}</p> : (
+            <ul className="lu-list lu-usage">
+              {showsHere.map(e => (
+                <li key={e.id}>
+                  <Link to={`${prefix}/events/${e.id}`} className="lu-list-row">
+                    <time>{e.date}</time>
+                    <span className="lu-list-main"><strong>{showName(e) || heading}</strong></span>
+                    {e.status === 'private' && <span className="lu-list-tags"><span className="lu-tag is-muted">{s.hidden}</span></span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      )}
 
       <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} backHref={`${prefix}/venues`} />
     </form>
