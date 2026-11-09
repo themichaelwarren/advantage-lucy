@@ -72,8 +72,10 @@ export async function replaceRows(tab: string, key: string, rows: Record<string,
   return result;
 }
 
-/** Mark a message new ('') or done. */
-export async function setMessageStatus(id: string, status: '' | 'done') {
+export type MessageStatus = '' | 'doing' | 'done';
+
+/** Set a message's status: '' (new), 'doing' (in progress) or 'done'. */
+export async function setMessageStatus(id: string, status: MessageStatus) {
   return adminFetch('/api/admin/messages', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

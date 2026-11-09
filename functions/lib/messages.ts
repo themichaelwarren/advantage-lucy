@@ -19,8 +19,8 @@ export const MESSAGE_COLUMNS = [
   'topic', 'event', 'attachments', 'status',
 ] as const;
 
-/** '' (new, not dealt with yet) or 'done'. */
-export const MESSAGE_STATUSES = ['', 'done'] as const;
+/** '' (new), 'doing' (someone is on it) or 'done'. */
+export const MESSAGE_STATUSES = ['', 'doing', 'done'] as const;
 
 // The "Say hello" options, kept from the original Tally form
 export const GREETINGS = ['hi', 'hey', 'hello', 'hello again', 'ヤッホー', 'こんにちは', 'こんにづは', 'どうも'];
@@ -162,7 +162,7 @@ export async function saveMessage(sheetId: string, saEmail: string, saKey: strin
 }
 
 /**
- * Mark a message new ('') or done. Writes only its status cell, so the
+ * Set a message's status ('' new, 'doing', 'done'). Writes only its status cell, so the
  * message itself is never rewritten.
  */
 export async function setMessageStatus(sheetId: string, saEmail: string, saKey: string, id: string, status: string) {
@@ -239,7 +239,7 @@ export function notificationEmail(m: ContactMessage, ctx: EmailContext = {}) {
   // Links (all to the Japanese pages: the band reads these)
   const base = (ctx.siteUrl || '').replace(/\/$/, '');
   const links = base ? {
-    message: `${base}/ja/admin/messages?open=${encodeURIComponent(m.id)}`,
+    message: `${base}/ja/admin/messages/${encodeURIComponent(m.id)}`,
     showPage: isSetlist && m.event ? `${base}/ja/events/${encodeURIComponent(m.event)}` : '',
     setlistEditor: isSetlist && m.event ? `${base}/ja/admin/events/${encodeURIComponent(m.event)}#setlist` : '',
   } : null;

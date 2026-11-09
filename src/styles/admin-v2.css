@@ -1070,3 +1070,22 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-badge { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: var(--pop); color: var(--text); font-size: 0.8rem; }
 .lu-section-link { margin-left: auto; font-size: 0.85rem; font-weight: 600; text-transform: none; letter-spacing: 0; text-decoration: underline; }
 .lu-snippet { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ---------- MESSAGE PAGE ---------- */
+.lu-messages li.is-done .lu-list-row { opacity: 0.6; }
+.lu-message-page { display: flex; flex-direction: column; gap: 1.1rem; max-width: 760px; }
+.lu-message-page .lu-eyebrow a { text-decoration: none; }
+.lu-message-page .lu-page-head { margin-bottom: 0; }
+.lu-message-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1.2rem; margin: 0; padding: 1rem 1.2rem; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: 0.92rem; }
+.lu-message-facts dt { color: var(--text-muted); font-weight: 600; }
+.lu-message-facts dd { margin: 0; overflow-wrap: anywhere; }
+.lu-message-facts a { text-decoration: underline; }
+.lu-message-page .lu-message-text { font-size: 1.02rem; border: 1.5px solid var(--border); }
+.lu-message-actions { flex-wrap: wrap; gap: 0.5rem; }
+.lu-message-next { margin: 0.6rem 0 0; }
+.lu-tag.is-doing { background: #ffd23f; border-color: transparent; color: #1a1a1a; }
+.lu-status-switch { display: inline-flex; gap: 0.3rem; padding: 0.25rem; border: 1.5px solid var(--border); border-radius: 999px; background: var(--surface); }
+.lu-status-switch .lu-pill { border-color: transparent; cursor: pointer; }
+.lu-status-switch .lu-pill.is-on.is-new { background: var(--pop); color: var(--text) !important; }
+.lu-status-switch .lu-pill.is-on.is-doing { background: #ffd23f; color: #1a1a1a !important; }
+.lu-status-switch .lu-pill.is-on.is-done { background: #3fcf8e; color: #1a1a1a !important; }
