@@ -3,6 +3,7 @@ import { useAllEvents, useAllSetlists } from '../../hooks/useSheetData';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
 import NeedsLook from '../../components/admin/NeedsLook';
+import NewMessages from '../../components/admin/NewMessages';
 
 /** Admin home: the four everyday jobs as big buttons, plus what needs doing. */
 export default function AdminDashboard() {
@@ -49,6 +50,8 @@ export default function AdminDashboard() {
           </Link>
         ))}
       </div>
+
+      <NewMessages />
 
       {!loading && (
         <div className="lu-columns">

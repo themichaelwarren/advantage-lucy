@@ -16,8 +16,11 @@ const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 export const MESSAGES_TAB = 'Messages';
 export const MESSAGE_COLUMNS = [
   'id', 'received_at', 'locale', 'greeting', 'name_family', 'name_given', 'email', 'message', 'notified',
-  'topic', 'event', 'attachments',
+  'topic', 'event', 'attachments', 'status',
 ] as const;
+
+/** '' (new, not dealt with yet) or 'done'. */
+export const MESSAGE_STATUSES = ['', 'done'] as const;
 
 // The "Say hello" options, kept from the original Tally form
 export const GREETINGS = ['hi', 'hey', 'hello', 'hello again', 'ヤッホー', 'こんにちは', 'こんにづは', 'どうも'];
@@ -158,10 +161,30 @@ export async function saveMessage(sheetId: string, saEmail: string, saKey: strin
   );
 }
 
+/**
+ * Mark a message new ('') or done. Writes only its status cell, so the
+ * message itself is never rewritten.
+ */
+export async function setMessageStatus(sheetId: string, saEmail: string, saKey: string, id: string, status: string) {
+  if (!id?.trim()) throw new Error('Missing message id');
+  if (!(MESSAGE_STATUSES as readonly string[]).includes(status)) throw new Error(`Unknown status "${status}"`);
+  const token = await getAccessToken(saEmail, saKey, SCOPE);
+  await ensureMessagesTab(sheetId, token);   // also adds the status heading on older tabs
+  const base = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+  const ids = await sheetsFetch(token, `${base}/values/${encodeURIComponent(`${MESSAGES_TAB}!A:A`)}`);
+  const row = (ids.values as string[][] | undefined)?.findIndex(r => r[0] === id) ?? -1;
+  if (row < 1) throw new Error(`Message "${id}" not found`);
+  const col = String.fromCharCode(65 + MESSAGE_COLUMNS.indexOf('status'));   // M
+  await sheetsFetch(token, `${base}/values/${encodeURIComponent(`${MESSAGES_TAB}!${col}${row + 1}`)}?valueInputOption=RAW`, {
+    method: 'PUT',
+    body: JSON.stringify({ values: [[status]] }),
+  });
+}
+
 /** Newest first. Returns [] if no message has arrived yet (tab not created). */
 export async function listMessages(sheetId: string, saEmail: string, saKey: string): Promise<Record<string, string>[]> {
   try {
-    const rows = await fetchSheet(sheetId, `${MESSAGES_TAB}!A:L`, saEmail, saKey);
+    const rows = await fetchSheet(sheetId, `${MESSAGES_TAB}!A:Z`, saEmail, saKey);
     return rowsToObjects(rows).sort((a, b) => (b.received_at || '').localeCompare(a.received_at || ''));
   } catch (err) {
     if (String(err).includes('Unable to parse range')) return [];

@@ -72,6 +72,15 @@ export async function replaceRows(tab: string, key: string, rows: Record<string,
   return result;
 }
 
+/** Mark a message new ('') or done. */
+export async function setMessageStatus(id: string, status: '' | 'done') {
+  return adminFetch('/api/admin/messages', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, status }),
+  });
+}
+
 /** Contact form messages, newest first (admin only). */
 export async function getMessages(): Promise<Record<string, string>[]> {
   const data = await adminFetch('/api/admin/messages');

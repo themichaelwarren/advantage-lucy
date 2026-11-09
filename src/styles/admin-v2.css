@@ -1060,3 +1060,13 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-publish-state { margin: 0; }
 .lu-publish-state.is-locked { color: var(--text); }
 .lu-tag.is-scheduled { background: color-mix(in srgb, var(--pop) 35%, var(--surface)); border-color: transparent; color: var(--text); }
+
+/* ---------- MESSAGES: new / done ---------- */
+.lu-tag.is-new { background: var(--pop); border-color: transparent; color: var(--text); }
+.lu-messages li.is-done .lu-message-head { opacity: 0.6; }
+.lu-btn-done { background: #3fcf8e; border-color: var(--text); color: var(--on-pop, #1a1a1a); }
+.lu-new-messages { margin-bottom: 2rem; }
+.lu-new-messages h2 { display: flex; align-items: center; gap: 0.5rem; }
+.lu-badge { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: var(--pop); color: var(--text); font-size: 0.8rem; }
+.lu-section-link { margin-left: auto; font-size: 0.85rem; font-weight: 600; text-transform: none; letter-spacing: 0; text-decoration: underline; }
+.lu-snippet { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }

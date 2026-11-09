@@ -6,7 +6,7 @@ import type { Plugin } from 'vite';
 import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews, fetchBlog, fetchPhotos, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, replaceRows, fetchHeaders, clearSheetCache } from './sheets';
 import { fetchDocText, createDoc } from './docs';
 import { checkAdmin } from '../functions/lib/adminAuth';
-import { checkContact, saveMessage, listMessages, verifyTurnstile, showForEmail } from '../functions/lib/messages';
+import { checkContact, saveMessage, listMessages, setMessageStatus, verifyTurnstile, showForEmail } from '../functions/lib/messages';
 import { notifyBand } from '../functions/lib/notify';
 import { checkFiles, attachmentNames, isAttachmentName } from '../functions/lib/attachments';
 import type { IncomingMessage, ServerResponse } from 'http';
@@ -34,8 +34,9 @@ export default function sheetsPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         const isContact = req.url === '/api/contact' && req.method === 'POST';
         const isList = req.url?.startsWith('/api/admin/messages') && req.method === 'GET';
+        const isStatus = req.url?.startsWith('/api/admin/messages') && req.method === 'PATCH';
         const attachment = req.method === 'GET' ? req.url?.match(/^\/api\/admin\/attachment\/([^/?]+)/)?.[1] : undefined;
-        if (!isContact && !isList && !attachment) return next();
+        if (!isContact && !isList && !isStatus && !attachment) return next();
         // Dev only: attached photos are kept in a local, git-ignored folder
         const fs = await import('fs');
         const path = await import('path');
@@ -58,6 +59,15 @@ export default function sheetsPlugin(): Plugin {
           if (isList) {
             if (!(await requireAdmin(req, res))) return;
             res.end(JSON.stringify({ messages: await listMessages(sheetId, email, privateKey) }));
+            return;
+          }
+          if (isStatus) {
+            if (!(await requireAdmin(req, res))) return;
+            const chunks: Buffer[] = [];
+            for await (const chunk of req) chunks.push(chunk as Buffer);
+            const { id, status } = JSON.parse(Buffer.concat(chunks).toString() || '{}');
+            await setMessageStatus(sheetId, email, privateKey, id || '', status ?? '');
+            res.end(JSON.stringify({ ok: true }));
             return;
           }
           const chunks: Buffer[] = [];
