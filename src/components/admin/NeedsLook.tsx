@@ -47,6 +47,16 @@ export default function NeedsLook() {
     return { real: all.filter(m => !isPlaceholderTitle(m.title)), placeholders: all.filter(m => isPlaceholderTitle(m.title)) };
   }, [songs, setlists, tracklists]);
 
+  // Problems in Songs itself: rows with no ID (can't be opened or saved),
+  // and the same title twice
+  const songProblems = useMemo(() => {
+    const noId = songs.filter(x => x.title && !x.id);
+    const byKey = new Map<string, typeof songs>();
+    songs.forEach(x => { const k = normalize(x.title || ''); if (k) byKey.set(k, [...(byKey.get(k) || []), x]); });
+    const dupes = [...byKey.values()].filter(list => list.length > 1);
+    return { noId, dupes };
+  }, [songs]);
+
   const eventById = useMemo(() => new Map(events.map(e => [e.id, e])), [events]);
   const albumByTitle = useMemo(() => new Map(albums.map(a => [a.title, a])), [albums]);
   const songOptions = useMemo(
@@ -84,6 +94,24 @@ export default function NeedsLook() {
   return (
     <section className="lu-list-group lu-needs-look">
       <h2>{s.needsLook}{real.length > 0 && <span className="lu-count"> {real.length}</span>}</h2>
+      {(songProblems.noId.length > 0 || songProblems.dupes.length > 0) && (
+        <div className="lu-note lu-song-problems">
+          {songProblems.dupes.length > 0 && (
+            <p>
+              <strong>{s.songDupes}</strong>{' '}
+              {songProblems.dupes.map((list, i) => (
+                <span key={i}>{i > 0 && ' · '}{list.map((x, j) => (
+                  <span key={j}>{j > 0 && ' / '}{x.id ? <Link to={`${prefix}/songs/${x.id}`}>{x.title}</Link> : <span>{x.title} ({s.songNoId})</span>}</span>
+                ))}</span>
+              ))}
+            </p>
+          )}
+          {songProblems.noId.length > 0 && (
+            <p><strong>{s.songsNoId}</strong> {songProblems.noId.map(x => x.title).join(', ')}</p>
+          )}
+          <p className="lu-hint">{s.songsNoIdHint}</p>
+        </div>
+      )}
       {real.length === 0 ? <p className="lu-empty">{s.allMatched}</p> : (
         <>
           <p className="lu-hint">{s.needsLookHint}</p>

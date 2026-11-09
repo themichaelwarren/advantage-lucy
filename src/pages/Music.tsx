@@ -57,7 +57,7 @@ export default function Music({ locale }: Props) {
   }, [tracklists]);
 
   const sortedSongs = useMemo(
-    () => [...songs].filter(x => x.title).sort((a, b) => a.title.localeCompare(b.title, 'ja')),
+    () => [...songs].filter(x => x.title && x.id).sort((a, b) => a.title.localeCompare(b.title, 'ja')),
     [songs],
   );
 
@@ -83,11 +83,11 @@ export default function Music({ locale }: Props) {
   const songRow = (x: Song) => {
     const first = firstRelease.get(normalize(x.title));
     return (
-      <li key={x.id}>
+      <li key={x.id || `title:${x.title}`}>
         <Link to={`${prefix}/songs/${x.id}`} className="tl-row song-row">
           <span className="tl-main">
             <strong>{x.title}</strong>
-            {first && <span>{first.title}{first.year ? ` · ${first.year}` : ''}</span>}
+            <span>{first ? `${first.title}${first.year ? ` · ${first.year}` : ''}` : s.music.unreleased}</span>
           </span>
           {x.lyrics_doc_id && <span className="song-lyrics-tag">{s.music.lyricsTag}</span>}
         </Link>

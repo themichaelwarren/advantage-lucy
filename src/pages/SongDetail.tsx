@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { normalize } from '../utils/text';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useSongs, useTracklists, useSetlists, useEvents, useAlbums, usePeople } from '../hooks/useSheetData';
@@ -76,7 +77,7 @@ export default function SongDetail({ locale }: Props) {
   // Albums this song appears on (via Tracklists)
   const albumAppearances = !tracklistsLoading
     ? tracklists
-        .filter(t => t.title === song.title)
+        .filter(t => normalize(t.title || '') === normalize(song.title))
         .map(t => {
           const album = albums.find(a => a.title === t.release);
           return album ? { album, track: t.track } : null;
@@ -87,7 +88,7 @@ export default function SongDetail({ locale }: Props) {
   // Events where this song was performed (via Setlists)
   const eventAppearances = !setlistsLoading
     ? setlists
-        .filter(sl => sl.song === song.title)
+        .filter(sl => normalize(sl.song || '') === normalize(song.title))
         .map(sl => {
           const event = events.find(e => e.id === sl.event);
           return event ? { event, set: sl.set, order: sl.order } : null;

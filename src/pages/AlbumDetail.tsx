@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
+import { normalize } from '../utils/text';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useAlbums, useTracklists, useSongs } from '../hooks/useSheetData';
@@ -117,7 +118,7 @@ export default function AlbumDetail({ locale }: Props) {
               <h2 className="section-label">{s.music.tracklist}</h2>
               <ol className="tracklist">
                 {tracks.map(tr => {
-                  const song = songs.find(s => s.title === tr.title);
+                  const song = songs.find(x => x.id && normalize(x.title || '') === normalize(tr.title || ''));
                   return (
                     <li key={tr.track} value={tr.track}>
                       {song

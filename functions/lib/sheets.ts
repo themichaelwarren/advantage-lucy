@@ -226,6 +226,7 @@ async function findRowIndex(sheetId: string, tab: string, id: string, email: str
 }
 
 export async function updateRow(sheetId: string, tab: string, id: string, fields: Record<string, string>, email: string, key: string): Promise<void> {
+  if (!id?.trim()) throw new Error(`Can't update a row in ${tab} without an ID`);
   const [rowIdx, values] = await Promise.all([
     findRowIndex(sheetId, tab, id, email, key),
     fieldsToRow(sheetId, tab, fields, email, key),
@@ -244,6 +245,7 @@ export async function updateRow(sheetId: string, tab: string, id: string, fields
 }
 
 export async function deleteRow(sheetId: string, tab: string, id: string, email: string, key: string): Promise<void> {
+  if (!id?.trim()) throw new Error(`Can't delete a row in ${tab} without an ID`);
   const token = await getToken(email, key);
   const metaRes = await fetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties`,

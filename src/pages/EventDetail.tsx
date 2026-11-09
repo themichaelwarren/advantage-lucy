@@ -1,5 +1,6 @@
 import { linkify } from '../utils/linkify';
 import { useParams, Link } from 'react-router-dom';
+import { normalize } from '../utils/text';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useSetlists, useSongs } from '../hooks/useSheetData';
@@ -165,7 +166,7 @@ export default function EventDetail({ locale }: Props) {
                     {setGroups.size > 1 && <h3 className="setlist-set-label">{setLabel(setKey)}</h3>}
                     <ol className="tracklist">
                       {entries.map((entry, i) => {
-                        const song = songs.find(x => x.title === entry.song);
+                        const song = songs.find(x => x.id && normalize(x.title || '') === normalize(entry.song || ''));
                         return (
                           <li key={`${setKey}-${i}`} value={entry.order}>
                             {song ? <Link to={`${prefix}/songs/${song.id}`}>{entry.song}</Link> : entry.song}

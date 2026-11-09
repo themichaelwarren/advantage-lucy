@@ -48,13 +48,14 @@ export default function AdminSongs() {
         {list.map(x => {
           const credits = [names(x.music_by), names(x.lyrics_by)].filter(Boolean);
           return (
-            <li key={x.id}>
-              <Link to={`${prefix}/songs/${x.id}`} className="lu-list-row">
+            <li key={x.id || `title:${x.title}`}>
+              <Link to={x.id ? `${prefix}/songs/${x.id}` : prefix} className="lu-list-row">
                 <span className="lu-list-main">
                   <strong>{x.title}</strong>
                   {credits.length > 0 && <span>{[...new Set(credits)].join(' · ')}</span>}
                 </span>
                 <span className="lu-list-tags">
+                  {!x.id && <span className="lu-tag is-todo">⚠ {s.songNoId}</span>}
                   {x.lyrics_doc_id
                     ? <span className="lu-tag is-ok">✎ {s.lyricsLinked}</span>
                     : <span className="lu-tag is-todo">{s.lyricsMissing}</span>}

@@ -963,3 +963,6 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-list-row:hover .lu-row-cta, .lu-list-row:focus-visible .lu-row-cta { background: var(--text); color: var(--bg); }
 .lu-list-row:hover .lu-row-cta-arrow, .lu-list-row:focus-visible .lu-row-cta-arrow { transform: translateX(3px); }
 @media (max-width: 520px) { .lu-row-cta { order: 2; } }
+.lu-song-problems { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.9rem; }
+.lu-song-problems p { margin: 0; }
+.lu-song-problems a { text-decoration: underline; }

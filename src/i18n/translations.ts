@@ -75,6 +75,7 @@ export const translations = {
       lyricsTag: 'Lyrics',
       noMatch: 'Nothing matches “{q}”.',
       trackMatch: 'Includes',
+      unreleased: 'Unreleased',
       types: { album: 'Album', lp: 'LP', ep: 'EP', single: 'Single', compilation: 'Compilation' } as Record<string, string>,
     },
     songs: {
@@ -242,6 +243,7 @@ export const translations = {
       lyricsTag: '歌詞',
       noMatch: '「{q}」に一致するものはありません。',
       trackMatch: '収録',
+      unreleased: '未収録',
       types: { album: 'アルバム', lp: 'LP', ep: 'EP', single: 'シングル', compilation: 'コンピレーション' } as Record<string, string>,
     },
     songs: {
