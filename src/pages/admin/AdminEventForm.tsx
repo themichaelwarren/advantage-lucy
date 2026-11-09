@@ -8,6 +8,7 @@ import {
   useUnsavedWarning, makeId, errorText,
 } from '../../components/admin/ui';
 import VenuePicker from '../../components/admin/VenuePicker';
+import LinkTextarea from '../../components/admin/LinkTextarea';
 import { setlistIsPublic } from '../../utils/showDates';
 import { EVENT_COLUMNS, eventToRow } from '../../utils/adminRows';
 import SetlistEditor, { newItem, type SetlistItem } from '../../components/admin/SetlistEditor';
@@ -191,10 +192,10 @@ export default function AdminEventForm() {
         </Field>
         {/* Notes can be long (times, ticket details…): full width, growing with the text */}
         <Field label={`${s.description} · ${s.english}`} hint={s.notesHint} optional s={s}>
-          {fid => <textarea id={fid} className="lu-textarea-long" rows={6} value={form.body_en} onChange={e => set('body_en', e.target.value)} />}
+          {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={6} value={form.body_en} onChange={v => set('body_en', v)} />}
         </Field>
         <Field label={`${s.description} · ${s.japanese}`} optional s={s}>
-          {fid => <textarea id={fid} className="lu-textarea-long" rows={6} lang="ja" value={form.body_ja} onChange={e => set('body_ja', e.target.value)} />}
+          {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={6} lang="ja" value={form.body_ja} onChange={v => set('body_ja', v)} />}
         </Field>
       </Section>
 

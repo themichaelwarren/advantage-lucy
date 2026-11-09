@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAlbums, useTracklists, useSongs } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, replaceRows } from '../../services/adminService';
+import SuggestInput from '../../components/admin/SuggestInput';
+import LinkTextarea from '../../components/admin/LinkTextarea';
 import { useAdminT } from '../../i18n/admin';
 import {
   Section, Field, BilingualRow, SaveBar, ImageField, DeleteButton,
@@ -41,6 +43,10 @@ export default function AdminAlbumForm() {
   const [error, setError] = useState('');
 
   const songByTitle = useMemo(() => new Map(songs.map(x => [x.title, x])), [songs]);
+  const songSuggestions = useMemo(
+    () => songs.map(x => x.title).filter(Boolean).sort((a, b) => a.localeCompare(b, 'ja')).map(value => ({ value })),
+    [songs],
+  );
   const snapshot = (f: Form, t: Track[]) => JSON.stringify([f, t.map(x => x.title)]);
 
   useEffect(() => {
@@ -154,37 +160,33 @@ export default function AdminAlbumForm() {
         </Field>
         <BilingualRow>
           <Field label={`${s.description} · ${s.english}`} optional s={s}>
-            {fid => <textarea id={fid} rows={4} value={form.description_en} onChange={e => set('description_en', e.target.value)} />}
+            {fid => <LinkTextarea s={s} id={fid} rows={4} value={form.description_en} onChange={v => set('description_en', v)} />}
           </Field>
           <Field label={`${s.description} · ${s.japanese}`} optional s={s}>
-            {fid => <textarea id={fid} rows={4} lang="ja" value={form.description_ja} onChange={e => set('description_ja', e.target.value)} />}
+            {fid => <LinkTextarea s={s} id={fid} rows={4} lang="ja" value={form.description_ja} onChange={v => set('description_ja', v)} />}
           </Field>
         </BilingualRow>
       </Section>
 
       <Section title={s.secTracklist}>
         <div className="lu-setlist">
-          <datalist id="lu-track-titles">
-            {songs.map(x => <option key={x.id} value={x.title} />)}
-          </datalist>
           <div className="lu-set">
             <ol>
               {tracks.map((t, i) => {
                 const song = songByTitle.get(t.title.trim());
                 return (
                   <li key={t.key} className="lu-song">
-                    <input
+                    <SuggestInput
+                      wrapClassName="lu-song-title-wrap"
                       className="lu-song-title"
-                      list="lu-track-titles"
                       value={t.title}
                       placeholder={s.trackTitle}
                       aria-label={s.trackTitle}
-                      onChange={e => setTracks(tracks.map(x => (x.key === t.key ? { ...x, title: e.target.value } : x)))}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (t.title.trim()) { const copy = [...tracks]; copy.splice(i + 1, 0, track()); setTracks(copy); }
-                        }
+                      onChange={v => setTracks(tracks.map(x => (x.key === t.key ? { ...x, title: v } : x)))}
+                      suggestions={songSuggestions}
+                      newLabel={s.newSongTitle}
+                      onEnter={() => {
+                        if (t.title.trim()) { const copy = [...tracks]; copy.splice(i + 1, 0, track()); setTracks(copy); }
                       }}
                       autoFocus={i === tracks.length - 1 && !t.title}
                     />

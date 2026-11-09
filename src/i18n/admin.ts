@@ -183,6 +183,13 @@ const en = {
   lyricsLinked: 'Has lyrics',
   lyricsMissing: 'No lyrics yet',
   songNotListed: 'Not in Songs yet',
+  newSongTitle: 'New song',
+  newArea: 'New area',
+  linkAdd: 'Link',
+  linkText: 'Text to show (optional)',
+  linkUrl: 'Web address',
+  linkInsert: 'Add link',
+  linkHint: 'Or select some words and paste a web address.',
   releaseTitleMissing: 'Add the release title.',
 
   // Songs
@@ -444,6 +451,13 @@ const ja: AdminStrings = {
   lyricsLinked: '歌詞あり',
   lyricsMissing: '歌詞なし',
   songNotListed: '楽曲に未登録',
+  newSongTitle: '新しい曲',
+  newArea: '新しいエリア',
+  linkAdd: 'リンク',
+  linkText: '表示する文字（任意）',
+  linkUrl: 'URL',
+  linkInsert: 'リンクを追加',
+  linkHint: '文字を選んでURLを貼り付けてもリンクになります。',
   releaseTitleMissing: 'タイトルを入力してください。',
 
   songsTitle: '楽曲',

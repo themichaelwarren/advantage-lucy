@@ -8,6 +8,7 @@ import {
   useUnsavedWarning, makeId, errorText,
 } from '../../components/admin/ui';
 import { NEWS_COLUMNS, newsToRow } from '../../utils/adminRows';
+import LinkTextarea from '../../components/admin/LinkTextarea';
 
 type NewsField = typeof NEWS_COLUMNS[number];
 type Form = Record<NewsField, string>;
@@ -96,10 +97,10 @@ export default function AdminNewsForm() {
           </Field>
         </BilingualRow>
         <Field label={`${s.body} · ${s.english}`} optional s={s}>
-          {fid => <textarea id={fid} className="lu-textarea-long" rows={8} value={form.body_en} onChange={e => set('body_en', e.target.value)} />}
+          {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={8} value={form.body_en} onChange={v => set('body_en', v)} />}
         </Field>
         <Field label={`${s.body} · ${s.japanese}`} optional s={s}>
-          {fid => <textarea id={fid} className="lu-textarea-long" rows={8} lang="ja" value={form.body_ja} onChange={e => set('body_ja', e.target.value)} />}
+          {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={8} lang="ja" value={form.body_ja} onChange={v => set('body_ja', v)} />}
         </Field>
       </Section>
 

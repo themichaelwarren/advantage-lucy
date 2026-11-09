@@ -894,3 +894,23 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-table .lu-td-date { font-family: var(--font-main); font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; }
 .lu-table .lu-td-center { text-align: center; }
 .lu-table tr.is-hidden :is(.lu-td-date, .lu-td-title) { opacity: 0.55; }
+
+/* ---------- SUGGESTION FIELDS (SuggestInput) ---------- */
+.lu-suggest { display: block; }
+.lu-suggest > input { width: 100%; }
+.lu-shell .lu-setlist .lu-song-title-wrap { flex: 2; min-width: 0; }
+.lu-shell .lu-setlist .lu-song-title-wrap .lu-song-title { width: 100%; }
+@media (max-width: 560px) {
+  .lu-shell .lu-setlist .lu-song-title-wrap { flex-basis: calc(100% - 3.5rem); }
+}
+.lu-options mark { background: color-mix(in srgb, var(--pop) 45%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.lu-options li.is-static { cursor: default; color: var(--text-muted); font-weight: 500; }
+.lu-options li strong { font-weight: 600; }
+
+/* ---------- LINK TEXTAREA ---------- */
+.lu-linkarea textarea { width: 100%; }
+.lu-linkbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.35rem; }
+.lu-linkbar .lu-btn { padding: 0.35em 0.8em; font-size: 0.85rem; }
+.lu-linkbar .lu-hint { margin: 0; font-size: 0.8rem; }
+.lu-linkform { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; padding: 0.6rem; border: 1.5px dashed var(--text); border-radius: var(--radius-sm); }
+.lu-linkform input { flex: 1 1 12rem; min-width: 0; }

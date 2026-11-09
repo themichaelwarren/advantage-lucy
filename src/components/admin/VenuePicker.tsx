@@ -3,6 +3,19 @@ import type { Area, Venue } from '../../types';
 import type { AdminLocale, AdminStrings } from '../../i18n/admin';
 import { createRow } from '../../services/adminService';
 import { errorText, makeId } from './ui';
+import SuggestInput, { Highlight, rankMatches } from './SuggestInput';
+import type { Suggestion } from './SuggestInput';
+
+/** Areas as suggestions: name in the admin's language, the other one greyed. */
+export function areaSuggestions(areas: Area[], locale: AdminLocale): Suggestion[] {
+  return areas
+    .map(a => {
+      const main = (locale === 'ja' ? a.name_ja || a.name_en : a.name_en || a.name_ja) || a.id;
+      const other = locale === 'ja' ? a.name_en : a.name_ja;
+      return { value: main, hint: other && other !== main ? other : undefined, keywords: a.id };
+    })
+    .sort((x, y) => x.value.localeCompare(y.value, locale));
+}
 
 /**
  * Find the area whose name (either language) or ID matches what was typed,
@@ -56,14 +69,12 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = q
-      ? venues.filter(v => [v.name_en, v.name_ja, areaOf(v)].some(t => t?.toLowerCase().includes(q)))
-      : venues;
-    return list.slice(0, 8);
+  const matches = useMemo(
+    () => rankMatches(venues, query, v => [v.name_en, v.name_ja, areaOf(v), v.id]).slice(0, 60),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, venues, areaById, locale]);
+    [query, venues, areaById, locale],
+  );
+  const areaList = useMemo(() => areaSuggestions(areas, locale), [areas, locale]);
 
   function choose(v: Venue) {
     onChange(v.id);
@@ -96,15 +107,14 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
           <input placeholder={s.venueNewName} value={draft.name_en} onChange={e => setDraft(d => ({ ...d, name_en: e.target.value }))} autoFocus />
           <input placeholder={s.venueNewNameJa} value={draft.name_ja} onChange={e => setDraft(d => ({ ...d, name_ja: e.target.value }))} lang="ja" />
         </div>
-        <input
+        <SuggestInput
           placeholder={s.venueNewArea}
+          aria-label={s.venueNewArea}
           value={draft.area}
-          list="lu-area-list"
-          onChange={e => setDraft(d => ({ ...d, area: e.target.value }))}
+          onChange={v => setDraft(d => ({ ...d, area: v }))}
+          suggestions={areaList}
+          newLabel={s.newArea}
         />
-        <datalist id="lu-area-list">
-          {areas.map(a => <option key={a.id} value={locale === 'ja' ? a.name_ja || a.name_en : a.name_en || a.name_ja} />)}
-        </datalist>
         <div className="lu-row">
           <button type="button" className="lu-btn" onClick={() => setCreating(false)}>{s.cancel}</button>
           <button type="button" className="lu-btn lu-btn-primary" disabled={busy || (!draft.name_en.trim() && !draft.name_ja.trim())} onClick={createVenue}>
@@ -155,7 +165,7 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
               onMouseDown={e => { e.preventDefault(); choose(v); }}
               onMouseEnter={() => setActive(i)}
             >
-              <strong>{nameOf(v)}</strong> <span>{areaOf(v)}</span>
+              <strong><Highlight text={nameOf(v)} query={query} /></strong> <span><Highlight text={areaOf(v)} query={query} /></span>
             </li>
           ))}
           <li

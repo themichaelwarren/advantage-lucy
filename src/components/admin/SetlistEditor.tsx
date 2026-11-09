@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import SuggestInput from './SuggestInput';
 import type { AdminStrings } from '../../i18n/admin';
 
 export interface SetlistItem {
@@ -26,6 +27,10 @@ export default function SetlistEditor({ s, items, onChange, songTitles }: {
 }) {
   const [dragKey, setDragKey] = useState<string | null>(null);
   const lastAdded = useRef<string | null>(null);
+  const suggestions = useMemo(
+    () => [...new Set(songTitles)].sort((a, b) => a.localeCompare(b, 'ja')).map(value => ({ value })),
+    [songTitles],
+  );
 
   const sets = Array.from(new Set(items.map(i => i.set)));
   if (sets.length === 0) sets.push('1');
@@ -83,10 +88,6 @@ export default function SetlistEditor({ s, items, onChange, songTitles }: {
 
   return (
     <div className="lu-setlist">
-      <datalist id="lu-song-titles">
-        {songTitles.map(t => <option key={t} value={t} />)}
-      </datalist>
-
       {sets.map(set => {
         const rows = items.filter(i => i.set === set);
         return (
@@ -107,18 +108,18 @@ export default function SetlistEditor({ s, items, onChange, songTitles }: {
                     onDragEnd={() => setDragKey(null)}
                   >
                     <span className="lu-drag" aria-hidden="true">⇅</span>
-                    <input
+                    <SuggestInput
+                      wrapClassName="lu-song-title-wrap"
                       className="lu-song-title"
-                      list="lu-song-titles"
                       value={row.song}
                       placeholder={s.songPlaceholder}
                       aria-label={s.songPlaceholder}
                       autoFocus={lastAdded.current === row.key}
-                      onChange={e => update(row.key, { song: e.target.value })}
-                      onKeyDown={e => {
-                        // Enter on a filled row adds the next song: quick to type a whole set
-                        if (e.key === 'Enter') { e.preventDefault(); if (row.song.trim()) add(set); }
-                      }}
+                      onChange={v => update(row.key, { song: v })}
+                      suggestions={suggestions}
+                      newLabel={s.newSongTitle}
+                      // Enter on a filled row adds the next song: quick to type a whole set
+                      onEnter={() => { if (row.song.trim()) add(set); }}
                     />
                     <input
                       className="lu-song-note"

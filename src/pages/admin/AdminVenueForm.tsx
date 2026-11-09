@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useVenues, useAreas, useAllEvents } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
 import { Section, Field, BilingualRow, SaveBar, DeleteButton, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
-import { resolveArea } from '../../components/admin/VenuePicker';
+import { resolveArea, areaSuggestions } from '../../components/admin/VenuePicker';
+import SuggestInput from '../../components/admin/SuggestInput';
 
 interface Form { id: string; name_en: string; name_ja: string; area: string; url: string }
 const empty: Form = { id: '', name_en: '', name_ja: '', area: '', url: '' };
@@ -16,6 +17,7 @@ export default function AdminVenueForm() {
   const navigate = useNavigate();
   const { venues, loading } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
+  const areaList = useMemo(() => areaSuggestions(areas, locale), [areas, locale]);
   const { events } = useAllEvents();
 
   // `areaText` is what's typed in the area box: a name in either language
@@ -94,12 +96,7 @@ export default function AdminVenueForm() {
         </BilingualRow>
         <Field label={s.area} hint={s.areaHint} optional s={s}>
           {fid => (
-            <>
-              <input id={fid} list="lu-venue-areas" value={areaText} onChange={e => setAreaText(e.target.value)} />
-              <datalist id="lu-venue-areas">
-                {areas.map(a => <option key={a.id} value={locale === 'ja' ? a.name_ja || a.name_en : a.name_en || a.name_ja} />)}
-              </datalist>
-            </>
+            <SuggestInput id={fid} value={areaText} onChange={setAreaText} suggestions={areaList} newLabel={s.newArea} />
           )}
         </Field>
         <Field label={s.venueUrl} optional s={s}>
