@@ -9,7 +9,7 @@ import { retitleEverywhere } from '../../components/admin/songs';
 import { createDriveDoc } from '../../services/driveService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
-import { Section, Field, SaveBar, DeleteButton, EditDialog, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
+import { Section, Field, SaveBar, DeleteButton, EditDialog, LockHint, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
 import PeoplePicker from '../../components/admin/PeoplePicker';
@@ -342,7 +342,7 @@ export default function AdminSongForm() {
             </div>
           )}
           {media && savedTitle && (
-            <Section title={s.songVideos} id="videos">
+            <Section title={s.songVideos} id="videos" badge={<LockHint text={s.videosPrivate} />}>
               <SongVideos
                 s={s} locale={locale} prefix={prefix}
                 songId={form.id} title={savedTitle} media={media} events={events}

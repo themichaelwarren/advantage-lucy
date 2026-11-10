@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AdminStrings } from '../../i18n/admin';
 import { getVideoTitle, type MediaRow } from '../../services/adminService';
 import type { SetlistItem } from './SetlistEditor';
 import YouTubePlayer, { type PlayerHandle } from './YouTubePlayer';
-import { youTubeId, youTubeStart, youTubeWatch, formatTime, parseTime } from '../../utils/youtube';
+import { youTubeId, youTubeStart, youTubeWatch, youTubeThumb, formatTime, parseTime } from '../../utils/youtube';
 import { normalize } from './SuggestInput';
+import { ConfirmDialog } from './ui';
 
 /**
  * Videos of a show (admin only). Paste YouTube links; the open one plays
@@ -16,8 +17,25 @@ export interface ShowVideo {
   key: string;
   url: string;
   title: string;
-  /** Start of each song, by setlist row (SetlistItem.key) */
+  /** Start of each song, by its place in the setlist: "シトラス#1" (#2 if played twice) */
   starts: Record<string, number>;
+}
+
+/**
+ * Each setlist row's lasting name for its start time: the song plus which
+ * time it's played ("めまい#2"). Row keys change whenever the setlist
+ * reloads; this doesn't, so marked times stay with their songs.
+ */
+export function songSlots(setlist: SetlistItem[]): Record<string, string> {
+  const seen: Record<string, number> = {};
+  const out: Record<string, string> = {};
+  for (const item of setlist) {
+    if (!item.song.trim()) continue;
+    const n = normalize(item.song);
+    seen[n] = (seen[n] || 0) + 1;
+    out[item.key] = `${n}#${seen[n]}`;
+  }
+  return out;
 }
 
 let nextKey = 0;
@@ -31,11 +49,15 @@ export function toShowVideos(rows: MediaRow[], eventId: string, setlist: Setlist
   for (const p of mine.filter(r => r.kind === 'part')) {
     if (!videos.some(v => v.url === p.url)) videos.push(newVideo(p.url));
   }
+  const slots = Object.values(songSlots(setlist));
   for (const v of videos) {
-    const used = new Set<string>();
+    const seen: Record<string, number> = {};
     for (const p of mine.filter(r => r.kind === 'part' && r.url === v.url)) {
-      const row = setlist.find(i => !used.has(i.key) && normalize(i.song) === normalize(p.song));
-      if (row && p.start !== '') { used.add(row.key); v.starts[row.key] = Number(p.start); }
+      if (p.start === '') continue;
+      const n = normalize(p.song);
+      seen[n] = (seen[n] || 0) + 1;
+      const slot = `${n}#${seen[n]}`;
+      if (slots.includes(slot)) v.starts[slot] = Number(p.start);
     }
   }
   return videos;
@@ -44,11 +66,12 @@ export function toShowVideos(rows: MediaRow[], eventId: string, setlist: Setlist
 /** Videos on screen → Media rows to save for the show. */
 export function fromShowVideos(videos: ShowVideo[], setlist: SetlistItem[]): Partial<MediaRow>[] {
   const out: Partial<MediaRow>[] = [];
+  const slot = songSlots(setlist);
   for (const v of videos) {
     if (!v.url.trim()) continue;
     out.push({ kind: 'show', url: v.url.trim(), title: v.title.trim() });
     for (const item of setlist) {
-      const t = v.starts[item.key];
+      const t = v.starts[slot[item.key]];
       if (item.song.trim() && t !== undefined) out.push({ kind: 'part', url: v.url.trim(), song: item.song.trim(), start: String(t) });
     }
   }
@@ -58,16 +81,25 @@ export function fromShowVideos(videos: ShowVideo[], setlist: SetlistItem[]): Par
 /** For "unsaved changes": what matters about the videos. */
 export const videosSnapshot = (videos: ShowVideo[], setlist: SetlistItem[]) => JSON.stringify(fromShowVideos(videos, setlist));
 
-export default function ShowVideos({ s, videos, onChange, setlist }: {
+export default function ShowVideos({ s, videos, onChange, setlist, editing = true }: {
   s: AdminStrings;
   videos: ShowVideo[];
   onChange: React.Dispatch<React.SetStateAction<ShowVideo[]>>;
   setlist: SetlistItem[];
+  /** false: watch only (player and the marked songs); true: change links and times */
+  editing?: boolean;
 }) {
   const [openKey, setOpenKey] = useState<string | null>(videos[0]?.key ?? null);
+  const [removing, setRemoving] = useState<ShowVideo | null>(null);
+  // Starting to edit with no videos: open with an empty link to paste into
+  useEffect(() => {
+    if (editing && videos.length === 0) { const v = newVideo(); onChange([v]); setOpenKey(v.key); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
   const [player, setPlayer] = useState<PlayerHandle | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({}); // typed times not yet valid
   const songs = setlist.filter(i => i.song.trim());
+  const slot = songSlots(setlist);
 
   const update = (key: string, patch: Partial<ShowVideo>) => onChange(vs => vs.map(v => (v.key === key ? { ...v, ...patch } : v)));
   /** Fill in a blank title from YouTube once a link is pasted. */
@@ -79,17 +111,83 @@ export default function ShowVideos({ s, videos, onChange, setlist }: {
   };
   const setStart = (v: ShowVideo, itemKey: string, sec: number | null) => {
     const starts = { ...v.starts };
-    if (sec === null) delete starts[itemKey]; else starts[itemKey] = Math.floor(sec);
+    const k = slot[itemKey];
+    if (sec === null) delete starts[k]; else starts[k] = Math.floor(sec);
     update(v.key, { starts });
   };
 
+  // ---------- Watching: nothing here changes anything ----------
+  if (!editing) {
+    const open = videos.find(v => v.key === openKey);
+    const openId = open ? youTubeId(open.url) : null;
+    const marksOf = (v: ShowVideo) => songs
+      .filter(i => v.starts[slot[i.key]] !== undefined)
+      .map(i => ({ item: i, t: v.starts[slot[i.key]] }))
+      .sort((x, y) => x.t - y.t);
+    return (
+      <div className="lu-videos lu-videos-compact">
+        {videos.length === 0 && <p className="lu-hint">{s.videosNoneShow}</p>}
+        {videos.length > 0 && (
+          <ul className="lu-vcards">
+            {videos.map(v => {
+              const id = youTubeId(v.url);
+              const n = marksOf(v).length;
+              const label = v.title || v.url.replace(/^https?:\/\/(www\.)?/, '');
+              const pick = () => (id ? setOpenKey(k => (k === v.key ? null : v.key)) : window.open(v.url, '_blank', 'noopener'));
+              return (
+                <li key={v.key} className={`lu-vcard${openKey === v.key ? ' is-on' : ''}`}>
+                  <button type="button" className="lu-vcard-play" onClick={pick} aria-label={`${s.videoPlay}: ${label}`}>
+                    {id ? <img src={youTubeThumb(id)} alt="" loading="lazy" /> : <span className="lu-vcard-link">↗</span>}
+                    <span className="lu-vcard-time">▶ {n ? s.videoSongsN.replace('{n}', String(n)) : s.videoPlay}</span>
+                  </button>
+                  <span className="lu-vcard-text">
+                    <button type="button" className="lu-vcard-title" onClick={pick}>{label}</button>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {open && openId && (
+          <div className="lu-video-body">
+            <YouTubePlayer key={openId} videoId={openId} onReady={setPlayer} title={open.title || undefined} />
+            <div className="lu-video-parts">
+              {marksOf(open).length === 0 ? <p className="lu-hint">{s.videoNoMarks}</p> : (
+                <ol className="lu-video-chapters">
+                  {marksOf(open).map(({ item, t }) => (
+                    <li key={item.key}>
+                      <button type="button" onClick={() => player?.seek(t)} disabled={!player}>
+                        <span className="lu-video-song">{item.song}</span>
+                        <span className="lu-video-at">{formatTime(t)}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <a className="lu-hint" href={youTubeWatch(openId)} target="_blank" rel="noopener noreferrer">{s.videoOpen} ↗</a>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ---------- Editing ----------
   return (
     <div className="lu-videos">
-      <p className="lu-hint lu-hint-top">🔒 {s.videosPrivate}</p>
+      <ConfirmDialog
+        s={s} open={!!removing}
+        title={s.videoRemoveTitle} body={s.videoRemoveBody} confirmLabel={s.videoRemoveYes}
+        onCancel={() => setRemoving(null)}
+        onConfirm={() => {
+          if (removing) { onChange(vs => vs.filter(x => x.key !== removing.key)); if (openKey === removing.key) setOpenKey(null); }
+          setRemoving(null);
+        }}
+      />
       {videos.map(v => {
         const id = youTubeId(v.url);
         const open = openKey === v.key;
-        const marked = Object.keys(v.starts).filter(k => songs.some(i => i.key === k)).length;
+        const marked = songs.filter(i => v.starts[slot[i.key]] !== undefined).length;
         return (
           <div key={v.key} className={`lu-video${open ? ' is-open' : ''}`}>
             <div className="lu-video-head">
@@ -101,7 +199,7 @@ export default function ShowVideos({ s, videos, onChange, setlist }: {
                   // A link copied at a moment (?t=…) is probably where the first song starts
                   const t = youTubeStart(url);
                   const first = songs[0];
-                  update(v.key, { url, ...(t !== null && first && !Object.keys(v.starts).length ? { starts: { [first.key]: t } } : {}) });
+                  update(v.key, { url, ...(t !== null && first && !Object.keys(v.starts).length ? { starts: { [slot[first.key]]: t } } : {}) });
                   setOpenKey(v.key);
                   if (!v.title.trim()) fetchTitle(v.key, url);
                 }}
@@ -113,7 +211,7 @@ export default function ShowVideos({ s, videos, onChange, setlist }: {
                 </button>
               )}
               <button type="button" className="lu-icon-btn is-danger" aria-label={s.videoRemove} title={s.videoRemove}
-                onClick={() => { onChange(videos.filter(x => x.key !== v.key)); if (open) setOpenKey(null); }}>✕</button>
+                onClick={() => (v.url.trim() ? setRemoving(v) : onChange(vs => vs.filter(x => x.key !== v.key)))}>✕</button>
             </div>
 
             {v.url.trim() && !id && (
@@ -132,7 +230,7 @@ export default function ShowVideos({ s, videos, onChange, setlist }: {
                       <p className="lu-hint">{s.videoSongsHint}</p>
                       <ol>
                         {songs.map(item => {
-                          const t = v.starts[item.key];
+                          const t = v.starts[slot[item.key]];
                           const draftKey = `${v.key}:${item.key}`;
                           const draft = drafts[draftKey];
                           return (

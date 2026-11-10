@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAllEvents, useVenues, useAreas, useAllSetlists, useSongs } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, type MediaRow } from '../../services/adminService';
+import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, getReservations, type MediaRow } from '../../services/adminService';
 import ShowVideos, { toShowVideos, fromShowVideos, videosSnapshot, type ShowVideo } from '../../components/admin/ShowVideos';
 import { useAdminT } from '../../i18n/admin';
 import {
-  Section, Field, BilingualRow, Switch, SaveBar, ImageField, DeleteButton,
+  Section, Field, BilingualRow, Switch, SaveBar, ImageField, DeleteButton, EditDialog, LockHint,
   useUnsavedWarning, makeId, errorText,
 } from '../../components/admin/ui';
+import { useFitsViewport } from '../../hooks/useFitsViewport';
+import { formatPrice } from '../../utils/format';
+import { linkify } from '../../utils/linkify';
 import VenuePicker from '../../components/admin/VenuePicker';
 import LinkTextarea from '../../components/admin/LinkTextarea';
 import { setlistIsPublic, todayInJapan, normDateTime } from '../../utils/showDates';
@@ -52,18 +55,19 @@ export default function AdminEventForm() {
   const [videos, setVideos] = useState<ShowVideo[]>([]);
   const [videosBaseline, setVideosBaseline] = useState('[]');
   useEffect(() => { getMedia().then(setMedia).catch(() => setMedia([])); }, []);
-  const [baseline, setBaseline] = useState('');
   const [errors, setErrors] = useState<Partial<Record<EventField, string>>>({});
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState('');
 
-  const snapshot = (f: Form, sl: SetlistItem[]) =>
-    JSON.stringify([f, sl.map(({ song, set, notes }) => [song, set, notes])]);
+  // What's saved, to tell what changed: the show's fields, its setlist, its videos
+  const [formBase, setFormBase] = useState('');
+  const [setlistBase, setSetlistBase] = useState<SetlistItem[]>([]);
+  const setlistKey = (sl: SetlistItem[]) => JSON.stringify(sl.filter(r => r.song.trim()).map(({ song, set, notes }) => [song, set, notes]));
 
   // Load an existing show and its setlist
   useEffect(() => {
-    if (isNew) { setBaseline(snapshot(emptyForm(), [])); return; }
+    if (isNew) { setFormBase(JSON.stringify(emptyForm())); return; }
     if (loading) return;
     const ev = events.find(e => e.id === id);
     if (!ev) return;
@@ -73,10 +77,12 @@ export default function AdminEventForm() {
       .sort((a, b) => a.set.localeCompare(b.set, undefined, { numeric: true }) || a.order - b.order)
       .map(x => ({ ...newItem(x.set, x.song), notes: x.notes || '', status: x.status || 'published' }));
     setForm(f);
+    setFormBase(JSON.stringify(f));
     setSetlist(sl);
-    setBaseline(snapshot(f, sl));
+    setSetlistBase(sl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew, id, loading, events, setlists]);
+  const baseline = formBase;
 
   // The show's videos, once both it and the Media tab have loaded (once per show,
   // so saving doesn't reload what's on screen)
@@ -90,16 +96,26 @@ export default function AdminEventForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew, media, baseline, id]);
 
-  // Arriving from "Add a setlist": jump to the setlist once the show has loaded
+  // Read first: the setlist has its own editor; the rest edit in small windows
+  const [dialog, setDialog] = useState<null | 'details' | 'tickets' | 'notes' | 'poster'>(null);
+  const [setlistEditing, setSetlistEditing] = useState(isNew);
+  const [videosEditing, setVideosEditing] = useState(false);
+  useEffect(() => { setDialog(null); setSetlistEditing(isNew); setVideosEditing(false); }, [id, isNew]);
+  const panel = useFitsViewport<HTMLElement>(32);
+
+  // Arriving from "Add a setlist": open the setlist editor once the show has loaded
   const location = useLocation();
   useEffect(() => {
     if (location.hash === '#setlist' && baseline) {
-      document.getElementById('setlist')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setSetlistEditing(true);
+      window.setTimeout(() => document.getElementById('setlist')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
   }, [location.hash, baseline]);
 
+  const formDirty = baseline !== '' && JSON.stringify(form) !== baseline;
+  const setlistDirty = setlistKey(setlist) !== setlistKey(setlistBase);
   const videosChanged = videosSnapshot(videos, setlist) !== videosBaseline;
-  const dirty = baseline !== '' && (snapshot(form, setlist) !== baseline || videosChanged);
+  const dirty = formDirty || setlistDirty || videosChanged;
   const leaveGuard = useUnsavedWarning(dirty, saving);
 
   const set = (field: EventField, value: string) => {
@@ -125,229 +141,471 @@ export default function AdminEventForm() {
     return makeId([form.date, place], new Set(events.map(e => e.id)));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function checkRequired(): boolean {
     const problems: Partial<Record<EventField, string>> = {};
     if (!form.date) problems.date = s.dateMissing;
     if (!form.venue) problems.venue = s.venueMissing;
     setErrors(problems);
     if (Object.keys(problems).length) {
       document.querySelector('.lu-field.has-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
+      return false;
     }
+    return true;
+  }
 
+  /** The show's own row (Events). */
+  async function writeEvent(eventId: string) {
+    const fields = { ...form, id: eventId };
+    if (isNew) await createRow('Events', fields);
+    else await updateRow('Events', eventId, fields);
+    setForm(fields);
+    setFormBase(JSON.stringify(fields));
+    return fields;
+  }
+
+  /** The setlist: new titles go into Songs; the order on screen becomes the order numbers. */
+  async function writeSetlist(eventId: string) {
+    const filled = setlist.filter(r => r.song.trim());
+    const { added, canonical } = await addMissingSongs(filled.map(r => r.song), songs);
+    const cleaned = setlist.filter(r => r.song.trim()).map(r => ({ ...r, song: canonical(r.song) }));
+    const counters: Record<string, number> = {};
+    const rows = cleaned.map(r => {
+      counters[r.set] = (counters[r.set] || 0) + 1;
+      return { event: eventId, song: r.song, set: r.set, order: String(counters[r.set]), notes: r.notes, status: r.status };
+    });
+    const hadSetlist = setlists.some(x => x.event === eventId) || setlistBase.length > 0;
+    if (rows.length || hadSetlist) await replaceRows('Setlists', eventId, rows);
+    if (added.length) { setAddedSongs(added); refreshSongs(); }
+    setSetlist(cleaned);
+    setSetlistBase(cleaned);
+    return cleaned;
+  }
+
+  async function writeVideos(eventId: string, sl: SetlistItem[]) {
+    const saved = await saveMedia(eventId, fromShowVideos(videos, sl));
+    setMedia(m => [...(m || []).filter(r => r.owner !== eventId), ...saved]);
+    setVideosBaseline(videosSnapshot(videos, sl));
+  }
+
+  /** Runs one save with the shared saving/error state; true if it worked. */
+  async function run(task: () => Promise<unknown>): Promise<boolean> {
     setSaving(true);
     setError('');
     try {
-      const eventId = isNew ? newEventId() : form.id;
-      const fields = { ...form, id: eventId };
-      if (isNew) await createRow('Events', fields);
-      else await updateRow('Events', eventId, fields);
-
-      // New song titles go into Songs too (like new venues); typed titles
-      // that match an existing song are saved with its exact spelling
-      const filled = setlist.filter(r => r.song.trim());
-      const { added, canonical } = await addMissingSongs(filled.map(r => r.song), songs);
-      const cleaned = setlist.map(r => (r.song.trim() ? { ...r, song: canonical(r.song) } : r));
-
-      // Setlist: the order on screen becomes the order numbers
-      const counters: Record<string, number> = {};
-      const rows = cleaned
-        .filter(r => r.song.trim())
-        .map(r => {
-          counters[r.set] = (counters[r.set] || 0) + 1;
-          return { event: eventId, song: r.song, set: r.set, order: String(counters[r.set]), notes: r.notes, status: r.status };
-        });
-      const hadSetlist = setlists.some(x => x.event === eventId);
-      if (rows.length || hadSetlist) await replaceRows('Setlists', eventId, rows);
-
-      // Videos: only written when they changed (their own private tab)
-      if (videosChanged) {
-        const saved = await saveMedia(eventId, fromShowVideos(videos, cleaned));
-        setMedia(m => [...(m || []).filter(r => r.owner !== eventId), ...saved]);
-        setVideosBaseline(videosSnapshot(videos, cleaned));
-      }
-
-      if (added.length) { setAddedSongs(added); refreshSongs(); }
-      setSetlist(cleaned);
-      setForm(fields);
-      setBaseline(snapshot(fields, cleaned));
+      await task();
       setSavedAt(Date.now());
-      if (isNew) navigate(`${prefix}/events/${eventId}`, { replace: true });
+      return true;
     } catch (err) {
       setError(errorText(err));
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
+  // A new show: everything at once
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!checkRequired()) return;
+    const eventId = newEventId();
+    await run(async () => {
+      await writeEvent(eventId);
+      const sl = await writeSetlist(eventId);
+      if (videosChanged) await writeVideos(eventId, sl);
+      navigate(`${prefix}/events/${eventId}`, { replace: true });
+    });
+  }
+
+  // An existing show: one part at a time
+  const saveDialog = async () => {
+    if (!checkRequired()) return;
+    if (await run(() => writeEvent(form.id))) setDialog(null);
+  };
+  const closeDialog = () => {
+    if (formDirty && !window.confirm(s.songDiscard)) return;
+    if (baseline) setForm(JSON.parse(baseline) as Form);
+    setErrors({});
+    setError('');
+    setDialog(null);
+  };
+  const saveSetlist = async () => {
+    const ok = await run(async () => {
+      // When the setlist goes public is part of the show's row
+      if (formDirty) await writeEvent(form.id);
+      const sl = await writeSetlist(form.id);
+      if (videosChanged) await writeVideos(form.id, sl);
+    });
+    if (ok) setSetlistEditing(false);
+  };
+  const cancelSetlist = () => {
+    if ((setlistDirty || formDirty) && !window.confirm(s.songDiscard)) return;
+    setSetlist(setlistBase);
+    if (baseline) setForm(JSON.parse(baseline) as Form);
+    setSetlistEditing(false);
+  };
+
+  // Reservations so far (when the show takes them)
+  const [booked, setBooked] = useState<number | null>(null);
+  useEffect(() => {
+    if (isNew || form.reserve !== 'TRUE' || !id) { setBooked(null); return; }
+    getReservations()
+      .then(list => setBooked(list.filter(r => r.event === id && r.status !== 'cancelled').reduce((n, r) => n + (parseInt(String(r.tickets), 10) || 0), 0)))
+      .catch(() => setBooked(null));
+  }, [isNew, id, form.reserve]);
+
   if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
-  const heading = isNew ? s.newShow : (locale === 'ja' ? form.title_ja || form.title_en : form.title_en || form.title_ja) || form.date;
+  // ---------- The edit fields, for the new-show form and the edit windows ----------
+  const whenWhereFields = (
+    <>
+      <div className="lu-grid-2">
+        <Field label={s.date} error={errors.date}>
+          {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
+        </Field>
+        <Field label={s.endDate} hint={s.endDateHint} optional s={s}>
+          {fid => <input id={fid} type="date" value={form.end_date} min={form.date} onChange={e => set('end_date', e.target.value)} />}
+        </Field>
+      </div>
+      <Field label={s.venue} error={errors.venue}>
+        {fid => (
+          <VenuePicker
+            s={s} locale={locale} id={fid}
+            value={form.venue}
+            onChange={v => set('venue', v)}
+            venues={venues} areas={areas}
+            onCreated={() => { refreshVenues(); refreshAreas(); }}
+            onError={setError}
+          />
+        )}
+      </Field>
+      <div className="lu-grid-3">
+        <Field label={s.doors} optional s={s}>
+          {fid => <input id={fid} type="time" value={form.doors} onChange={e => set('doors', e.target.value)} />}
+        </Field>
+        <Field label={s.start} optional s={s}>
+          {fid => <input id={fid} type="time" value={form.start} onChange={e => set('start', e.target.value)} />}
+        </Field>
+        <Field label={s.end} optional s={s}>
+          {fid => <input id={fid} type="time" value={form.end} onChange={e => set('end', e.target.value)} />}
+        </Field>
+      </div>
+    </>
+  );
+  const aboutFields = (
+    <>
+      <BilingualRow>
+        <Field label={`${s.showTitle} · ${s.english}`} hint={s.showTitleHint} optional s={s}>
+          {fid => <input id={fid} value={form.title_en} onChange={e => set('title_en', e.target.value)} />}
+        </Field>
+        <Field label={`${s.showTitle} · ${s.japanese}`} optional s={s}>
+          {fid => <input id={fid} lang="ja" value={form.title_ja} onChange={e => set('title_ja', e.target.value)} />}
+        </Field>
+      </BilingualRow>
+      <Field label={s.performers} hint={s.performersHint} optional s={s}>
+        {fid => <input id={fid} value={form.performers} onChange={e => set('performers', e.target.value)} />}
+      </Field>
+    </>
+  );
+  const notesFields = (
+    <>
+      <p className="lu-hint">{s.bothLanguagesHint}</p>
+      <Field label={`${s.description} · ${s.english}`} hint={s.notesHint} optional s={s}>
+        {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={6} value={form.body_en} onChange={v => set('body_en', v)} />}
+      </Field>
+      <Field label={`${s.description} · ${s.japanese}`} optional s={s}>
+        {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={6} lang="ja" value={form.body_ja} onChange={v => set('body_ja', v)} />}
+      </Field>
+    </>
+  );
+  const visibilityFields = (
+    <>
+      <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
+      <Switch checked={form.featured === 'TRUE'} onChange={v => set('featured', v ? 'TRUE' : '')} label={s.featured} hint={s.featuredHint} />
+    </>
+  );
+  const ticketFields = (
+    <>
+      <div className="lu-grid-2">
+        <Field label={s.advPrice} optional s={s}>
+          {fid => <input id={fid} value={form.adv_price} placeholder={s.pricePlaceholder} onChange={e => set('adv_price', e.target.value)} />}
+        </Field>
+        <Field label={s.doorPrice} optional s={s}>
+          {fid => <input id={fid} value={form.door_price} placeholder={s.pricePlaceholder} onChange={e => set('door_price', e.target.value)} />}
+        </Field>
+      </div>
+      <Field label={s.ticketUrl} optional s={s}>
+        {fid => <input id={fid} type="url" inputMode="url" value={form.ticket_url} placeholder="https://" onChange={e => set('ticket_url', e.target.value)} />}
+      </Field>
+      <div className="lu-reserve-settings">
+        <Switch checked={form.reserve === 'TRUE'} onChange={v => set('reserve', v ? 'TRUE' : '')} label={s.reserveOn} hint={s.reserveOnHint} />
+        {form.reserve === 'TRUE' && (
+          <div className="lu-grid-3">
+            <Field label={s.reserveCap} hint={s.reserveCapHint} optional s={s}>
+              {fid => <input id={fid} type="number" inputMode="numeric" min={1} value={form.reserve_cap} onChange={e => set('reserve_cap', e.target.value)} />}
+            </Field>
+            <Field label={s.reserveMax} hint={s.reserveMaxHint} optional s={s}>
+              {fid => <input id={fid} type="number" inputMode="numeric" min={1} max={20} value={form.reserve_max} placeholder="4" onChange={e => set('reserve_max', e.target.value)} />}
+            </Field>
+            <Field label={s.reserveUntil} hint={s.reserveUntilHint} optional s={s}>
+              {fid => <input id={fid} type="datetime-local" value={normDateTime(form.reserve_until)} onChange={e => set('reserve_until', e.target.value)} />}
+            </Field>
+          </div>
+        )}
+      </div>
+    </>
+  );
+  const setlistPublic = form.date ? setlistIsPublic({ date: form.date, end_date: form.end_date, setlist_at: form.setlist_at }) : false;
+  const setlistState = form.date && (
+    <p className={`lu-hint lu-publish-state${setlistPublic ? '' : ' is-locked'}`}>
+      {setlistPublic
+        ? s.setlistPublicNow
+        : form.setlist_at
+          ? `🔒 ${s.setlistAtHint.replace('{at}', showDateTime(form.setlist_at))}`
+          : `🔒 ${s.setlistDefaultHint.replace('{at}', `${dayAfter(form.end_date || form.date)} 00:00`)}`}
+    </p>
+  );
+  const setlistTiming = (
+    <div className="lu-publish">
+      <p className="lu-publish-label">{s.setlistGoesLive}</p>
+      <div className="lu-chips" role="radiogroup" aria-label={s.setlistGoesLive}>
+        <button type="button" role="radio" aria-checked={!form.setlist_at} className={`lu-pill${!form.setlist_at ? ' is-on' : ''}`} onClick={() => set('setlist_at', '')}>{s.setlistDayAfter}</button>
+        <button type="button" role="radio" aria-checked={!!form.setlist_at} className={`lu-pill${form.setlist_at ? ' is-on' : ''}`}
+          onClick={() => set('setlist_at', form.setlist_at || `${form.date || todayInJapan()}T21:00`)}>{s.goLiveLater}</button>
+      </div>
+      {form.setlist_at && (
+        <label className="lu-publish-when">
+          <input type="datetime-local" value={normDateTime(form.setlist_at)} onChange={e => set('setlist_at', e.target.value)} aria-label={s.goLiveLater} />
+          <span className="lu-hint">{s.japanTime}</span>
+        </label>
+      )}
+      {setlistState}
+    </div>
+  );
+  const setlistEditor = (
+    <>
+      {setlistTiming}
+      <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} songCover={songCover} />
+      <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
+    </>
+  );
+
+  // ---------- A new show: the plain form ----------
+  if (isNew) {
+    return (
+      <form className="lu-form" onSubmit={handleSubmit} noValidate>
+        {leaveGuard}
+        <div className="lu-page-head">
+          <div>
+            <p className="lu-eyebrow">{s.shows}</p>
+            <h1>{s.newShow}</h1>
+          </div>
+        </div>
+        <Section title={s.secWhenWhere}>{whenWhereFields}</Section>
+        <Section title={s.secAbout}>{aboutFields}{notesFields}</Section>
+        <Section title={s.secSetlist} id="setlist">{setlistEditor}</Section>
+        <Section title={s.secTickets}>{ticketFields}</Section>
+        <Section title={s.secPoster}><ImageField s={s} value={form.poster_url} onChange={v => set('poster_url', v)} onError={setError} /></Section>
+        <Section title={s.visible}>{visibilityFields}</Section>
+        <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} backHref={`${prefix}/events`} />
+      </form>
+    );
+  }
+
+  // ---------- The show at a glance ----------
+  const saved = (baseline ? JSON.parse(baseline) : form) as Form;
+  const pick = (en?: string, ja?: string) => (locale === 'ja' ? ja || en : en || ja) || '';
+  const venue = venues.find(v => v.id === saved.venue);
+  const area = venue ? areas.find(a => a.id === venue.area) : undefined;
+  const venueName = venue ? pick(venue.name_en, venue.name_ja) : saved.venue;
+  const areaName = area ? pick(area.name_en, area.name_ja) : '';
+  const title = pick(saved.title_en, saved.title_ja);
+  const weekday = saved.date
+    ? new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { weekday: 'short', timeZone: 'UTC' }).format(new Date(`${saved.date}T00:00:00Z`))
+    : '';
+  const isPast = (saved.end_date || saved.date) < todayInJapan();
+  const times = [
+    saved.doors && `${s.doors} ${saved.doors}`,
+    saved.start && `${s.start} ${saved.start}`,
+    saved.end && `${s.end} ${saved.end}`,
+  ].filter(Boolean).join(' / ');
+  const prices = [
+    saved.adv_price && `${s.advPrice} ${formatPrice(saved.adv_price, locale)}`,
+    saved.door_price && `${s.doorPrice} ${formatPrice(saved.door_price, locale)}`,
+  ].filter(Boolean);
+  const notes = pick(saved.body_en, saved.body_ja);
+  const editBtn = (which: 'details' | 'tickets' | 'notes' | 'poster') => (
+    <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={s.songEdit} title={s.songEdit}>✎</button>
+  );
+  const setLabel = (set: string) => set === 'e' ? s.encore : set.startsWith('e') ? `${s.encore} ${set.slice(1)}` : `${s.set} ${set}`;
+  const sets = [...new Set(setlistBase.map(r => r.set))];
 
   return (
-    <form className="lu-form" onSubmit={handleSubmit} noValidate>
+    <div className="lu-song-page lu-show-page">
       {leaveGuard}
-      <div className="lu-page-head">
-        <div>
-          <p className="lu-eyebrow">{isNew ? s.shows : s.editShow}</p>
-          <h1>{heading}</h1>
+      <div className="lu-song-layout">
+        {/* Left: the show itself, tickets and flyer (stays in view while it fits) */}
+        <aside ref={panel.ref} className={`lu-song-side${panel.fits ? ' is-sticky' : ''}`} style={{ top: panel.top }}>
+          <div className="lu-song-card">
+            <div className="lu-song-card-head">
+              <p className="lu-eyebrow"><Link to={`${prefix}/events`}>← {s.shows}</Link></p>
+              {editBtn('details')}
+            </div>
+            <p className="lu-show-date">
+              <strong>{saved.date.replace(/-/g, '.')}</strong>
+              {weekday && <span className="lu-tag">{weekday}</span>}
+              {saved.end_date && saved.end_date !== saved.date && <span className="lu-hint">〜 {saved.end_date.replace(/-/g, '.')}</span>}
+            </p>
+            <h1>{title || venueName}</h1>
+            <dl className="lu-song-credits">
+              <dt>{s.venue}</dt>
+              <dd>{venue ? <Link to={`${prefix}/venues/${venue.id}`}>{venueName}</Link> : venueName}{areaName && <span className="lu-hint"> · {areaName}</span>}</dd>
+              {times && (<><dt>{s.showTimes}</dt><dd>{times}</dd></>)}
+              {saved.performers && (<><dt>{s.performers}</dt><dd>{saved.performers}</dd></>)}
+            </dl>
+            {(saved.status === 'private' || saved.featured === 'TRUE') && (
+              <p className="lu-row">
+                {saved.status === 'private' && <span className="lu-tag is-muted">{s.hidden}</span>}
+                {saved.featured === 'TRUE' && <span className="lu-tag is-ok">{s.featured}</span>}
+              </p>
+            )}
+            <Link to={`/${locale}/events/${saved.id}`} className="lu-btn lu-btn-quiet lu-song-site">{s.viewOnSite} ↗</Link>
+          </div>
+
+          <div className="lu-song-card">
+            <div className="lu-song-card-head">
+              <p className="lu-publish-label">{s.secTickets}</p>
+              {editBtn('tickets')}
+            </div>
+            {prices.length === 0 && !saved.ticket_url && saved.reserve !== 'TRUE' && <p className="lu-hint">{s.ticketsNone}</p>}
+            {prices.length > 0 && <p className="lu-show-line">{prices.join(' / ')}</p>}
+            {saved.ticket_url && <a className="lu-show-line" href={saved.ticket_url} target="_blank" rel="noopener noreferrer">{s.ticketUrl} ↗</a>}
+            {saved.reserve === 'TRUE' && (
+              <Link to={`${prefix}/reservations/${saved.id}`} className="lu-show-resv">
+                🎫 <strong>{booked ?? '…'}{saved.reserve_cap ? ` / ${saved.reserve_cap}` : ''}</strong> {s.resvTicketsShort}
+                <span className="lu-hint"> · {s.openReservations} →</span>
+              </Link>
+            )}
+          </div>
+
+          <div className="lu-song-card">
+            <div className="lu-song-card-head">
+              <p className="lu-publish-label">{s.secPoster}</p>
+              {editBtn('poster')}
+            </div>
+            {saved.poster_url
+              ? <a href={saved.poster_url} target="_blank" rel="noopener noreferrer" className="lu-show-flyer"><img src={saved.poster_url} alt="" loading="lazy" /></a>
+              : <p className="lu-hint">{s.posterNone}</p>}
+          </div>
+        </aside>
+
+        {/* Right: setlist, videos, notes */}
+        <div className="lu-song-main">
+          <Section
+            title={`${s.secSetlist}${setlistBase.length ? ` · ${setlistBase.length}` : ''}`}
+            id="setlist"
+            aside={!setlistEditing && setlistBase.length > 0 ? <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setSetlistEditing(true)} aria-label={s.songEdit} title={s.songEdit}>✎</button> : undefined}
+          >
+            {setlistEditing ? (
+              <>
+                {setlistEditor}
+                <div className="lu-row lu-section-actions">
+                  {error && <span className="lu-field-error">{s.errorPrefix} {error}</span>}
+                  <button type="button" className="lu-btn" onClick={cancelSetlist} disabled={saving}>{s.cancel}</button>
+                  <button type="button" className="lu-btn lu-btn-primary" onClick={saveSetlist} disabled={saving || (!setlistDirty && !formDirty && !videosChanged)}>{saving ? s.saving : s.save}</button>
+                </div>
+              </>
+            ) : setlistBase.length === 0 ? (
+              <div className="lu-row lu-videos-empty">
+                <span className="lu-hint">{isPast ? s.setlistMissing : s.setlistLater}</span>
+                <button type="button" className="lu-btn lu-btn-primary" onClick={() => setSetlistEditing(true)}>+ {s.setlistEnter}</button>
+              </div>
+            ) : (
+              <>
+                {setlistState}
+                <div className="lu-show-setlist">
+                  {sets.map(set => (
+                    <div key={set}>
+                      {sets.length > 1 && <h3>{setLabel(set)}</h3>}
+                      <ol>
+                        {setlistBase.filter(r => r.set === set).map(r => {
+                          const href = songHref(r.song);
+                          const cover = songCover(r.song);
+                          return (
+                            <li key={r.key}>
+                              {href ? <Link to={href}>{r.song}</Link> : <span className="is-unlinked" title={s.needsLookHint}>{r.song}</span>}
+                              {cover && <span className="lu-tag lu-cover-tag">{s.coverTag}</span>}
+                              {r.notes && <span className="lu-hint"> （{r.notes}）</span>}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </Section>
+
+          <Section
+            title={`${s.secVideos}${videos.length ? ` · ${videos.length}` : ''}`}
+            id="videos"
+            badge={<LockHint text={s.videosPrivate} />}
+            aside={!videosEditing && !setlistEditing && videos.length > 0
+              ? <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setVideosEditing(true)} aria-label={s.songEdit} title={s.songEdit}>✎</button>
+              : undefined}
+          >
+            {/* Watching by default; ✎ to change links and times (saved or cancelled here) */}
+            <ShowVideos s={s} videos={videos} onChange={setVideos} setlist={setlistEditing ? setlist : setlistBase} editing={videosEditing || setlistEditing} />
+            {!videosEditing && !setlistEditing && videos.length === 0 && (
+              <div className="lu-vfoot">
+                <button type="button" className="lu-link-btn" onClick={() => { setVideosEditing(true); }}>+ {s.videoAdd}</button>
+              </div>
+            )}
+            {videosEditing && !setlistEditing && (
+              <div className="lu-row lu-section-actions">
+                {error && <span className="lu-field-error">{s.errorPrefix} {error}</span>}
+                <button type="button" className="lu-btn" disabled={saving}
+                  onClick={() => {
+                    if (videosChanged && !window.confirm(s.songDiscard)) return;
+                    setVideos(toShowVideos(media || [], saved.id, setlistBase));
+                    setVideosEditing(false);
+                  }}>{s.cancel}</button>
+                <button type="button" className="lu-btn lu-btn-primary" disabled={saving || !videosChanged}
+                  onClick={async () => { if (await run(() => writeVideos(saved.id, setlistBase))) setVideosEditing(false); }}>{saving ? s.saving : s.save}</button>
+              </div>
+            )}
+          </Section>
+
+          <Section title={s.description} aside={editBtn('notes')}>
+            {notes
+              ? <div className="event-notes lu-show-notes">{notes.split(/\n\s*\n/).map((para, i) => <p key={i}>{linkify(para.trim())}</p>)}</div>
+              : <p className="lu-hint">{s.notesNone}</p>}
+          </Section>
         </div>
       </div>
 
-      <Section title={s.secWhenWhere}>
-        <div className="lu-grid-2">
-          <Field label={s.date} error={errors.date}>
-            {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
-          </Field>
-          <Field label={s.endDate} hint={s.endDateHint} optional s={s}>
-            {fid => <input id={fid} type="date" value={form.end_date} min={form.date} onChange={e => set('end_date', e.target.value)} />}
-          </Field>
-        </div>
-        <Field label={s.venue} error={errors.venue}>
-          {fid => (
-            <VenuePicker
-              s={s} locale={locale} id={fid}
-              value={form.venue}
-              onChange={v => set('venue', v)}
-              venues={venues} areas={areas}
-              onCreated={() => { refreshVenues(); refreshAreas(); }}
-              onError={setError}
-            />
-          )}
-        </Field>
-          {form.venue && venues.some(v => v.id === form.venue) && (
-            <Link to={`${prefix}/venues/${form.venue}`} className="lu-related-link">{s.openVenue} →</Link>
-          )}
-        <div className="lu-grid-3">
-          <Field label={s.doors} optional s={s}>
-            {fid => <input id={fid} type="time" value={form.doors} onChange={e => set('doors', e.target.value)} />}
-          </Field>
-          <Field label={s.start} optional s={s}>
-            {fid => <input id={fid} type="time" value={form.start} onChange={e => set('start', e.target.value)} />}
-          </Field>
-          <Field label={s.end} optional s={s}>
-            {fid => <input id={fid} type="time" value={form.end} onChange={e => set('end', e.target.value)} />}
-          </Field>
-        </div>
-      </Section>
-
-      <Section title={s.secAbout}>
-        <p className="lu-hint">{s.bothLanguagesHint}</p>
-        <BilingualRow>
-          <Field label={`${s.showTitle} · ${s.english}`} hint={s.showTitleHint} optional s={s}>
-            {fid => <input id={fid} value={form.title_en} onChange={e => set('title_en', e.target.value)} />}
-          </Field>
-          <Field label={`${s.showTitle} · ${s.japanese}`} optional s={s}>
-            {fid => <input id={fid} lang="ja" value={form.title_ja} onChange={e => set('title_ja', e.target.value)} />}
-          </Field>
-        </BilingualRow>
-        <Field label={s.performers} hint={s.performersHint} optional s={s}>
-          {fid => <input id={fid} value={form.performers} onChange={e => set('performers', e.target.value)} />}
-        </Field>
-        {/* Notes can be long (times, ticket details…): full width, growing with the text */}
-        <Field label={`${s.description} · ${s.english}`} hint={s.notesHint} optional s={s}>
-          {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={6} value={form.body_en} onChange={v => set('body_en', v)} />}
-        </Field>
-        <Field label={`${s.description} · ${s.japanese}`} optional s={s}>
-          {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={6} lang="ja" value={form.body_ja} onChange={v => set('body_ja', v)} />}
-        </Field>
-      </Section>
-
-      <Section title={s.secSetlist} id="setlist">
-        <div className="lu-publish">
-          <p className="lu-publish-label">{s.setlistGoesLive}</p>
-          <div className="lu-chips" role="radiogroup" aria-label={s.setlistGoesLive}>
-            <button type="button" role="radio" aria-checked={!form.setlist_at} className={`lu-pill${!form.setlist_at ? ' is-on' : ''}`} onClick={() => set('setlist_at', '')}>{s.setlistDayAfter}</button>
-            <button type="button" role="radio" aria-checked={!!form.setlist_at} className={`lu-pill${form.setlist_at ? ' is-on' : ''}`}
-              onClick={() => set('setlist_at', form.setlist_at || `${form.date || todayInJapan()}T21:00`)}>{s.goLiveLater}</button>
-          </div>
-          {form.setlist_at && (
-            <label className="lu-publish-when">
-              <input type="datetime-local" value={normDateTime(form.setlist_at)} onChange={e => set('setlist_at', e.target.value)} aria-label={s.goLiveLater} />
-              <span className="lu-hint">{s.japanTime}</span>
-            </label>
-          )}
-          {form.date && (
-            <p className={`lu-hint lu-publish-state${setlistIsPublic({ date: form.date, end_date: form.end_date, setlist_at: form.setlist_at }) ? '' : ' is-locked'}`}>
-              {setlistIsPublic({ date: form.date, end_date: form.end_date, setlist_at: form.setlist_at })
-                ? s.setlistPublicNow
-                : form.setlist_at
-                  ? `🔒 ${s.setlistAtHint.replace('{at}', showDateTime(form.setlist_at))}`
-                  : `🔒 ${s.setlistDefaultHint.replace('{at}', `${dayAfter(form.end_date || form.date)} 00:00`)}`}
-            </p>
-          )}
-        </div>
-        <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} songCover={songCover} />
-        <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
-      </Section>
-
-      <Section title={s.secVideos} id="videos">
-        <ShowVideos s={s} videos={videos} onChange={setVideos} setlist={setlist} />
-      </Section>
-
-      <Section title={s.secTickets}>
-        <div className="lu-grid-2">
-          <Field label={s.advPrice} optional s={s}>
-            {fid => <input id={fid} value={form.adv_price} placeholder={s.pricePlaceholder} onChange={e => set('adv_price', e.target.value)} />}
-          </Field>
-          <Field label={s.doorPrice} optional s={s}>
-            {fid => <input id={fid} value={form.door_price} placeholder={s.pricePlaceholder} onChange={e => set('door_price', e.target.value)} />}
-          </Field>
-        </div>
-        <Field label={s.ticketUrl} optional s={s}>
-          {fid => <input id={fid} type="url" inputMode="url" value={form.ticket_url} placeholder="https://" onChange={e => set('ticket_url', e.target.value)} />}
-        </Field>
-        <div className="lu-reserve-settings">
-          <Switch checked={form.reserve === 'TRUE'} onChange={v => set('reserve', v ? 'TRUE' : '')} label={s.reserveOn} hint={s.reserveOnHint} />
-          {form.reserve === 'TRUE' && (
-            <>
-              <div className="lu-grid-3">
-                <Field label={s.reserveCap} hint={s.reserveCapHint} optional s={s}>
-                  {fid => <input id={fid} type="number" inputMode="numeric" min={1} value={form.reserve_cap} onChange={e => set('reserve_cap', e.target.value)} />}
-                </Field>
-                <Field label={s.reserveMax} hint={s.reserveMaxHint} optional s={s}>
-                  {fid => <input id={fid} type="number" inputMode="numeric" min={1} max={20} value={form.reserve_max} placeholder="4" onChange={e => set('reserve_max', e.target.value)} />}
-                </Field>
-                <Field label={s.reserveUntil} hint={s.reserveUntilHint} optional s={s}>
-                  {fid => <input id={fid} type="datetime-local" value={normDateTime(form.reserve_until)} onChange={e => set('reserve_until', e.target.value)} />}
-                </Field>
-              </div>
-              {!isNew && <Link to={`${prefix}/reservations/${form.id}`} className="lu-related-link">🎫 {s.openReservations} →</Link>}
-            </>
-          )}
-        </div>
-      </Section>
-
-      <Section title={s.secPoster}>
+      <EditDialog s={s} title={s.secDetails} open={dialog === 'details'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}
+        footer={<DeleteButton s={s} onConfirm={async () => {
+          try {
+            if (setlists.some(x => x.event === form.id)) await replaceRows('Setlists', form.id, []);
+            await deleteRow('Events', form.id);
+            navigate(`${prefix}/events`);
+          } catch (err) { setError(errorText(err)); }
+        }} />}
+      >
+        {whenWhereFields}
+        {aboutFields}
+        {visibilityFields}
+      </EditDialog>
+      <EditDialog s={s} title={s.secTickets} open={dialog === 'tickets'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}>
+        {ticketFields}
+      </EditDialog>
+      <EditDialog s={s} title={s.description} open={dialog === 'notes'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}>
+        {notesFields}
+      </EditDialog>
+      <EditDialog s={s} title={s.secPoster} open={dialog === 'poster'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}>
         <ImageField s={s} value={form.poster_url} onChange={v => set('poster_url', v)} onError={setError} />
-      </Section>
-
-      <Section title={s.visible}>
-        <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
-        <Switch checked={form.featured === 'TRUE'} onChange={v => set('featured', v ? 'TRUE' : '')} label={s.featured} hint={s.featuredHint} />
-        {!isNew && (
-          <div className="lu-danger-row">
-            <DeleteButton s={s} onConfirm={async () => {
-              try {
-                if (setlists.some(x => x.event === form.id)) await replaceRows('Setlists', form.id, []);
-                await deleteRow('Events', form.id);
-                navigate(`${prefix}/events`);
-              } catch (err) { setError(errorText(err)); }
-            }} />
-          </div>
-        )}
-      </Section>
-
-      <SaveBar
-        s={s}
-        saving={saving}
-        savedAt={savedAt}
-        error={error}
-        dirty={dirty}
-        viewHref={!isNew ? `/${locale}/events/${form.id}` : undefined}
-        backHref={`${prefix}/events`}
-      />
-    </form>
+      </EditDialog>
+    </div>
   );
 }

@@ -10,11 +10,15 @@ import { uploadFile, AuthExpiredError } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
 import type { AdminStrings } from '../../i18n/admin';
 
-export function Section({ title, children, aside, id }: { title: string; children: ReactNode; aside?: ReactNode; id?: string }) {
+export function Section({ title, children, aside, id, badge }: {
+  title: string; children: ReactNode; aside?: ReactNode; id?: string;
+  /** Small extra beside the title, e.g. a LockHint */
+  badge?: ReactNode;
+}) {
   return (
     <section className="lu-section" id={id}>
       <header className="lu-section-head">
-        <h2>{title}</h2>
+        <h2>{title}{badge}</h2>
         {aside}
       </header>
       <div className="lu-section-body">{children}</div>
@@ -221,6 +225,66 @@ export function DeleteButton({ s, onConfirm, label }: { s: AdminStrings; onConfi
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * 🔒 with a short explanation that shows on hover, keyboard focus or tap
+ * (e.g. "only the band sees this"). Tap again or tap elsewhere to hide it.
+ */
+export function LockHint({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: Event) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [open]);
+  return (
+    <span ref={ref} className={`lu-lock${open ? ' is-open' : ''}`}>
+      <button type="button" className="lu-lock-btn" aria-label={text} aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+        </svg>
+      </button>
+      <span className="lu-lock-tip" role="tooltip">{text}</span>
+    </span>
+  );
+}
+
+/**
+ * "Are you sure?" before removing something. Esc or Cancel keeps it.
+ */
+export function ConfirmDialog({ s, open, title, body, confirmLabel, onConfirm, onCancel }: {
+  s: AdminStrings;
+  open: boolean;
+  title: string;
+  body?: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    cancelRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onCancel]);
+  if (!open) return null;
+  return (
+    <div className="lu-modal-overlay" onClick={onCancel}>
+      <div className="lu-modal" role="alertdialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
+        <h3>{title}</h3>
+        {body && <p>{body}</p>}
+        <div className="lu-modal-actions">
+          <button ref={cancelRef} type="button" className="lu-btn" onClick={onCancel}>{s.cancel}</button>
+          <button type="button" className="lu-btn lu-btn-danger" onClick={onConfirm}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 

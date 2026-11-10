@@ -6,7 +6,7 @@ import { saveMedia, getVideoTitle, type MediaRow } from '../../services/adminSer
 import YouTubePlayer, { type PlayerHandle } from './YouTubePlayer';
 import { youTubeId, youTubeStart, youTubeThumb, youTubeWatch, formatTime } from '../../utils/youtube';
 import { normalize } from './SuggestInput';
-import { errorText } from './ui';
+import { errorText, ConfirmDialog } from './ui';
 
 /**
  * Every video of one song (admin only): live performances gathered from
@@ -70,6 +70,7 @@ export default function SongVideos({ s, locale, prefix, songId, title, media, pl
     getVideoTitle(url).then(t => { if (t) setRows(rs => rs.map((x, j) => (j === i && !x.title.trim() && x.url === url ? { ...x, title: t } : x))); });
   };
   const [state, setState] = useState<'' | 'saving' | 'saved' | string>('');
+  const [removing, setRemoving] = useState<number | null>(null);
   // Without ✎, the saved videos aren't in the rows: keep them as they are
   const songOnly = (rs: Draft[]) => [...(editingOwn ? [] : own.map(r => ({ url: r.url, title: r.title }))), ...rs.filter(r => r.url.trim() && !r.show).map(r => ({ url: r.url.trim(), title: r.title.trim() }))];
   const changed = rows.some(r => r.show && r.url.trim())
@@ -111,30 +112,32 @@ export default function SongVideos({ s, locale, prefix, songId, title, media, pl
 
   const card = (it: Item) => {
     const id = youTubeId(it.url);
+    const on = !!playing && id === playing.id && (it.start ?? null) === playing.start;
     return (
-      <li key={it.key}>
-        <button type="button" className={`lu-vcard${playing && id === playing.id && (it.start ?? null) === playing.start ? ' is-on' : ''}`} onClick={() => play(it.url, it.start)}>
+      <li key={it.key} className={`lu-vcard${on ? ' is-on' : ''}`}>
+        <button type="button" className="lu-vcard-play" onClick={() => play(it.url, it.start)} aria-label={`${s.videoPlay}: ${it.label}`}>
           {id ? <img src={youTubeThumb(id)} alt="" loading="lazy" /> : <span className="lu-vcard-link">↗</span>}
-          <span className="lu-vcard-text">
-            <strong>{it.label}</strong>
-            {it.sub && <span>{it.sub}</span>}
-            <span className="lu-vcard-time">▶ {it.whole ? s.songVideoWhole : it.start !== null ? formatTime(it.start) : s.videoPlay}</span>
-          </span>
+          <span className="lu-vcard-time">▶ {it.whole ? s.songVideoWhole : it.start !== null ? formatTime(it.start) : s.videoPlay}</span>
         </button>
-        {it.href && <Link to={it.href} className="lu-icon-btn" aria-label={s.editShow} title={s.editShow}>↗</Link>}
+        <span className="lu-vcard-text">
+          <button type="button" className="lu-vcard-title" onClick={() => play(it.url, it.start)}>{it.label}</button>
+          {it.sub && (it.href ? <Link to={it.href} className="lu-vcard-sub">{it.sub}</Link> : <span className="lu-vcard-sub">{it.sub}</span>)}
+        </span>
       </li>
     );
   };
+  const ownItems = own.map((r, i): Item => ({ key: `o${i}`, url: r.url, start: null, label: r.title || r.url.replace(/^https?:\/\/(www\.)?/, '') }));
+  const both = live.length > 0 && ownItems.length > 0;
+  const editingRows = editingOwn || rows.length > 0;
 
   return (
-    <div className="lu-videos">
-      <p className="lu-hint lu-hint-top">🔒 {s.videosPrivate}</p>
-      {live.length === 0 && own.length === 0 && rows.length === 0 && (
-        <div className="lu-row lu-videos-empty">
-          <span className="lu-hint">{s.songVideosNone}</span>
-          <button type="button" className="lu-btn" onClick={() => setRows([{ url: '', title: '', show: '' }])}>+ {s.videoAdd}</button>
-        </div>
-      )}
+    <div className="lu-videos lu-videos-compact">
+      <ConfirmDialog
+        s={s} open={removing !== null}
+        title={s.videoRemoveTitle} body={s.videoRemoveBody} confirmLabel={s.videoRemoveYes}
+        onCancel={() => setRemoving(null)}
+        onConfirm={() => { setRows(rs => rs.filter((_, j) => j !== removing)); setRemoving(null); }}
+      />
 
       {playing && (
         <div className="lu-video-body is-song">
@@ -143,54 +146,56 @@ export default function SongVideos({ s, locale, prefix, songId, title, media, pl
         </div>
       )}
 
-
+      {live.length === 0 && ownItems.length === 0 && !editingRows && <p className="lu-hint">{s.songVideosNone}</p>}
       {live.length > 0 && (
         <>
-          <p className="lu-publish-label">{s.songVideosLive} · {live.length}</p>
+          {both && <p className="lu-vgroup">{s.songVideosLive}</p>}
           <ul className="lu-vcards">{live.map(card)}</ul>
         </>
       )}
-
-      {(live.length > 0 || own.length > 0 || rows.length > 0) && <>
-      <p className="lu-publish-label lu-row-between">
-        <span>{s.songVideosOther}</span>
-        {own.length > 0 && !editingOwn && (
-          <button type="button" className="lu-icon-btn lu-edit-btn" onClick={startEditOwn} aria-label={s.songEdit} title={s.songEdit}>✎</button>
-        )}
-      </p>
-      {own.length > 0 && !editingOwn && (
-        <ul className="lu-vcards">
-          {own.map((r, i) => card({ key: `o${i}`, url: r.url, start: null, label: r.title || r.url.replace(/^https?:\/\/(www\.)?/, '') }))}
-        </ul>
+      {ownItems.length > 0 && !editingOwn && (
+        <>
+          {both && <p className="lu-vgroup">{s.songVideosOther}</p>}
+          <ul className="lu-vcards">{ownItems.map(card)}</ul>
+        </>
       )}
-      <div className="lu-video-edit">
-        {rows.map((r, i) => (
-          <div key={i} className="lu-video-head">
-            <input className="lu-video-url" type="url" inputMode="url" placeholder="https://youtu.be/…" value={r.url} aria-label={s.videoUrl}
-              onChange={e => { setRow(i, { url: e.target.value }); if (!r.title.trim()) fetchTitle(i, e.target.value); }} />
-            <input className="lu-video-title" placeholder={s.videoTitle} value={r.title} aria-label={s.videoTitle}
-              onChange={e => setRow(i, { title: e.target.value })} />
-            {playedShows.length > 0 && (
-              <select className="lu-video-show" value={r.show} aria-label={s.videoFromShow} onChange={e => setRow(i, { show: e.target.value })}>
-                <option value="">{s.videoNoShow}</option>
-                {playedShows.map(ev => <option key={ev.id} value={ev.id}>{ev.date} · {showName(ev)}</option>)}
-              </select>
-            )}
-            <button type="button" className="lu-icon-btn is-danger" aria-label={s.videoRemove} title={s.videoRemove}
-              onClick={() => setRows(rs => rs.filter((_, j) => j !== i))}>✕</button>
-          </div>
-        ))}
-        <div className="lu-row">
-          <button type="button" className="lu-btn" onClick={() => setRows(rs => [...rs, { url: '', title: '', show: '' }])}>+ {s.videoAdd}</button>
-          {(changed || state) && (
+
+      {editingRows && (
+        <div className="lu-video-edit">
+          {rows.map((r, i) => (
+            <div key={i} className="lu-video-head">
+              <input className="lu-video-url" type="url" inputMode="url" placeholder="https://youtu.be/…" value={r.url} aria-label={s.videoUrl}
+                onChange={e => { setRow(i, { url: e.target.value }); if (!r.title.trim()) fetchTitle(i, e.target.value); }} />
+              <input className="lu-video-title" placeholder={s.videoTitle} value={r.title} aria-label={s.videoTitle}
+                onChange={e => setRow(i, { title: e.target.value })} />
+              {playedShows.length > 0 && (
+                <select className="lu-video-show" value={r.show} aria-label={s.videoFromShow} onChange={e => setRow(i, { show: e.target.value })}>
+                  <option value="">{s.videoNoShow}</option>
+                  {playedShows.map(ev => <option key={ev.id} value={ev.id}>{ev.date} · {showName(ev)}</option>)}
+                </select>
+              )}
+              <button type="button" className="lu-icon-btn is-danger" aria-label={s.videoRemove} title={s.videoRemove}
+                onClick={() => (r.url.trim() ? setRemoving(i) : setRows(rs => rs.filter((_, j) => j !== i)))}>✕</button>
+            </div>
+          ))}
+          <div className="lu-row lu-section-actions">
+            {state && !['saving', 'saved'].includes(state) && <span className="lu-field-error">{s.errorPrefix} {state}</span>}
+            <button type="button" className="lu-btn" disabled={state === 'saving'}
+              onClick={() => { if (changed && !window.confirm(s.songDiscard)) return; setRows([]); setEditingOwn(false); setState(''); }}>{s.cancel}</button>
             <button type="button" className="lu-btn lu-btn-primary" onClick={save} disabled={state === 'saving' || !changed}>
-              {state === 'saving' ? s.saving : state === 'saved' ? `✓ ${s.songVideosSaved}` : s.save}
+              {state === 'saving' ? s.saving : s.save}
             </button>
-          )}
-          {state && !['saving', 'saved'].includes(state) && <span className="lu-field-error">{s.errorPrefix} {state}</span>}
+          </div>
         </div>
-      </div>
-      </>}
+      )}
+
+      {!editingRows && (
+        <div className="lu-vfoot">
+          <button type="button" className="lu-link-btn" onClick={() => setRows([{ url: '', title: '', show: '' }])}>+ {s.videoAdd}</button>
+          {ownItems.length > 0 && <button type="button" className="lu-link-btn" onClick={startEditOwn}>✎ {s.songVideosEditOwn}</button>}
+          {state === 'saved' && <span className="lu-hint">✓ {s.songVideosSaved}</span>}
+        </div>
+      )}
     </div>
   );
 }

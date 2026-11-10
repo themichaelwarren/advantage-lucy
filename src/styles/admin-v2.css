@@ -1407,26 +1407,35 @@ body:has(tr.is-dragging) { cursor: grabbing; user-select: none; }
 .lu-shell .lu-video-time { width: 100%; padding: 0.35rem 0.5rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); font-family: var(--font-main); font-size: 0.85rem; text-align: right; }
 .lu-video-now { padding: 0.3em 0.8em !important; font-size: 0.85rem; }
 
-/* Song page: one card per video, thumbnail and where/when */
-.lu-vcards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.6rem; }
-.lu-vcards li { display: flex; align-items: center; gap: 0.2rem; min-width: 0; }
+/* Video cards: thumbnail (plays), title, and where it's from */
+.lu-vcards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 0.5rem; }
 .lu-vcard {
-  flex: 1; min-width: 0;
-  display: flex; align-items: center; gap: 0.7rem;
-  padding: 0.45rem; text-align: left;
-  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  background: var(--surface); color: var(--text); cursor: pointer;
-  font: inherit;
+  display: flex; align-items: center; gap: 0.7rem; min-width: 0;
+  padding: 0.4rem; border-radius: var(--radius-sm);
+  transition: background-color 120ms ease;
 }
-.lu-vcard:hover { border-color: var(--text); }
-.lu-vcard.is-on { border-color: var(--text); box-shadow: 3px 3px 0 var(--pop); }
-.lu-vcard img { width: 6.4rem; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #000; }
-.lu-vcard-link { width: 6.4rem; aspect-ratio: 16 / 9; display: grid; place-items: center; border-radius: 6px; background: var(--surface-hover); flex-shrink: 0; }
-.lu-vcard-text { flex: 1; display: flex; flex-direction: column; min-width: 0; font-size: 0.85rem; }
-/* Long titles and links end in … instead of running out of the card */
-.lu-vcard-text strong { font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lu-vcard-text span { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lu-vcard-time { color: var(--text) !important; font-weight: 600; }
+.lu-vcard:hover, .lu-vcard.is-on { background: var(--surface-hover); }
+.lu-vcard-play { position: relative; flex-shrink: 0; padding: 0; border: none; background: none; cursor: pointer; border-radius: 6px; }
+.lu-vcard-play img, .lu-vcard-link { display: grid; place-items: center; width: 7rem; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; background: #000; color: #fff; }
+.lu-vcard-time {
+  position: absolute; right: 0.3rem; bottom: 0.3rem;
+  padding: 0.05rem 0.35rem; border-radius: 4px;
+  background: rgba(0, 0, 0, 0.72); color: #fff;
+  font-family: var(--font-main); font-size: 0.72rem; font-weight: 600;
+}
+.lu-vcard.is-on .lu-vcard-play { box-shadow: 0 0 0 2px var(--text); }
+.lu-vcard-text { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.lu-vcard-title {
+  padding: 0; border: none; background: none; color: var(--text); cursor: pointer;
+  font: inherit; font-weight: 700; font-size: 0.9rem; text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lu-vcard-title:hover { text-decoration: underline; }
+.lu-vcard-sub { font-size: 0.8rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+a.lu-vcard-sub:hover { color: var(--text); text-decoration: underline; }
+.lu-vgroup { margin: 0.4rem 0 0; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.04em; }
+.lu-vfoot { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; font-size: 0.88rem; }
+.lu-videos-compact { gap: 0.6rem; }
 .lu-video-edit { display: flex; flex-direction: column; gap: 0.5rem; }
 .lu-shell .lu-video-head select.lu-video-show { flex: 1 1 12rem; min-width: 0; padding: 0.5rem 0.7rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
 /* Editing one section in a window */
@@ -1541,3 +1550,56 @@ a.lu-stat:hover { box-shadow: inset 0 0 0 1.5px var(--text); }
 .lu-song-page a.lu-stat:hover { box-shadow: none; }
 .lu-song-page a.lu-stat:hover strong { text-decoration: underline; }
 .lu-song-page .lu-song-site { padding-inline: 0; }
+
+/* ---------- SHOW PAGE (same shape as the song page) ---------- */
+.lu-show-date { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: 0; }
+.lu-show-date strong { font-family: var(--font-display); font-size: 1.35rem; letter-spacing: -0.01em; }
+.lu-show-line { margin: 0; font-size: 0.92rem; }
+a.lu-show-line { font-weight: 600; }
+.lu-show-resv { display: block; text-decoration: none; color: var(--text); font-size: 0.92rem; }
+.lu-show-resv strong { font-family: var(--font-display); font-size: 1.05rem; }
+.lu-show-resv:hover .lu-hint { text-decoration: underline; }
+.lu-show-flyer img { display: block; width: 100%; height: auto; max-height: 22rem; object-fit: contain; border-radius: var(--radius-sm); background: var(--bg); }
+.lu-show-setlist { display: flex; flex-direction: column; gap: 0.8rem; }
+.lu-show-setlist h3 { margin: 0 0 0.3rem; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.04em; }
+.lu-show-setlist ol { margin: 0; padding-left: 1.8rem; display: grid; gap: 0.25rem; list-style: decimal; }
+.lu-show-setlist li { display: list-item; list-style: decimal; line-height: 1.6; }
+.lu-show-setlist li::marker { color: var(--text-muted); font-size: 0.85em; }
+.lu-show-setlist li a { font-weight: 600; text-decoration: none; }
+.lu-show-setlist li a:hover { text-decoration: underline; }
+.lu-show-setlist .is-unlinked { font-weight: 600; text-decoration: underline dotted var(--text-muted); }
+.lu-show-setlist .lu-cover-tag { margin-left: 0.4rem; font-size: 0.7rem; }
+.lu-section-actions { justify-content: flex-end; align-items: center; gap: 0.5rem; margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--rule); }
+.lu-section-actions .lu-field-error { margin-right: auto; }
+.lu-song-page .lu-show-notes { border: none; background: none; padding: 0; box-shadow: none; max-width: 46rem; }
+.lu-show-notes p { margin: 0 0 0.9em; white-space: pre-line; border: none; padding: 0; }
+.lu-show-notes p + p { border-top: none; }
+/* Videos, watching: title, player, and the marked songs to jump to */
+.lu-video.is-read { gap: 0.6rem; }
+.lu-video-read-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.lu-video-read-head strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-video-chapters { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 26rem; overflow: auto; }
+.lu-video-chapters li + li { border-top: 1px solid var(--rule); }
+.lu-video-chapters button {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+  padding: 0.45rem 0.4rem; border: none; border-radius: 6px; background: none;
+  color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.lu-video-chapters button:hover:not(:disabled) { background: var(--surface-hover); }
+.lu-video-at { font-family: var(--font-main); font-size: 0.85rem; color: var(--text-muted); }
+.lu-video-chapters button:hover .lu-video-at { color: var(--text); }
+/* 🔒 beside a section title; its note shows on hover, focus or tap */
+.lu-lock { position: relative; display: inline-flex; vertical-align: middle; margin-left: 0.45rem; }
+.lu-lock-btn { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; padding: 0; border: none; border-radius: 50%; background: none; color: var(--text-muted); cursor: help; }
+.lu-lock-btn:hover, .lu-lock.is-open .lu-lock-btn { background: var(--surface-hover); color: var(--text); }
+.lu-lock-tip {
+  /* Starts at the icon and runs right, so it never falls off the left edge */
+  position: absolute; left: -0.3rem; top: calc(100% + 6px); z-index: 30;
+  width: max-content; max-width: min(16rem, calc(100vw - 4rem));
+  padding: 0.4rem 0.65rem; border-radius: 8px;
+  background: var(--text); color: var(--bg);
+  font-size: 0.78rem; font-weight: 500; line-height: 1.5; letter-spacing: 0;
+  opacity: 0; visibility: hidden; transition: opacity 120ms ease;
+  pointer-events: none;
+}
+.lu-lock:hover .lu-lock-tip, .lu-lock-btn:focus-visible + .lu-lock-tip, .lu-lock.is-open .lu-lock-tip { opacity: 1; visibility: visible; }
