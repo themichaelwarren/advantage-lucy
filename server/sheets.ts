@@ -4,6 +4,7 @@
  */
 import { normDateTime } from '../functions/lib/visibility';
 import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person, NewsPost, BlogPost, SplashPhoto } from '../src/types';
+import { LISTEN_COLUMNS, listenFromRow } from '../functions/lib/listen';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -265,7 +266,7 @@ export async function fetchAlbums(
   email: string,
   privateKey: string
 ): Promise<Album[]> {
-  const rows = await fetchSheet(sheetId, 'Albums!A:L', email, privateKey);
+  const rows = await fetchSheet(sheetId, 'Albums!A:Z', email, privateKey);
   return rowsToObjects(rows).map(row => ({
     id: row.id,
     title: row.title,
@@ -277,6 +278,7 @@ export async function fetchAlbums(
     label: row.label || undefined,
     coverUrl: row.artwork_url || undefined,
     listenUrl: row.listen_url || undefined,
+    listen: listenFromRow(row),
     description_en: row.description_en || undefined,
     description_ja: row.description_ja || undefined,
   }));
@@ -423,6 +425,7 @@ const OPTIONAL_COLUMNS: Record<string, string[]> = {
   News: ['publish_at'],
   Blog: ['publish_at'],
   Photos: ['link'],
+  Albums: LISTEN_COLUMNS,
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */

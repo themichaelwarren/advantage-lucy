@@ -9,6 +9,7 @@ import { useFitsViewport } from '../hooks/useFitsViewport';
 import { linkify } from '../utils/linkify';
 import PageTitle from '../components/PageTitle';
 import { songTitle } from '../utils/songTitles';
+import { LISTEN_SERVICES } from '../../functions/lib/listen';
 
 interface Props {
   locale: Locale;
@@ -94,7 +95,19 @@ export default function AlbumDetail({ locale }: Props) {
                 )}
               </dl>
 
-              {album.listenUrl && (
+              {/* One button per streaming service; the "all services" page last
+                  (or on its own, as the one Listen button, when it's all there is) */}
+              {album.listen ? (
+                <div className="album-listen">
+                  <p className="section-label">{s.music.listen}</p>
+                  <ul>
+                    {LISTEN_SERVICES.filter(x => album.listen?.[x.key]).map(x => (
+                      <li key={x.key}><a href={album.listen![x.key]} target="_blank" rel="noopener noreferrer" className="album-listen-btn">{x.name} ↗</a></li>
+                    ))}
+                    {album.listenUrl && <li><a href={album.listenUrl} target="_blank" rel="noopener noreferrer" className="album-listen-btn is-more">{s.music.listenMore} ↗</a></li>}
+                  </ul>
+                </div>
+              ) : album.listenUrl && (
                 <div className="mt-1">
                   <a href={album.listenUrl} target="_blank" rel="noopener noreferrer" className="ticket-btn">
                     {s.music.listen} →

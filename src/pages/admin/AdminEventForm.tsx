@@ -238,9 +238,11 @@ export default function AdminEventForm() {
     if (ok) setSetlistEditing(false);
   };
   const cancelSetlist = () => {
-    if ((setlistDirty || formDirty) && !window.confirm(s.songDiscard)) return;
+    if ((setlistDirty || formDirty || videosChanged) && !window.confirm(s.songDiscard)) return;
     setSetlist(setlistBase);
     if (baseline) setForm(JSON.parse(baseline) as Form);
+    // Times marked while editing the setlist are discarded with it
+    if (!isNew && id) setVideos(toShowVideos(media || [], id, setlistBase));
     setSetlistEditing(false);
   };
 
@@ -547,7 +549,7 @@ export default function AdminEventForm() {
           </Section>
 
           <Section
-            title={`${s.secVideos}${videos.length ? ` · ${videos.length}` : ''}`}
+            title={`${s.secVideos}${videos.filter(v => v.url.trim()).length ? ` · ${videos.filter(v => v.url.trim()).length}` : ''}`}
             id="videos"
             badge={<LockHint text={s.videosPrivate} />}
             aside={!videosEditing && !setlistEditing && videos.length > 0

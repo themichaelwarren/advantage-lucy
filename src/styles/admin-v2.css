@@ -348,6 +348,14 @@
   font-size: 0.97rem;
   transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 }
+/* Native dropdowns ignore padding and borders in Safari: draw our own, same size as the inputs */
+.lu-shell :is(.lu-field, .lu-modal) select:not([multiple]):not([size]) {
+  -webkit-appearance: none; appearance: none;
+  padding-right: 2.2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.85rem center;
+  cursor: pointer;
+}
 .lu-shell :is(.lu-field, .lu-modal) :is(input:not([type="checkbox"]):not([type="file"]), textarea, select):hover:not(:focus) { border-color: color-mix(in srgb, var(--text) 35%, var(--border)); }
 .lu-shell :is(input, textarea)::placeholder { color: var(--text-muted); opacity: 0.55; }
 .lu-shell :is(input, textarea, select):focus {
@@ -1692,3 +1700,103 @@ a.lu-show-line { font-weight: 600; }
   .lu-field-label .lu-info { position: static; }
   .lu-field-label .lu-info .lu-lock-tip { left: 0; right: auto; top: calc(100% + 4px); }
 }
+
+/* ---------- RELEASES TABLE ---------- */
+.lu-rel-grid th { text-align: left; white-space: nowrap; font-size: 0.78rem; color: var(--text-muted); font-weight: 700; padding: 0.6rem 0.8rem; }
+.lu-rel-grid th.lu-td-num { text-align: right; }
+.lu-rel-grid td { padding: 0.55rem 0.8rem; }
+.lu-rel-grid tbody tr { cursor: pointer; transition: background-color 100ms ease; }
+.lu-rel-grid tbody tr:hover { background: var(--surface-hover); }
+.lu-rel-grid .lu-td-num { text-align: right; font-family: var(--font-main); font-variant-numeric: tabular-nums; width: 1%; white-space: nowrap; }
+.lu-rel-title { display: flex; align-items: center; gap: 0.8rem; min-width: 14rem; }
+.lu-rel-cover {
+  flex-shrink: 0; width: 2.75rem; height: 2.75rem; border-radius: 5px;
+  object-fit: cover; background: var(--surface-hover); border: 1px solid var(--rule);
+}
+span.lu-rel-cover { background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--rule) 6px 7px); }
+.lu-rel-name { display: flex; flex-direction: column; min-width: 0; }
+.lu-rel-name a { font-weight: 700; color: var(--text); text-decoration: none; }
+.lu-rel-name a:hover { text-decoration: underline; }
+.lu-rel-sub { font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-main); }
+.lu-rel-type {
+  display: inline-block; padding: 0.15em 0.6em; border-radius: var(--pill);
+  border: 1.5px solid var(--border); font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+}
+.lu-rel-type:is(.is-album, .is-lp) { background: var(--text); color: var(--bg); border-color: var(--text); }
+.lu-rel-type.is-compilation { border-style: dashed; }
+.lu-rel-label { font-size: 0.88rem; white-space: nowrap; }
+.lu-rel-live { display: inline-flex; align-items: center; gap: 0.5rem; }
+.lu-rel-bar {
+  display: inline-block; width: 3rem; height: 0.35rem; border-radius: 99px;
+  background: linear-gradient(to right, var(--text) var(--p), var(--rule) var(--p));
+}
+.lu-rel-check { white-space: nowrap; width: 1%; }
+.lu-rel-marks { display: inline-flex; gap: 0.25rem; }
+.lu-rel-mark {
+  display: inline-block; padding: 0.12em 0.5em; border-radius: var(--pill);
+  border: 1.5px dashed var(--border); color: var(--text-muted); opacity: 0.7;
+  font-size: 0.72rem; font-weight: 700; white-space: nowrap; text-decoration: none;
+}
+.lu-rel-mark.is-on { border-style: solid; border-color: var(--text); color: var(--text); opacity: 1; }
+a.lu-rel-mark:hover { background: var(--text); color: var(--bg); }
+.lu-rel-mdate { display: none; }
+/* Phones: each release a compact block: cover, title and type on top,
+   then how much was played live and the four marks */
+@media (max-width: 760px) {
+  .lu-rel-grid thead { display: none; }
+  .lu-rel-grid, .lu-rel-grid tbody { display: block; width: 100%; min-width: 0 !important; }
+  .lu-rel-grid tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.8rem; padding: 0.7rem 0.9rem; border-top: 1px solid var(--rule); }
+  .lu-rel-grid td:first-child { flex: 1 1 0; min-width: calc(100% - 8rem); }
+  .lu-rel-grid tbody tr:first-child { border-top: none; }
+  .lu-rel-grid td { display: block; padding: 0; border: none !important; min-width: 0; }
+  .lu-rel-title { min-width: 0; }
+  .lu-rel-grid td:nth-child(3), .lu-rel-grid td:nth-child(4), .lu-rel-grid td:nth-child(5) { display: none; }
+  .lu-rel-grid td:nth-child(6) { text-align: left; font-size: 0.8rem; padding-left: 3.55rem; width: auto; }
+  .lu-rel-mdate { display: inline; }
+  .lu-rel-mdate:not(:empty)::after { content: ' · '; }
+  .lu-rel-check { width: auto; margin-left: auto; }
+}
+
+/* ---------- RELEASE PAGE ---------- */
+.lu-rel-art { position: relative; aspect-ratio: 1; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-hover); border: 1px solid var(--rule); }
+.lu-rel-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lu-rel-art-empty {
+  width: 100%; height: 100%; border: none; cursor: pointer; font: inherit; font-weight: 700; color: var(--text-muted);
+  background: repeating-linear-gradient(135deg, transparent 0 10px, var(--rule) 10px 11px);
+}
+.lu-rel-art-empty:hover { color: var(--text); }
+.lu-rel-art-edit { position: absolute; right: 0.6rem; bottom: 0.6rem; }
+.lu-rel-art-edit .lu-icon-btn { background: var(--surface); box-shadow: 0 1px 4px rgb(0 0 0 / 0.2); }
+.lu-rel-meta { display: flex; align-items: center; gap: 0.6rem; margin: 0.5rem 0 0; font-family: var(--font-main); font-size: 0.9rem; color: var(--text-muted); }
+.lu-rel-mono { font-family: var(--font-main); }
+.lu-rel-links { flex-wrap: wrap; gap: 0.5rem; }
+.lu-tracks { list-style: none; margin: 0; padding: 0; }
+.lu-track { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: 0.8rem; padding: 0.65rem 0; border-top: 1px solid var(--rule); }
+.lu-track:first-child { border-top: none; padding-top: 0.2rem; }
+.lu-track-n { font-family: var(--font-main); color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: right; }
+.lu-track-main { display: flex; flex-direction: column; min-width: 0; gap: 0.15rem; }
+.lu-track-title { font-weight: 700; color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+a.lu-track-title:hover { text-decoration: underline; }
+.lu-track-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.6rem; font-size: 0.8rem; color: var(--text-muted); }
+.lu-track-sub .lu-tag { font-size: 0.7rem; }
+.lu-track-key { font-weight: 700; color: var(--text); }
+.lu-track-plays { display: inline-flex; align-items: center; gap: 0.5rem; }
+.lu-track-count { font-family: var(--font-main); font-variant-numeric: tabular-nums; min-width: 1.6rem; text-align: right; font-weight: 700; }
+.lu-rel-notes { display: grid; gap: 1.2rem; }
+@media (min-width: 1100px) { .lu-rel-notes { grid-template-columns: 1fr 1fr; } }
+.lu-rel-note .lu-publish-label { margin: 0 0 0.3rem; }
+.lu-rel-note-text { margin: 0; white-space: pre-wrap; line-height: 1.7; }
+/* Release titles run longer than song titles: a touch smaller so the longest
+   (飛び立った7頭の蝶たち) fits on one line; anything longer wraps evenly */
+.lu-rel-page .lu-song-card h1 { font-size: clamp(1.45rem, 2.3vw, 1.8rem); text-wrap: balance; }
+.lu-listen-fields { display: grid; gap: 0.9rem 1rem; }
+@media (min-width: 640px) { .lu-listen-fields { grid-template-columns: 1fr 1fr; } .lu-listen-fields > :last-child { grid-column: 1 / -1; } }
+.lu-rel-listen-list .lu-publish-label { margin: 0 0 0.4rem; }
+.lu-rel-listen-list ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.lu-rel-svc {
+  display: inline-block; padding: 0.3em 0.75em; border-radius: var(--pill); font: inherit; font-size: 0.8rem; font-weight: 700;
+  border: 1.5px dashed var(--border); color: var(--text-muted); background: none; text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.lu-rel-svc.is-on { border-style: solid; border-color: var(--text); color: var(--text); }
+.lu-rel-svc:hover { border-color: var(--text); color: var(--text); }
+a.lu-rel-svc.is-on:hover { background: var(--text); color: var(--bg); }

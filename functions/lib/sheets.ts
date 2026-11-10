@@ -4,6 +4,7 @@
  */
 import { normDateTime } from './visibility';
 import { getAccessToken } from './auth';
+import { LISTEN_COLUMNS, listenFromRow } from './listen';
 
 const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 
@@ -125,11 +126,11 @@ export async function fetchEvents(sheetId: string, email: string, key: string) {
 }
 
 export async function fetchAlbums(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'Albums!A:L', email, key);
+  const rows = await fetchSheet(sheetId, 'Albums!A:Z', email, key);
   return rowsToObjects(rows).map(r => ({
     id: r.id, title: r.title, date: r.date || undefined, year: r.year, type: r.type,
     number: r.number || undefined, format: r.format || undefined, label: r.label || undefined,
-    coverUrl: r.artwork_url || undefined, listenUrl: r.listen_url || undefined,
+    coverUrl: r.artwork_url || undefined, listenUrl: r.listen_url || undefined, listen: listenFromRow(r),
     description_en: r.description_en || undefined, description_ja: r.description_ja || undefined,
   }));
 }
@@ -225,6 +226,7 @@ const OPTIONAL_COLUMNS: Record<string, string[]> = {
   News: ['publish_at'],
   Blog: ['publish_at'],
   Photos: ['link'],
+  Albums: LISTEN_COLUMNS,
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */

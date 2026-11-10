@@ -141,7 +141,8 @@ export interface Album {
   format?: string;       // physical format (CD, vinyl, etc.)
   label?: string;
   coverUrl?: string;
-  listenUrl?: string;
+  listenUrl?: string;   // all services (song.link…)
+  listen?: Partial<Record<import('../functions/lib/listen').ListenService, string>>;
   description_en?: string;
   description_ja?: string;
 }

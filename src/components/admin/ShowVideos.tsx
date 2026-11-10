@@ -92,8 +92,10 @@ export default function ShowVideos({ s, videos, onChange, setlist, editing = tru
   const [openKey, setOpenKey] = useState<string | null>(videos[0]?.key ?? null);
   const [removing, setRemoving] = useState<ShowVideo | null>(null);
   // Starting to edit with no videos: open with an empty link to paste into
+  // …and leaving edit mode (saved or cancelled) drops any link box left empty
   useEffect(() => {
     if (editing && videos.length === 0) { const v = newVideo(); onChange([v]); setOpenKey(v.key); }
+    if (!editing) onChange(vs => (vs.some(v => !v.url.trim()) ? vs.filter(v => v.url.trim()) : vs));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing]);
   const [player, setPlayer] = useState<PlayerHandle | null>(null);

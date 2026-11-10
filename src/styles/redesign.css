@@ -2168,3 +2168,15 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 /* A song's title in the other language: muted, beside or under the main one */
 .song-alt-title { margin-left: 0.5em; font-weight: 400; font-size: 0.85em; color: var(--text-muted); }
 .song-alt-subtitle { margin: 0.4rem 0 0; font-size: 1.05rem; color: var(--text-muted); }
+
+/* Release page: a button per streaming service */
+.album-listen { margin-top: 1.2rem; }
+.album-listen .section-label { margin-bottom: 0.5rem; }
+.album-listen ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.album-listen-btn {
+  display: inline-block; padding: 0.5em 1em; border-radius: var(--pill);
+  border: 2px solid var(--text); color: var(--text); font-weight: 700; font-size: 0.92rem; text-decoration: none;
+  transition: transform 180ms var(--ease-bounce), box-shadow 120ms ease, background-color 120ms ease;
+}
+.album-listen-btn:hover { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--pop); text-decoration: none; color: var(--text); }
+.album-listen-btn.is-more { border-style: dashed; font-weight: 600; }
