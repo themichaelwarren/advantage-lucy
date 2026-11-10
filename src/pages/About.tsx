@@ -2,6 +2,7 @@ import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { usePhotos } from '../hooks/useSheetData';
 import { useFitsViewport } from '../hooks/useFitsViewport';
+import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
@@ -15,6 +16,7 @@ export default function About({ locale }: Props) {
 
   return (
     <>
+      <PageTitle title={s.nav.about} />
       <header className="news-detail-header">
         <h1 className="news-detail-title">{s.about.title}</h1>
       </header>

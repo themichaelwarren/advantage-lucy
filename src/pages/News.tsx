@@ -3,6 +3,7 @@ import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useNews } from '../hooks/useSheetData';
 import PageLoader from '../components/PageLoader';
+import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
@@ -19,6 +20,7 @@ export default function News({ locale }: Props) {
 
   return (
     <>
+      <PageTitle title={s.nav.news} />
       <header className="news-detail-header">
         <h1 className="news-detail-title">{s.news.title}</h1>
       </header>

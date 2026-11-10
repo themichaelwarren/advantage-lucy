@@ -12,6 +12,7 @@ import { handleReserveGet, handleReservePost, handleAdminReservations } from '..
 import { checkFiles, attachmentNames, isAttachmentName } from '../functions/lib/attachments';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { publicView } from '../functions/lib/visibility';
+import { pageMeta, injectMeta, type Load } from '../functions/lib/meta';
 
 /** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
 async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -30,6 +31,24 @@ async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<
 export default function sheetsPlugin(): Plugin {
   return {
     name: 'sheets-api',
+    // Link-preview tags, as production adds them (functions/lib/pageFunction.ts),
+    // so they can be checked locally: curl a page and look at <head>
+    async transformIndexHtml(html, ctx) {
+      const path = (ctx.originalUrl || ctx.path || '/').split('?')[0];
+      const sheetId = process.env.VITE_GOOGLE_SHEET_ID;
+      const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+      const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+      if (!sheetId || !email || !privateKey) return html;
+      const fetchers = { events: fetchEvents, albums: fetchAlbums, tracklists: fetchTracklists, songs: fetchSongs, news: fetchNews, venues: fetchVenues };
+      const load: Load = async tab => publicView(tab, await fetchers[tab](sheetId, email, privateKey)) as Record<string, any>[];
+      try {
+        const origin = `http://${ctx.server?.config.server.host || 'localhost'}:${ctx.server?.config.server.port || 5173}`;
+        const meta = await pageMeta(path, origin, load);
+        return meta ? injectMeta(html, meta) : html;
+      } catch {
+        return html;
+      }
+    },
     configureServer(server) {
       // Ticket reservations (same code as production: functions/lib/reservations.ts)
       server.middlewares.use(async (req, res, next) => {

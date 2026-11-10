@@ -6,6 +6,7 @@ import PhotoPile from '../components/PhotoPile';
 import { photoSlides } from '../utils/photoLinks';
 import ShowCard from '../components/ShowCard';
 import PageLoader from '../components/PageLoader';
+import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
@@ -76,6 +77,7 @@ export default function Home({ locale }: Props) {
 
   return (
     <>
+      <PageTitle />
       <h1 className="visually-hidden band-name">advantage Lucy</h1>
       <PhotoPile slides={photoSlides(photos, events, locale)} locale={locale} />
 

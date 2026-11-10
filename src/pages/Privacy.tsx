@@ -1,4 +1,5 @@
 import type { Locale } from '../i18n/translations';
+import PageTitle from '../components/PageTitle';
 
 const CONTACT_EMAIL = 'advantagelucyofficial@gmail.com';
 const UPDATED = '2026-11-08';
@@ -9,7 +10,12 @@ const UPDATED = '2026-11-08';
  * email, profile, drive.file). Update it if those change.
  */
 export default function Privacy({ locale }: { locale: Locale }) {
-  return locale === 'ja' ? <Ja /> : <En />;
+  return (
+    <>
+      <PageTitle title={locale === 'ja' ? 'プライバシー' : 'Privacy'} />
+      {locale === 'ja' ? <Ja /> : <En />}
+    </>
+  );
 }
 
 function En() {

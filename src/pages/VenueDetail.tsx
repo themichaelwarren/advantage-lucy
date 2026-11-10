@@ -7,6 +7,7 @@ import { formatDateWithDay } from '../utils/format';
 import { todayInJapan } from '../utils/showDates';
 import PageLoader from '../components/PageLoader';
 import NotFound from '../components/NotFound';
+import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
@@ -76,6 +77,7 @@ export default function VenueDetail({ locale }: Props) {
 
   return (
     <article className="venue-detail">
+      <PageTitle title={name} />
       <header className="news-detail-header venue-head">
         <p className="venue-kicker">{s.events.venue}</p>
         <h1 className="news-detail-title">{name}</h1>

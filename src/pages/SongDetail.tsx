@@ -9,6 +9,7 @@ import PageLoader from '../components/PageLoader';
 import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import NowPlaying from '../components/NowPlaying';
+import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
@@ -91,6 +92,7 @@ export default function SongDetail({ locale }: Props) {
 
   return (
     <article className="song-detail">
+      <PageTitle title={song.title} />
       <NowPlaying title={song.title} locale={locale} watch=".song-head .song-detail-title" />
       {/* Wide screens: title, credits and releases in a sticky panel on the
           left, lyrics on the right. Phones: title, credits, lyrics, releases. */}

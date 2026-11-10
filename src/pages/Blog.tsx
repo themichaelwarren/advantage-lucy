@@ -3,6 +3,7 @@ import { t } from '../i18n/translations';
 import { useBlog } from '../hooks/useSheetData';
 import InstagramEmbed from '../components/InstagramEmbed';
 import PageLoader from '../components/PageLoader';
+import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
@@ -23,6 +24,7 @@ export default function Blog({ locale }: Props) {
 
   return (
     <>
+      <PageTitle title={s.nav.blog} />
       <header className="news-detail-header blog-index-header">
         <h1 className="news-detail-title">{s.blog.title}</h1>
         <p className="blog-index-intro">{s.blog.intro}</p>

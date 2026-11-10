@@ -7,6 +7,7 @@ import type { Album, Song } from '../types';
 import PageLoader from '../components/PageLoader';
 import { normalize } from '../utils/text';
 import { useQueryParam } from '../hooks/useQueryParam';
+import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
@@ -145,6 +146,7 @@ export default function Music({ locale }: Props) {
 
   return (
     <>
+      <PageTitle title={s.nav.music} />
       <header className="news-detail-header">
         <h1 className="news-detail-title">{s.music.subtitle}</h1>
       </header>

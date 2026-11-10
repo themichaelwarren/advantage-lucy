@@ -3,6 +3,7 @@ import { Outlet, Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
 import ThemeToggle from '../../components/ThemeToggle';
+import PageTitle from '../../components/PageTitle';
 import CommandPalette from '../../components/admin/CommandPalette';
 import { getMessages } from '../../services/adminService';
 
@@ -138,6 +139,7 @@ export default function AdminLayout() {
 
   return (
     <div className="admin-shell lu-shell">
+      <PageTitle title={s.brand} />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
       {navOpen && <div className="lu-nav-backdrop" onClick={() => setNavOpen(false)} aria-hidden="true" />}
       <aside

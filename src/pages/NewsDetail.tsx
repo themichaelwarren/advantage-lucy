@@ -8,6 +8,7 @@ import { useFitsViewport } from '../hooks/useFitsViewport';
 import PageLoader from '../components/PageLoader';
 import NotFound from '../components/NotFound';
 import type { NewsPost } from '../types';
+import PageTitle from '../components/PageTitle';
 
 /** A line that is only [text](url) links: those become buttons. */
 const LINK_ONLY = /^\s*(\[[^\]\n]+\]\(https?:\/\/[^)\s]+\)\s*)+$/;
@@ -98,6 +99,7 @@ export default function NewsDetail({ locale }: Props) {
 
   return (
     <article className="event-detail news-page">
+      <PageTitle title={title} />
       {/* Like a show page: date, title and image on the left (sticky when it
           fits); the text, links and other news on the right. Phones: stacked. */}
       <div className="evd-layout">

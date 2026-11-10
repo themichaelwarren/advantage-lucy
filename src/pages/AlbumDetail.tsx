@@ -7,6 +7,7 @@ import PageLoader from '../components/PageLoader';
 import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import { linkify } from '../utils/linkify';
+import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
@@ -40,6 +41,7 @@ export default function AlbumDetail({ locale }: Props) {
 
   return (
     <article className="album-detail">
+      <PageTitle title={album.title} />
       {/* Wide screens: title, cover and details in a sticky panel on the left,
           tracklist (and notes) on the right. Phones: stacked in that order. */}
       <div className="album-layout">

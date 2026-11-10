@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
+import PageTitle from './PageTitle';
 
 /**
  * The 404 page: the whole band, looking a bit lost. Used for addresses
@@ -22,6 +23,7 @@ export default function NotFound({ locale, what, back }: {
 
   return (
     <section className="not-found" aria-labelledby="not-found-title">
+      <PageTitle title={ja ? 'ページが見つかりません' : 'Not found'} />
       <img className="not-found-art" src="/img/lucy-band-404.png" alt="" width="1200" height="771" />
       <p className="not-found-code" aria-hidden="true">404</p>
       <h1 id="not-found-title" className="not-found-title">

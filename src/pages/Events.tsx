@@ -8,6 +8,7 @@ import type { Event } from '../types';
 import PageLoader from '../components/PageLoader';
 import ShowCard from '../components/ShowCard';
 import { todayInJapan } from '../utils/showDates';
+import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
@@ -89,6 +90,7 @@ export default function Events({ locale }: Props) {
 
   return (
     <>
+      <PageTitle title={s.nav.events} />
       <header className="news-detail-header">
         <h1 className="news-detail-title">{s.events.title}</h1>
       </header>
