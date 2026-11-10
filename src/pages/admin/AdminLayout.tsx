@@ -116,6 +116,7 @@ export default function AdminLayout() {
           <div className="lu-side-row">
             <Link to={otherPath} className="lu-pill" lang={otherLocale}>{otherLocale === 'ja' ? '日本語' : 'English'}</Link>
             <ThemeToggle locale={locale} />
+            <NavLink to={`${prefix}/help`} className="lu-help-btn" aria-label={s.help} title={s.help}>?</NavLink>
           </div>
           <Link to={`/${locale}`} className="lu-side-link">
             <span className="lu-side-icon" aria-hidden="true">↗</span>
