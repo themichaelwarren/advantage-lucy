@@ -7,6 +7,7 @@ import { useAdminT } from '../../i18n/admin';
 import type { AdminLocale } from '../../i18n/admin';
 import { personName } from './PeoplePicker';
 import { Highlight, rankMatches } from './SuggestInput';
+import { songTitle, songAltTitle } from '../../utils/songTitles';
 
 interface Item {
   kind: string;        // group label
@@ -58,7 +59,11 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
     return [
       ...actions,
       ...shows,
-      ...songs.filter(x => x.id).map(x => ({ kind: s.songs, title: x.title, sub: x.original_artist, href: `${prefix}/songs/${x.id}`, keywords: `${x.id} ${x.original_artist || ''}` })),
+      // Found by either title or the reading (Onboru, おんぼろ); the other language shows underneath
+      ...songs.filter(x => x.id).map(x => ({
+        kind: s.songs, title: songTitle(x, locale), sub: [songAltTitle(x, locale), x.original_artist].filter(Boolean).join(' · '),
+        href: `${prefix}/songs/${x.id}`, keywords: `${x.title} ${x.title_en || ''} ${x.title_kana || ''} ${x.id} ${x.original_artist || ''}`,
+      })),
       ...albums.map(a => ({ kind: s.releases, title: a.title, sub: [a.date || a.year, a.label].filter(Boolean).join(' · '), href: `${prefix}/releases/${a.id}`, keywords: `${a.year} ${a.label || ''} ${a.number || ''}` })),
       ...venues.map(v => ({ kind: s.venues, title: pick(locale, v.name_en, v.name_ja) || v.id, href: `${prefix}/venues/${v.id}`, keywords: `${v.name_en} ${v.name_ja} ${v.id}` })),
       ...people.map(p => ({ kind: s.people, title: personName(p, locale), href: `${prefix}/people/${p.id}`, keywords: `${personName(p, locale === 'ja' ? 'en' : 'ja')} ${p.id}` })),

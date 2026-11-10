@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { normalize } from '../../utils/text';
+import { hira } from '../../utils/songTitles';
 
 export { normalize };
 
@@ -15,14 +16,15 @@ export interface Suggestion {
 
 /** Starts-with matches first, then contains; same order as given otherwise. */
 export function rankMatches<T>(items: T[], query: string, texts: (item: T) => (string | undefined)[]): T[] {
-  const q = normalize(query);
+  // Katakana and hiragana count as the same (しとらす finds シトラス)
+  const q = hira(normalize(query));
   if (!q) return items;
   const scored: { item: T; score: number; i: number }[] = [];
   items.forEach((item, i) => {
     let best = -1;
     for (const t of texts(item)) {
       if (!t) continue;
-      const n = normalize(t);
+      const n = hira(normalize(t));
       if (n === q) best = Math.max(best, 3);
       else if (n.startsWith(q)) best = Math.max(best, 2);
       else if (n.includes(q)) best = Math.max(best, 1);

@@ -26,7 +26,7 @@ export const songSortKey = (s: Titled, locale: Lang) => (locale === 'ja' ? s.tit
 export const compareSongs = (locale: Lang) => (a: Titled, b: Titled) => collators[locale].compare(songSortKey(a, locale), songSortKey(b, locale));
 
 /** Katakana → hiragana, so しとらす finds シトラス */
-const hira = (t: string) => t.replace(/[\u30a1-\u30f6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+export const hira = (t: string) => t.replace(/[\u30a1-\u30f6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
 
 /** Every way to find a song: シトラス, しとらす, citrus. */
 export const songSearchText = (s: Titled & { original_artist?: string }) =>
