@@ -2012,3 +2012,33 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 .reserve-done { display: flex; flex-direction: column; gap: 0.8rem; }
 .reserve-done-title { font-weight: 800; font-size: 1.4rem; margin: 0; outline: none; color: var(--text); }
 .reserve-done-hint { font-size: 0.9rem; color: var(--text-muted); }
+
+/* ============================================================
+   NEWS POST: laid out like a show page (date, title, image on the
+   left; text, links, other news on the right)
+   ============================================================ */
+.news-page .evd-title { font-size: clamp(1.7rem, 4.4vw, 2.3rem); }
+.news-page .evd-aside .event-poster img { max-height: none; }
+.news-body { max-width: 38rem; }
+.news-body p { margin: 0 0 1.1em; }
+.news-body p:last-child { margin-bottom: 0; }
+.news-body .news-links { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 1.6rem 0 0.4rem; }
+.news-body .news-links .ticket-btn { margin: 0; }
+
+/* Older / newer */
+.news-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+.news-pager-link {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  padding: 0.9rem 1.1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 200ms var(--ease-bounce), box-shadow 120ms ease, border-color 120ms ease;
+}
+.news-pager-link:hover { border-color: var(--text); transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--pop); }
+.news-pager-link.is-newer { text-align: right; }
+.news-pager-dir { font-size: 0.8rem; color: var(--text-muted); }
+.news-pager-link strong { font-family: var(--font-display); font-weight: 700; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 560px) { .news-pager { grid-template-columns: 1fr; } .news-pager-link.is-newer { text-align: left; } }

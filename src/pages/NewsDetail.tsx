@@ -4,37 +4,60 @@ import { useParams, Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useNews } from '../hooks/useSheetData';
+import { useFitsViewport } from '../hooks/useFitsViewport';
 import PageLoader from '../components/PageLoader';
+import type { NewsPost } from '../types';
 
+/** A line that is only [text](url) links: those become buttons. */
+const LINK_ONLY = /^\s*(\[[^\]\n]+\]\(https?:\/\/[^)\s]+\)\s*)+$/;
+const LINK = /\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)/g;
+
+/**
+ * News text: a blank line starts a new paragraph, single line breaks are
+ * kept. Lines that are only [text](url) links become a row of buttons
+ * (several in a row sit side by side); links inside a sentence stay links.
+ * **bold** works as in the rest of the site.
+ */
 function renderBody(text: string): ReactNode[] {
-  return text.split('\n').map((line, i) => {
-    if (!line.trim()) return <br key={i} />;
-    // Parse [text](url) links within the line
-    const parts: ReactNode[] = [];
-    let lastIndex = 0;
-    const re = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
-    let match;
-    while ((match = re.exec(line)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(...linkify(line.slice(lastIndex, match.index), `${i}-${lastIndex}-`));
-      }
-      parts.push(
-        <a key={`${i}-${match.index}`} href={match[2]} target="_blank" rel="noopener noreferrer" className="ticket-btn">
-          {match[1]} →
-        </a>
-      );
-      lastIndex = match.index + match[0].length;
+  const out: ReactNode[] = [];
+  let lines: string[] = [];
+  let buttons: { label: string; href: string }[] = [];
+  const flushLines = () => {
+    if (!lines.length) return;
+    const key = `p${out.length}`;
+    out.push(
+      <p key={key}>
+        {lines.flatMap((l, i) => (i ? [<br key={`${key}br${i}`} />, ...linkify(l, `${key}-${i}-`)] : linkify(l, `${key}-${i}-`)))}
+      </p>,
+    );
+    lines = [];
+  };
+  // A run of link-only lines is one row of buttons, even across blank lines
+  const flushButtons = () => {
+    if (!buttons.length) return;
+    out.push(
+      <div key={`b${out.length}`} className="news-links">
+        {buttons.map((b, i) => (
+          <a key={i} href={b.href} target="_blank" rel="noopener noreferrer" className="ticket-btn">{b.label} →</a>
+        ))}
+      </div>,
+    );
+    buttons = [];
+  };
+  for (const line of text.replace(/\r\n/g, '\n').split('\n')) {
+    if (LINK_ONLY.test(line)) {
+      flushLines();
+      for (const m of line.matchAll(LINK)) buttons.push({ label: m[1], href: m[2] });
+    } else if (line.trim()) {
+      flushButtons();
+      lines.push(line);
+    } else {
+      flushLines(); // blank line: new paragraph
     }
-    if (lastIndex < line.length) {
-      parts.push(...linkify(line.slice(lastIndex), `${i}-${lastIndex}-`));
-    }
-    // If line is only a link, render as a div (block), otherwise as a paragraph
-    const hasOnlyLinks = parts.every(p => typeof p !== 'string' || !p.trim());
-    if (hasOnlyLinks && parts.length > 0) {
-      return <div key={i} className="news-links">{parts}</div>;
-    }
-    return <p key={i}>{parts}</p>;
-  });
+  }
+  flushLines();
+  flushButtons();
+  return out;
 }
 
 interface Props {
@@ -46,53 +69,113 @@ export default function NewsDetail({ locale }: Props) {
   const prefix = `/${locale}`;
   const { id } = useParams<{ id: string }>();
   const { news, loading } = useNews();
+  // The left panel only sticks when it fits on screen, as on show pages
+  const panel = useFitsViewport<HTMLElement>();
 
   if (loading) return <PageLoader locale={locale} />;
 
-  const post = news.find(n => n.id === id);
+  // Newest first, the same order as the News page
+  const sorted = [...news].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  const at = sorted.findIndex(n => n.id === id);
+  const post = sorted[at];
 
   if (!post) {
     return (
       <div className="text-center mt-2">
-        <p style={{ background: 'var(--surface)', padding: '2rem', fontSize: '1.2rem' }}>
-          {locale === 'en' ? 'Post not found.' : '記事が見つかりません。'}
-        </p>
+        <p style={{ background: 'var(--surface)', padding: '2rem', fontSize: '1.2rem' }}>{s.news.notFound}</p>
         <div className="mt-1">
-          <Link to={`${prefix}/news`} className="tag">
-            <span>← {s.news.title}</span>
-          </Link>
+          <Link to={`${prefix}/news`} className="tag"><span>← {s.news.title}</span></Link>
         </div>
       </div>
     );
   }
 
   // Fall back to the other language when a translation is missing
-  const title = (locale === 'ja' ? post.title_ja || post.title_en : post.title_en || post.title_ja) || '';
+  const titleOf = (p: NewsPost) => (locale === 'ja' ? p.title_ja || p.title_en : p.title_en || p.title_ja) || '';
+  const title = titleOf(post);
   const body = (locale === 'ja' ? post.body_ja || post.body_en : post.body_en || post.body_ja) || '';
+  const bodyLang = locale === 'ja' ? (post.body_ja ? 'ja' : 'en') : (post.body_en ? 'en' : 'ja');
+
+  const weekday = new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { weekday: locale === 'ja' ? 'long' : 'short', timeZone: 'UTC' })
+    .format(new Date(`${post.date}T00:00:00Z`));
+  const newer = at > 0 ? sorted[at - 1] : undefined;
+  const older = sorted[at + 1];
+  const more = sorted.filter(n => n.id !== post.id).slice(0, 4);
 
   return (
-    <article className="news-detail">
-      <header className="news-detail-header">
-        <h1 className="news-detail-title">{title}</h1>
-        <time className="news-detail-date">{post.date}</time>
-      </header>
+    <article className="event-detail news-page">
+      {/* Like a show page: date, title and image on the left (sticky when it
+          fits); the text, links and other news on the right. Phones: stacked. */}
+      <div className="evd-layout">
+        <aside ref={panel.ref} className={`evd-aside${panel.fits ? ' is-sticky' : ''}`} style={{ top: panel.top }}>
+          <div className="evd-head">
+            <div className="evd-date-type">
+              <span className="evd-date-line">
+                <time dateTime={post.date} className="evd-date-big">{post.date.replace(/-/g, '.')}</time>
+                <span className="evd-day-pill">{locale === 'ja' ? weekday : weekday.toUpperCase()}</span>
+              </span>
+            </div>
+          </div>
 
-      {post.image_url && (
-        <div className="news-detail-image">
-          <img src={post.image_url} alt={title} />
-        </div>
-      )}
+          <header className="evd-title-block">
+            <h1 className="news-detail-title evd-title">{title}</h1>
+          </header>
 
-      {body && (
-        <div className="prose">
-          {renderBody(body)}
+          {post.image_url && (
+            <a className="event-poster" href={post.image_url} target="_blank" rel="noopener noreferrer" aria-label={s.news.viewImage}>
+              <img src={post.image_url} alt={title} />
+              <span className="event-poster-zoom" aria-hidden="true">⤢</span>
+            </a>
+          )}
+        </aside>
+
+        <div className="evd-main">
+          {body && (
+            <section className="evd-section">
+              <div className="prose news-body" lang={bodyLang}>{renderBody(body)}</div>
+            </section>
+          )}
+
+          {(newer || older) && (
+            <nav className="news-pager" aria-label={s.news.title}>
+              {older ? (
+                <Link to={`${prefix}/news/${older.id}`} className="news-pager-link is-older">
+                  <span className="news-pager-dir">← {s.news.older}</span>
+                  <strong>{titleOf(older)}</strong>
+                </Link>
+              ) : <span />}
+              {newer ? (
+                <Link to={`${prefix}/news/${newer.id}`} className="news-pager-link is-newer">
+                  <span className="news-pager-dir">{s.news.newer} →</span>
+                  <strong>{titleOf(newer)}</strong>
+                </Link>
+              ) : <span />}
+            </nav>
+          )}
+
+          {more.length > 0 && (
+            <section className="evd-section">
+              <div className="section-header-row">
+                <h2 className="section-label">{s.news.more}</h2>
+                <Link to={`${prefix}/news`} className="section-view-all">{s.news.all} →</Link>
+              </div>
+              <ul className="show-list">
+                {more.map(n => (
+                  <li key={n.id}>
+                    <Link to={`${prefix}/news/${n.id}`} className="show-row">
+                      <time dateTime={n.date}>{n.date}</time>
+                      <span className="show-row-main"><strong>{titleOf(n)}</strong></span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="mt-2">
-        <Link to={`${prefix}/news`} className="tag">
-          <span>← {s.news.title}</span>
-        </Link>
+        <Link to={`${prefix}/news`} className="tag"><span>← {s.news.title}</span></Link>
       </div>
     </article>
   );

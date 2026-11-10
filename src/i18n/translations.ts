@@ -27,6 +27,12 @@ export const translations = {
     news: {
       title: 'News',
       noNews: 'No news yet.',
+      more: 'More news',
+      all: 'All news',
+      newer: 'Newer',
+      older: 'Older',
+      notFound: 'Post not found.',
+      viewImage: 'Open the image full size',
     },
     blog: {
       title: 'Blog',
@@ -244,6 +250,12 @@ export const translations = {
     news: {
       title: 'ニュース',
       noNews: 'ニュースはありません。',
+      more: '最近のニュース',
+      all: 'ニュース一覧',
+      newer: '新しい記事',
+      older: '前の記事',
+      notFound: '記事が見つかりません。',
+      viewImage: '画像を大きく開く',
     },
     blog: {
       title: 'ブログ',
