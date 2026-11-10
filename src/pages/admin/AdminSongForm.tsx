@@ -12,6 +12,7 @@ import { useAdminT } from '../../i18n/admin';
 import { Section, Field, FieldGroup, SaveBar, DeleteButton, EditDialog, LockHint, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
+import { localTitle } from '../../utils/songTitles';
 import PeoplePicker from '../../components/admin/PeoplePicker';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
@@ -350,7 +351,7 @@ export default function AdminSongForm() {
                       <Link to={`${prefix}/releases/${album.id}`} className="lu-list-row">
                         {album.coverUrl ? <img className="lu-thumb" src={album.coverUrl} alt="" loading="lazy" /> : <span className="lu-thumb" />}
                         <span className="lu-list-main">
-                          <strong>{album.title}</strong>
+                          <strong>{localTitle(album, locale)}</strong>
                           <span>{[(album.date || album.year || '').slice(0, 4), s.trackN.replace('{n}', String(track.track))].filter(Boolean).join(' · ')}</span>
                         </span>
                       </Link>

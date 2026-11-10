@@ -119,7 +119,9 @@ export async function pageMeta(pathname: string, origin: string, load: Load): Pr
       const facts = [a.year || (a.date || '').slice(0, 4), kind, tracks ? (locale === 'ja' ? `全${tracks}曲` : `${tracks} tracks`) : '', a.label]
         .filter(Boolean).join(' · ');
       const about = plain(pick(locale, a.description_en, a.description_ja), 100);
-      return make(a.title, [facts, about].filter(Boolean).join(locale === 'ja' ? '。' : '. '), a.coverUrl, 'music.album');
+      // English pages: the English title first, the original after it (as for songs)
+      const name = locale === 'en' && a.title_en && a.title_en !== a.title ? `${a.title_en} (${a.title})` : a.title;
+      return make(name, [facts, about].filter(Boolean).join(locale === 'ja' ? '。' : '. '), a.coverUrl, 'music.album');
     }
 
     if (section === 'songs') {
@@ -131,7 +133,7 @@ export async function pageMeta(pathname: string, origin: string, load: Load): Pr
       const desc = s.original_artist
         ? (locale === 'ja' ? `${s.original_artist}のカバー` : `${s.original_artist} cover`)
         : album
-          ? (locale === 'ja' ? `「${album.title}」収録` : `From “${album.title}”`)
+          ? (locale === 'ja' ? `「${album.title}」収録` : `From “${album.title_en || album.title}”`)
           : TAGLINE[locale];
       // English pages: the English title (mostly romaji) first, the original after it
       const title = locale === 'en' && s.title_en && s.title_en !== s.title ? `${s.title_en} (${s.title})` : s.title;

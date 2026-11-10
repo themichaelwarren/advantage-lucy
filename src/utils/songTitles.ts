@@ -11,6 +11,10 @@ import { normalize } from './text';
 type Titled = Pick<Song, 'title' | 'title_en' | 'title_kana'>;
 type Lang = 'en' | 'ja';
 
+/** Same rules for releases (Album has the same three fields). */
+export const localTitle = (s: Titled, locale: Lang) => songTitle(s, locale);
+export const altTitle = (s: Titled, locale: Lang) => songAltTitle(s, locale);
+
 export const songTitle = (s: Titled, locale: Lang) => (locale === 'en' ? s.title_en || s.title : s.title) || '';
 
 /** The title in the other language, or '' when it's the same (Armond, May…). */

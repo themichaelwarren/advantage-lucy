@@ -270,6 +270,8 @@ export async function fetchAlbums(
   return rowsToObjects(rows).map(row => ({
     id: row.id,
     title: row.title,
+    title_en: row.title_en || undefined,
+    title_kana: row.title_kana || undefined,
     date: row.date || undefined,
     year: row.year,
     type: row.type,
@@ -425,7 +427,7 @@ const OPTIONAL_COLUMNS: Record<string, string[]> = {
   News: ['publish_at'],
   Blog: ['publish_at'],
   Photos: ['link'],
-  Albums: LISTEN_COLUMNS,
+  Albums: ['title_en', 'title_kana', ...LISTEN_COLUMNS],
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */

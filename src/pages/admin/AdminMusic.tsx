@@ -5,6 +5,7 @@ import { useAdminT } from '../../i18n/admin';
 import type { Album } from '../../types';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
 import { normalize } from '../../components/admin/SuggestInput';
+import { localTitle, altTitle, songSortKey, songSearchText, songQuery } from '../../utils/songTitles';
 
 /**
  * Releases: a cover list, or a table to sort and check what's missing.
@@ -86,11 +87,11 @@ export default function AdminMusic() {
     const dir = desc ? -1 : 1;
     const byDate = (x: Row, y: Row) => x.when.localeCompare(y.when);
     return rows
-      .filter(r => !q || [r.a.title, r.a.label, r.a.number, r.a.format, r.when, typeLabel[r.type]].some(t => t?.toLowerCase().includes(q)))
+      .filter(r => !q || songSearchText(r.a).includes(songQuery(ui.query)) || [r.a.label, r.a.number, r.a.format, r.when, typeLabel[r.type]].some(t => t?.toLowerCase().includes(q)))
       .filter(r => ui.filter === 'all' || (ui.filter === 'todo' ? r.missing.length > 0 : r.type === ui.filter))
       .sort((x, y) => {
         switch (col) {
-          case 'title': return dir * collator.compare(x.a.title, y.a.title);
+          case 'title': return dir * collator.compare(songSortKey(x.a, locale), songSortKey(y.a, locale));
           case 'type': return dir * (typePos(x.type) - typePos(y.type)) || byDate(x, y);
           // Empty labels last, whichever way
           case 'label': return (!x.a.label ? 1 : 0) - (!y.a.label ? 1 : 0) || dir * collator.compare(x.a.label || '', y.a.label || '') || byDate(x, y);
@@ -175,7 +176,8 @@ export default function AdminMusic() {
                       <div className="lu-rel-title">
                         {r.a.coverUrl ? <img className="lu-rel-cover" src={r.a.coverUrl} alt="" loading="lazy" /> : <span className="lu-rel-cover" aria-hidden="true" />}
                         <span className="lu-rel-name">
-                          <Link to={href}>{r.a.title}</Link>
+                          <Link to={href}>{localTitle(r.a, locale)}</Link>
+                          {altTitle(r.a, locale) && <span className="lu-sg-alt">{altTitle(r.a, locale)}</span>}
                           <span className="lu-rel-sub">
                             <span className="lu-rel-mdate">{r.when}</span>
                             {sub(r.a)}
@@ -215,7 +217,7 @@ export default function AdminMusic() {
               <Link to={`${prefix}/releases/${a.id}`} className="lu-list-row">
                 {a.coverUrl ? <img className="lu-thumb" src={a.coverUrl} alt="" loading="lazy" /> : <span className="lu-thumb" />}
                 <span className="lu-list-main">
-                  <strong>{a.title}</strong>
+                  <strong>{localTitle(a, locale)}{altTitle(a, locale) && <span className="lu-list-alt"> {altTitle(a, locale)}</span>}</strong>
                   <span>{[when, typeLabel[type] || a.type, a.label].filter(Boolean).join(' · ')}</span>
                 </span>
               </Link>

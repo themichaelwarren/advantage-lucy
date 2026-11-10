@@ -10,7 +10,7 @@ import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import NowPlaying from '../components/NowPlaying';
 import PageTitle from '../components/PageTitle';
-import { songTitle, songAltTitle } from '../utils/songTitles';
+import { songTitle, songAltTitle, localTitle } from '../utils/songTitles';
 
 interface Props {
   locale: Locale;
@@ -149,12 +149,12 @@ export default function SongDetail({ locale }: Props) {
                     <Link to={`${prefix}/releases/${album.id}`} className="song-album-item" key={album.id}>
                       <div className="song-album-cover">
                         {album.coverUrl
-                          ? <img src={album.coverUrl} alt={album.title} />
+                          ? <img src={album.coverUrl} alt={localTitle(album, locale)} />
                           : <span>{album.title.slice(0, 2)}</span>
                         }
                       </div>
                       <div className="song-album-body">
-                        <span className="song-album-title">{album.title}</span>
+                        <span className="song-album-title">{localTitle(album, locale)}</span>
                         <span className="song-album-meta">
                           <span>{album.year}</span>
                           <span className="event-detail-sep">·</span>

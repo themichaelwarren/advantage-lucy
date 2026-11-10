@@ -8,7 +8,7 @@ import PageLoader from '../components/PageLoader';
 import { normalize } from '../utils/text';
 import { useQueryParam } from '../hooks/useQueryParam';
 import PageTitle from '../components/PageTitle';
-import { songTitle, songAltTitle, compareSongs, songSearchText, songQuery } from '../utils/songTitles';
+import { songTitle, songAltTitle, compareSongs, songSearchText, songQuery, localTitle, altTitle } from '../utils/songTitles';
 
 interface Props {
   locale: Locale;
@@ -76,7 +76,7 @@ export default function Music({ locale }: Props) {
     if (!q) return albums.map(a => ({ album: a, tracks: [] as string[] }));
     return albums
       .map(a => {
-        const own = [a.title, a.label, a.year, a.number].some(x => x && normalize(x).includes(q));
+        const own = songSearchText(a).includes(songQuery(query)) || [a.label, a.year, a.number].some(x => x && normalize(x).includes(q));
         const tracks = (tracksOf.get(a.title) || []).filter(x => normalize(x).includes(q));
         return own || tracks.length ? { album: a, tracks: own ? [] : tracks } : null;
       })
@@ -97,7 +97,7 @@ export default function Music({ locale }: Props) {
             <span>
               {x.original_artist
                 ? s.songs.coverOf.replace('{artist}', x.original_artist)
-                : first ? `${first.title}${first.year ? ` · ${first.year}` : ''}` : s.music.unreleased}
+                : first ? `${localTitle(first, locale)}${first.year ? ` · ${first.year}` : ''}` : s.music.unreleased}
             </span>
           </span>
           {x.lyrics_doc_id && <span className="song-lyrics-tag">{s.music.lyricsTag}</span>}
@@ -112,10 +112,10 @@ export default function Music({ locale }: Props) {
         {list.map(({ album, tracks }) => (
           <Link to={`${prefix}/releases/${album.id}`} className="disco-item" key={album.id}>
             <div className="disco-cover">
-              {album.coverUrl ? <img src={album.coverUrl} alt={album.title} /> : <span>{album.title.slice(0, 2)}</span>}
+              {album.coverUrl ? <img src={album.coverUrl} alt={localTitle(album, locale)} /> : <span>{album.title.slice(0, 2)}</span>}
             </div>
             <div>
-              <h3>{album.title}</h3>
+              <h3>{localTitle(album, locale)}{altTitle(album, locale) && <span className="song-alt-title">{altTitle(album, locale)}</span>}</h3>
               <span className="year-label">{album.year}</span>
               {' · '}
               <span className="format-label">{typeLabel(album)}</span>
@@ -135,10 +135,10 @@ export default function Music({ locale }: Props) {
             style={{ transform: `rotate(${[-1.5, 1, -0.5, 1.5, -1, 0.8][i % 6]}deg)` }}
           >
             <div className="disco-card-cover">
-              {album.coverUrl ? <img src={album.coverUrl} alt={album.title} /> : <span>{album.title.slice(0, 2)}</span>}
+              {album.coverUrl ? <img src={album.coverUrl} alt={localTitle(album, locale)} /> : <span>{album.title.slice(0, 2)}</span>}
             </div>
             <div className="disco-card-info">
-              <h3>{album.title}</h3>
+              <h3>{localTitle(album, locale)}</h3>
               <span>{album.year} · {typeLabel(album)}</span>
             </div>
           </Link>

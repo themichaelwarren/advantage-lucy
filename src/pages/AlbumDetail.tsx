@@ -8,7 +8,7 @@ import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import { linkify } from '../utils/linkify';
 import PageTitle from '../components/PageTitle';
-import { songTitle } from '../utils/songTitles';
+import { songTitle, localTitle, altTitle } from '../utils/songTitles';
 import { LISTEN_SERVICES } from '../../functions/lib/listen';
 
 interface Props {
@@ -43,13 +43,14 @@ export default function AlbumDetail({ locale }: Props) {
 
   return (
     <article className="album-detail">
-      <PageTitle title={album.title} />
+      <PageTitle title={localTitle(album, locale)} />
       {/* Wide screens: title, cover and details in a sticky panel on the left,
           tracklist (and notes) on the right. Phones: stacked in that order. */}
       <div className="album-layout">
         <aside ref={panel.ref} className="album-aside is-sticky" style={{ top: panel.top }}>
           <header className="album-detail-header">
-            <h1 className="album-detail-title">{album.title}</h1>
+            <h1 className="album-detail-title">{localTitle(album, locale)}</h1>
+            {altTitle(album, locale) && <p className="song-alt-subtitle album-detail-alt" lang={locale === 'en' ? 'ja' : 'en'}>{altTitle(album, locale)}</p>}
             <p className="album-detail-subtitle">
               {[album.date || album.year, typeLabel, album.label].filter(Boolean).join(' · ')}
             </p>
@@ -57,7 +58,7 @@ export default function AlbumDetail({ locale }: Props) {
           <div className="album-info">
             {album.coverUrl && (
               <div className="album-artwork">
-                <img src={album.coverUrl} alt={album.title} />
+                <img src={album.coverUrl} alt={localTitle(album, locale)} />
               </div>
             )}
 

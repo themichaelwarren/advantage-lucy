@@ -134,6 +134,8 @@ export interface SplashPhoto {
 export interface Album {
   id: string;
   title: string;
+  title_en?: string;     // English title (romaji / the English name, as on streaming services)
+  title_kana?: string;   // 読み, for 50音順
   date?: string;         // release date YYYY-MM-DD
   year: string;
   type: string;          // 'album' | 'ep' | 'single' | 'compilation'

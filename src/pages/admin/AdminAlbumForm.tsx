@@ -20,7 +20,7 @@ import {
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
 const ALBUM_COLUMNS = [
-  'id', 'title', 'date', 'year', 'type', 'number',
+  'id', 'title', 'title_en', 'title_kana', 'date', 'year', 'type', 'number',
   'format', 'label', 'artwork_url', 'listen_url',
   'description_en', 'description_ja',
   ...LISTEN_COLUMNS,
@@ -79,7 +79,7 @@ export default function AdminAlbumForm() {
     const a = albums.find(x => x.id === id);
     if (!a) return;
     const f: Form = {
-      id: a.id, title: a.title || '', date: a.date || '', year: a.year || '', type: a.type || '',
+      id: a.id, title: a.title || '', title_en: a.title_en || '', title_kana: a.title_kana || '', date: a.date || '', year: a.year || '', type: a.type || '',
       number: a.number || '', format: a.format || '', label: a.label || '', artwork_url: a.coverUrl || '',
       listen_url: a.listenUrl || '', description_en: a.description_en || '', description_ja: a.description_ja || '',
       ...Object.fromEntries(LISTEN_SERVICES.map(x => [x.column, a.listen?.[x.key] || ''])) as Record<typeof LISTEN_COLUMNS[number], string>,
@@ -179,6 +179,14 @@ export default function AdminAlbumForm() {
         <Field label={s.releaseTitle} error={titleError} required s={s}>
           {fid => <input id={fid} value={form.title} onChange={e => set('title', e.target.value)} />}
         </Field>
+        <div className="lu-grid-2">
+          <Field label={s.titleEn} hint={s.relTitleEnHint} s={s}>
+            {fid => <input id={fid} lang="en" placeholder={`${s.eg}Fanfare`} value={form.title_en} onChange={e => set('title_en', e.target.value)} />}
+          </Field>
+          <Field label={s.titleKana} hint={s.titleKanaHint} s={s}>
+            {fid => <input id={fid} lang="ja" placeholder={`${s.eg}ふぁんふぁーれ`} value={form.title_kana} onChange={e => set('title_kana', e.target.value)} />}
+          </Field>
+        </div>
         <div className="lu-grid-2">
           <Field label={s.releaseDate} s={s}>
             {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
@@ -350,6 +358,12 @@ export default function AdminAlbumForm() {
             </div>
             <div>
               <h1>{sf.title}</h1>
+              {(sf.title_en && sf.title_en !== sf.title || sf.title_kana) && (
+                <p className="lu-song-alt lu-rel-alt">
+                  {sf.title_en && sf.title_en !== sf.title && <span lang="en">{sf.title_en}</span>}
+                  {sf.title_kana && <span lang="ja">{sf.title_kana}</span>}
+                </p>
+              )}
               <p className="lu-rel-meta">
                 {kind && <span className={`lu-rel-type is-${kind}`}>{typeLabel[kind] || sf.type}</span>}
                 {(sf.date || sf.year) && <time>{sf.date || sf.year}</time>}

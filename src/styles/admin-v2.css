@@ -1800,3 +1800,30 @@ a.lu-track-title:hover { text-decoration: underline; }
 .lu-rel-svc.is-on { border-style: solid; border-color: var(--text); color: var(--text); }
 .lu-rel-svc:hover { border-color: var(--text); color: var(--text); }
 a.lu-rel-svc.is-on:hover { background: var(--text); color: var(--bg); }
+.lu-list-alt { font-weight: 400; color: var(--text-muted); font-size: 0.88em; margin-left: 0.3em; }
+.lu-rel-alt { margin: 0.35rem 0 0; }
+
+/* ---------- VENUE PAGE ---------- */
+.lu-venue-pref { color: var(--text-muted); font-weight: 400; }
+.lu-venue-url { overflow-wrap: anywhere; }
+.lu-venue-next {
+  display: flex; flex-direction: column; gap: 0.1rem; padding: 0.7rem 0.9rem; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--text); color: var(--text); text-decoration: none; background: var(--bg);
+}
+.lu-venue-next .lu-publish-label { margin: 0; }
+.lu-venue-next strong { font-family: var(--font-main); }
+.lu-venue-next span:last-child { font-size: 0.88rem; }
+.lu-venue-next:hover { box-shadow: 3px 3px 0 var(--text); transform: translate(-1px, -1px); }
+.lu-venue-map { padding: 0.5rem; gap: 0.4rem; }
+.lu-venue-map iframe { width: 100%; aspect-ratio: 4 / 3; border: 0; border-radius: calc(var(--radius-sm) - 2px); display: block; background: var(--surface-hover); }
+.lu-venue-map .lu-hint { padding: 0 0.4rem 0.2rem; }
+.lu-venue-page .lu-song-card h1 { font-size: clamp(1.45rem, 2.3vw, 1.8rem); text-wrap: balance; }
+/* Releases table: fit the content column without sideways scrolling */
+.lu-rel-grid :is(th, td) { padding-left: 0.55rem; padding-right: 0.55rem; }
+.lu-rel-grid :is(th, td):first-child { padding-left: 0.9rem; }
+.lu-rel-grid :is(th, td):last-child { padding-right: 0.9rem; }
+.lu-rel-label { white-space: normal; }
+.lu-rel-title { min-width: 12rem; }
+.lu-rel-grid .lu-rel-bar { width: 2.4rem; }
+.lu-rel-marks { gap: 0.2rem; }
+.lu-venue-with { font-size: 0.88rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
