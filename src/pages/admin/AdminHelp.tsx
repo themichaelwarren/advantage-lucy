@@ -50,6 +50,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
         '“Goes live” decides when the show appears on the site: now, at a set time (Japan time), or hidden as a draft that only the admin can see.',
         'Setlist: type song titles, drag ⇅ to reorder, and add sets and encores. It goes public the day after the show, so you can fill it in on the night without spoilers. You can pick a different time.',
         'Home lists recent shows that don’t have a setlist yet.',
+        'Videos (band only, not on the site): paste a YouTube link in the show’s Videos section. Play it and press “Now” as each song starts; the songs come from the setlist. Each marked song then shows up on that song’s page.',
       ],
     },
     {
@@ -92,6 +93,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
         'Releases have a tracklist that links to Songs.',
         'Each song can have music and lyrics credits, an original artist (for covers), and lyrics in a Google Doc that you can create from the song page.',
         'Renaming a song changes its title everywhere it’s used, so setlists and releases stay linked.',
+        'A song’s Videos section gathers every live video with that song marked, plus videos of the song on its own (add those there).',
         '“Needs a look” lists song titles in setlists or releases that don’t match any song. Add the song, or point it to the right one.',
       ],
     },
@@ -141,6 +143,7 @@ const ja: typeof en = {
         '「公開」で、サイトに出るタイミングを選べます：すぐ／日時を指定（日本時間）／非公開（下書き。管理画面でしか見えません）。',
         'セットリスト：曲名を打って追加し、⇅ をドラッグして並べ替えます。セットやアンコールも追加できます。公開はライブの翌日なので、当日に入力してもネタバレになりません。公開日時は変更もできます。',
         'ホームには、セットリストがまだない最近のライブが表示されます。',
+        '動画（バンドだけ。サイトには出ません）：ライブの「動画」にYouTubeのリンクを貼ります。再生して、曲が始まったら「今」を押すと開始位置が付きます（曲はセットリストから）。付けた曲は、その曲のページの「動画」に出ます。',
       ],
     },
     {
@@ -183,6 +186,7 @@ const ja: typeof en = {
         'リリースの曲目は「楽曲」とつながっています。',
         '曲ごとに作曲・作詞のクレジット、原曲のアーティスト（カバーの場合）、歌詞を登録できます。歌詞はGoogleドキュメントで、曲のページから作成できます。',
         '曲名を変えると、使われているところ（セットリスト・リリース）もすべて変わるので、つながりは切れません。',
+        '曲のページの「動画」には、その曲に開始位置が付いたライブ映像がすべて集まります。曲単体の動画もそこで追加できます。',
         '「要確認」には、どの曲とも一致しないセットリストやリリースの曲名が出ます。曲を追加するか、正しい曲を選んでください。',
       ],
     },

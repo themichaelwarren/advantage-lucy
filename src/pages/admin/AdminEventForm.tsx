@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAllEvents, useVenues, useAreas, useAllSetlists, useSongs } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, replaceRows } from '../../services/adminService';
+import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, type MediaRow } from '../../services/adminService';
+import ShowVideos, { toShowVideos, fromShowVideos, videosSnapshot, type ShowVideo } from '../../components/admin/ShowVideos';
 import { useAdminT } from '../../i18n/admin';
 import {
   Section, Field, BilingualRow, Switch, SaveBar, ImageField, DeleteButton,
@@ -46,6 +47,11 @@ export default function AdminEventForm() {
 
   const [form, setForm] = useState<Form>(emptyForm);
   const [setlist, setSetlist] = useState<SetlistItem[]>([]);
+  // Videos (admin only, private Media tab): loaded once, saved with the show
+  const [media, setMedia] = useState<MediaRow[] | null>(null);
+  const [videos, setVideos] = useState<ShowVideo[]>([]);
+  const [videosBaseline, setVideosBaseline] = useState('[]');
+  useEffect(() => { getMedia().then(setMedia).catch(() => setMedia([])); }, []);
   const [baseline, setBaseline] = useState('');
   const [errors, setErrors] = useState<Partial<Record<EventField, string>>>({});
   const [saving, setSaving] = useState(false);
@@ -72,6 +78,18 @@ export default function AdminEventForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew, id, loading, events, setlists]);
 
+  // The show's videos, once both it and the Media tab have loaded (once per show,
+  // so saving doesn't reload what's on screen)
+  const videosFor = useRef('');
+  useEffect(() => {
+    if (isNew || !media || !baseline || !id || videosFor.current === id) return;
+    videosFor.current = id;
+    const v = toShowVideos(media, id, setlist);
+    setVideos(v);
+    setVideosBaseline(videosSnapshot(v, setlist));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, media, baseline, id]);
+
   // Arriving from "Add a setlist": jump to the setlist once the show has loaded
   const location = useLocation();
   useEffect(() => {
@@ -80,7 +98,8 @@ export default function AdminEventForm() {
     }
   }, [location.hash, baseline]);
 
-  const dirty = baseline !== '' && snapshot(form, setlist) !== baseline;
+  const videosChanged = videosSnapshot(videos, setlist) !== videosBaseline;
+  const dirty = baseline !== '' && (snapshot(form, setlist) !== baseline || videosChanged);
   const leaveGuard = useUnsavedWarning(dirty, saving);
 
   const set = (field: EventField, value: string) => {
@@ -141,6 +160,13 @@ export default function AdminEventForm() {
         });
       const hadSetlist = setlists.some(x => x.event === eventId);
       if (rows.length || hadSetlist) await replaceRows('Setlists', eventId, rows);
+
+      // Videos: only written when they changed (their own private tab)
+      if (videosChanged) {
+        const saved = await saveMedia(eventId, fromShowVideos(videos, cleaned));
+        setMedia(m => [...(m || []).filter(r => r.owner !== eventId), ...saved]);
+        setVideosBaseline(videosSnapshot(videos, cleaned));
+      }
 
       if (added.length) { setAddedSongs(added); refreshSongs(); }
       setSetlist(cleaned);
@@ -254,6 +280,10 @@ export default function AdminEventForm() {
         </div>
         <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} songCover={songCover} />
         <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
+      </Section>
+
+      <Section title={s.secVideos} id="videos">
+        <ShowVideos s={s} videos={videos} onChange={setVideos} setlist={setlist} />
       </Section>
 
       <Section title={s.secTickets}>

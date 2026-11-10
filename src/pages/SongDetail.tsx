@@ -89,6 +89,8 @@ export default function SongDetail({ locale }: Props) {
 
   // Sort events by date descending
   eventAppearances.sort((a, b) => b.event.date.localeCompare(a.event.date));
+  const lastPlayed = eventAppearances[0]?.event;
+  const playedCount = new Set(eventAppearances.map(x => x.event.id)).size;
 
   return (
     <article className="song-detail">
@@ -105,7 +107,7 @@ export default function SongDetail({ locale }: Props) {
                 <p className="song-cover-of">{s.songs.coverOf.replace('{artist}', song.original_artist)}</p>
               )}
             </header>
-            {(song.music_by || song.lyrics_by) && (
+            {(song.music_by || song.lyrics_by || lastPlayed) && (
               <dl className="event-meta">
                 {song.lyrics_by && (
                   <>
@@ -117,6 +119,19 @@ export default function SongDetail({ locale }: Props) {
                   <>
                     <dt>{s.songs.musicBy}</dt>
                     <dd>{resolveNames(song.music_by)}</dd>
+                  </>
+                )}
+                {/* Only public setlists are here, so an upcoming show never shows */}
+                {lastPlayed && (
+                  <>
+                    <dt>{s.songs.lastPlayed}</dt>
+                    <dd>
+                      <Link to={`${prefix}/events/${lastPlayed.id}`}>
+                        {lastPlayed.date.replace(/-/g, '.')} · {(locale === 'ja' ? lastPlayed.venue_ja || lastPlayed.venue_en : lastPlayed.venue_en || lastPlayed.venue_ja) || lastPlayed.title_en}
+                      </Link>
+                    </dd>
+                    <dt>{s.songs.playedLive}</dt>
+                    <dd>{s.songs.playedTimes.replace('{n}', String(playedCount))}</dd>
                   </>
                 )}
               </dl>

@@ -187,3 +187,59 @@ export async function resendReservation(id: string): Promise<Reservation> {
   });
   return data.reservation;
 }
+
+// ── Media (admin only: videos of shows and songs, see functions/lib/media.ts) ──
+
+export interface MediaRow {
+  owner: string;   // event id, or "song:<song id>"
+  kind: 'show' | 'part' | 'song';
+  url: string;
+  song: string;    // part: the song's title, as in setlists
+  start: string;   // part: seconds into the video
+  title: string;
+  note: string;
+}
+
+export async function getMedia(): Promise<MediaRow[]> {
+  const out = await adminFetch('/api/admin/media') as { media: MediaRow[] };
+  return out.media;
+}
+
+/** A YouTube video's title ('' if it can't be found). */
+export async function getVideoTitle(url: string): Promise<string> {
+  try {
+    const out = await adminFetch(`/api/admin/media?title=${encodeURIComponent(url)}`) as { title: string };
+    return out.title || '';
+  } catch {
+    return '';
+  }
+}
+
+/** Replace everything a show (event id) or song ("song:<id>") owns. */
+export async function saveMedia(owner: string, rows: Partial<MediaRow>[]): Promise<MediaRow[]> {
+  const out = await adminFetch('/api/admin/media', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ owner, rows }),
+  }) as { media: MediaRow[] };
+  return out.media;
+}
+
+// ── Arrangements (admin only: keys etc., see functions/lib/arrangements.ts) ──
+
+export interface ArrangementRow { song: string; kind: 'key'; value: string; label: string; note: string }
+
+export async function getArrangements(): Promise<ArrangementRow[]> {
+  const out = await adminFetch('/api/admin/arrangements') as { arrangements: ArrangementRow[] };
+  return out.arrangements;
+}
+
+/** Replace a song's arrangement rows (in this order). */
+export async function saveArrangements(song: string, rows: Partial<ArrangementRow>[]): Promise<ArrangementRow[]> {
+  const out = await adminFetch('/api/admin/arrangements', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ song, rows }),
+  }) as { arrangements: ArrangementRow[] };
+  return out.arrangements;
+}

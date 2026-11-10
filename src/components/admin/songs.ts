@@ -1,5 +1,5 @@
 import type { SetlistEntry, Song, TracklistEntry } from '../../types';
-import { createRow, replaceRows } from '../../services/adminService';
+import { createRow, replaceRows, getMedia, saveMedia } from '../../services/adminService';
 import { makeId } from './ui';
 import { normalize } from './SuggestInput';
 
@@ -61,5 +61,13 @@ export async function retitleEverywhere(from: string, to: string, setlists: Setl
       release: t.release, track: String(t.track), title: normalize(t.title || '') === key ? title : t.title,
     })));
   }
+  // Video start times name the song too (admin-only Media tab)
+  try {
+    const media = await getMedia();
+    const owners = [...new Set(media.filter(r => r.kind === 'part' && normalize(r.song) === key).map(r => r.owner))];
+    for (const owner of owners) {
+      await saveMedia(owner, media.filter(r => r.owner === owner).map(r => (r.kind === 'part' && normalize(r.song) === key ? { ...r, song: title } : r)));
+    }
+  } catch { /* no Media tab yet, or offline: setlists and releases are what matter */ }
   return { shows: events.length, releases: releases.length };
 }

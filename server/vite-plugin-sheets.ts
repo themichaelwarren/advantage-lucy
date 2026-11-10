@@ -9,6 +9,8 @@ import { checkAdmin } from '../functions/lib/adminAuth';
 import { checkContact, saveMessage, listMessages, setMessageStatus, verifyTurnstile, showForEmail } from '../functions/lib/messages';
 import { notifyBand } from '../functions/lib/notify';
 import { handleReserveGet, handleReservePost, handleAdminReservations } from '../functions/lib/reservations';
+import { handleAdminMedia } from '../functions/lib/media';
+import { handleAdminArrangements } from '../functions/lib/arrangements';
 import { checkFiles, attachmentNames, isAttachmentName } from '../functions/lib/attachments';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { publicView } from '../functions/lib/visibility';
@@ -50,6 +52,29 @@ export default function sheetsPlugin(): Plugin {
       }
     },
     configureServer(server) {
+      // Media and arrangements (admin only; same code as production: functions/lib/media.ts, arrangements.ts)
+      server.middlewares.use(async (req, res, next) => {
+        const isMedia = req.url?.startsWith('/api/admin/media');
+        if (!isMedia && !req.url?.startsWith('/api/admin/arrangements')) return next();
+        if (!(await requireAdmin(req, res))) return;
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) chunks.push(chunk as Buffer);
+        const request = new Request(new URL(req.url!, `http://${req.headers.host}`), {
+          method: req.method,
+          headers: { 'content-type': 'application/json' },
+          body: req.method === 'GET' || req.method === 'HEAD' ? undefined : Buffer.concat(chunks),
+        });
+        const ctx = {
+          sheetId: process.env.VITE_GOOGLE_SHEET_ID!,
+          saEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!,
+          saKey: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
+        };
+        const out = isMedia ? await handleAdminMedia(request, ctx) : await handleAdminArrangements(request, ctx);
+        res.statusCode = out.status;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(await out.text());
+      });
+
       // Ticket reservations (same code as production: functions/lib/reservations.ts)
       server.middlewares.use(async (req, res, next) => {
         const isPublic = req.url?.startsWith('/api/reserve') && (req.method === 'GET' || req.method === 'POST');

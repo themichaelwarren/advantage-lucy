@@ -104,6 +104,9 @@ export const translations = {
       performedAt: 'Performed at',
       coverOf: '{artist} cover',
       noSong: 'Song not found.',
+      lastPlayed: 'Last played live',
+      playedLive: 'Played live',
+      playedTimes: '{n} times',
     },
     setlist: {
       title: 'Setlist',
@@ -331,6 +334,9 @@ export const translations = {
       performedAt: '演奏イベント',
       coverOf: '{artist}のカバー',
       noSong: '楽曲が見つかりません。',
+      lastPlayed: '最後のライブ演奏',
+      playedLive: 'ライブ演奏',
+      playedTimes: '{n}回',
     },
     setlist: {
       title: 'セットリスト',

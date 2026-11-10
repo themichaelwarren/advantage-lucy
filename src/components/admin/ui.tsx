@@ -225,6 +225,54 @@ export function DeleteButton({ s, onConfirm, label }: { s: AdminStrings; onConfi
 }
 
 /**
+ * A small window for editing one section of a read-mode page. Esc or a
+ * click outside cancels; the form inside submits with Save (or Enter).
+ */
+export function EditDialog({ s, title, open, onClose, onSave, saving, error, children, footer }: {
+  s: AdminStrings;
+  title: string;
+  open: boolean;
+  onClose: () => void;
+  onSave: () => void;
+  saving?: boolean;
+  error?: string;
+  children: ReactNode;
+  /** Left side of the buttons row, e.g. Delete */
+  footer?: ReactNode;
+}) {
+  const box = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    box.current?.querySelector<HTMLElement>('input, select, textarea')?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !saving) onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, saving, onClose]);
+  if (!open) return null;
+  return (
+    <div className="lu-modal-overlay" onClick={() => !saving && onClose()}>
+      <form
+        ref={box}
+        className="lu-modal lu-edit-dialog"
+        role="dialog" aria-modal="true" aria-label={title}
+        onClick={e => e.stopPropagation()}
+        onSubmit={e => { e.preventDefault(); onSave(); }}
+        noValidate
+      >
+        <h3>{title}</h3>
+        <div className="lu-edit-dialog-body">{children}</div>
+        {error && <p className="lu-field-error">{s.errorPrefix} {error}</p>}
+        <div className="lu-modal-actions">
+          {footer && <span className="lu-edit-dialog-footer">{footer}</span>}
+          <button type="button" className="lu-btn" onClick={onClose} disabled={saving}>{s.cancel}</button>
+          <button type="submit" className="lu-btn lu-btn-primary" disabled={saving}>{saving ? s.saving : s.save}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/**
  * Don't lose unsaved edits.
  * - Closing or reloading the tab: the browser's own "Leave site?" warning.
  * - Clicking a link inside the admin (sidebar, Back, links on the page):
