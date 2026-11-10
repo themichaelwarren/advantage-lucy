@@ -13,6 +13,7 @@ import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
 import News from './pages/News';
 import NewsDetail from './pages/NewsDetail';
+import NotFound from './components/NotFound';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminEvents from './pages/admin/AdminEvents';
@@ -90,6 +91,12 @@ function applyBg(current?: string) {
 // Set initial color before first paint
 applyBg();
 
+function WithLanguage() {
+  const { pathname, search } = useLocation();
+  const lang = navigator.language.startsWith('ja') ? 'ja' : 'en';
+  return <Navigate to={`/${lang}${pathname}${search}`} replace />;
+}
+
 export default function App() {
   const location = useLocation();
 
@@ -121,6 +128,7 @@ export default function App() {
         <Route path="about" element={<About locale="en" />} />
         <Route path="contact" element={<Contact locale="en" />} />
         <Route path="privacy" element={<Privacy locale="en" />} />
+        <Route path="*" element={<NotFound locale="en" />} />
       </Route>
 
       {/* Japanese routes */}
@@ -139,6 +147,7 @@ export default function App() {
         <Route path="about" element={<About locale="ja" />} />
         <Route path="contact" element={<Contact locale="ja" />} />
         <Route path="privacy" element={<Privacy locale="ja" />} />
+        <Route path="*" element={<NotFound locale="ja" />} />
       </Route>
 
       {/* Admin routes (under locale, auth-protected) */}
@@ -176,7 +185,8 @@ export default function App() {
       </Route>
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/en/" replace />} />
+      {/* No language in the address: the same address in the browser's language (a 404 there if it doesn't exist) */}
+      <Route path="*" element={<WithLanguage />} />
     </Routes>
   );
 }

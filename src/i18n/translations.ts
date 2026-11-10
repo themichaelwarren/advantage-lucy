@@ -6,6 +6,8 @@ export const translations = {
     nav: {
       home: 'Home',
       events: 'Events',
+      news: 'News',
+      blog: 'Blog',
       music: 'Music',
       about: 'About',
       contact: 'Contact',
@@ -37,6 +39,7 @@ export const translations = {
     blog: {
       title: 'Blog',
       noPosts: 'No posts yet.',
+      intro: 'From our Instagram.',
     },
     events: {
       title: 'Events',
@@ -198,6 +201,7 @@ export const translations = {
     footer: {
       copyright: '© advantage Lucy',
       privacy: 'Privacy',
+      pages: 'Site pages',
     },
     admin: {
       dashboard: 'Dashboard',
@@ -229,6 +233,8 @@ export const translations = {
     nav: {
       home: 'ホーム',
       events: 'イベント',
+      news: 'ニュース',
+      blog: 'ブログ',
       music: '音楽',
       about: 'プロフィール',
       contact: 'お問い合わせ',
@@ -260,6 +266,7 @@ export const translations = {
     blog: {
       title: 'ブログ',
       noPosts: 'まだ投稿がありません。',
+      intro: 'Instagramからの投稿です。',
     },
     events: {
       title: 'イベント',
@@ -421,6 +428,7 @@ export const translations = {
     footer: {
       copyright: '© advantage Lucy',
       privacy: 'プライバシー',
+      pages: 'サイトのページ',
     },
     admin: {
       dashboard: 'ダッシュボード',

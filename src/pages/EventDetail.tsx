@@ -6,6 +6,7 @@ import { t } from '../i18n/translations';
 import { useEvents, useSetlists, useSongs } from '../hooks/useSheetData';
 import { formatPrice } from '../utils/format';
 import PageLoader from '../components/PageLoader';
+import NotFound from '../components/NotFound';
 import { setlistIsPublic, todayInJapan } from '../utils/showDates';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import SetlistTip from '../components/SetlistTip';
@@ -34,18 +35,7 @@ export default function EventDetail({ locale }: Props) {
   if (loading) return <PageLoader locale={locale} />;
 
   if (!event) {
-    return (
-      <div className="text-center mt-2">
-        <p style={{ background: 'var(--surface)', padding: '2rem', fontSize: '1.2rem' }}>
-          {locale === 'en' ? 'Event not found.' : 'イベントが見つかりません。'}
-        </p>
-        <div className="mt-1">
-          <Link to={`${prefix}/events`} className="tag">
-            <span>← {s.events.title}</span>
-          </Link>
-        </div>
-      </div>
-    );
+    return <NotFound locale={locale} what={locale === 'ja' ? 'このライブ' : 'This show'} back={{ to: `${prefix}/events`, label: s.events.title }} />;
   }
 
   // Fall back to the other language when a translation is missing

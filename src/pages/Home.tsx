@@ -15,7 +15,7 @@ function PostList({ title, viewAll, to, items }: {
   title: string;
   viewAll: string;
   to: string;
-  items: { id: string; date: string; title: string; href: string }[];
+  items: { id: string; date: string; title: string; href: string; external?: boolean }[];
 }) {
   if (items.length === 0) return null;
   return (
@@ -27,10 +27,17 @@ function PostList({ title, viewAll, to, items }: {
       <ul className="show-list">
         {items.map(item => (
           <li key={item.id}>
-            <Link to={item.href} className="show-row">
-              <time dateTime={item.date}>{item.date}</time>
-              <span className="show-row-main"><strong>{item.title}</strong></span>
-            </Link>
+            {item.external ? (
+              <a href={item.href} target="_blank" rel="noopener noreferrer" className="show-row">
+                <time dateTime={item.date}>{item.date}</time>
+                <span className="show-row-main"><strong>{item.title} <span aria-hidden="true">↗</span></strong></span>
+              </a>
+            ) : (
+              <Link to={item.href} className="show-row">
+                <time dateTime={item.date}>{item.date}</time>
+                <span className="show-row-main"><strong>{item.title}</strong></span>
+              </Link>
+            )}
           </li>
         ))}
       </ul>
@@ -65,7 +72,7 @@ export default function Home({ locale }: Props) {
   const blogItems = [...blog]
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 3)
-    .map(p => ({ id: p.id, date: p.date, title: (locale === 'ja' ? p.title_ja : p.title_en) || p.instagram_url, href: `${prefix}/blog/${p.id}` }));
+    .map(p => ({ id: p.id, date: p.date, title: (locale === 'ja' ? p.title_ja || p.title_en : p.title_en || p.title_ja) || p.instagram_url, href: p.instagram_url, external: true }));
 
   return (
     <>

@@ -50,6 +50,8 @@ export default function Layout({ locale }: Props) {
 
   const navLinks = [
     { to: `${prefix}/events`, label: s.nav.events },
+    { to: `${prefix}/news`, label: s.nav.news },
+    { to: `${prefix}/blog`, label: s.nav.blog },
     { to: `${prefix}/releases`, label: s.nav.music },
     { to: `${prefix}/about`, label: s.nav.about },
     { to: `${prefix}/contact`, label: s.nav.contact },
@@ -126,6 +128,10 @@ export default function Layout({ locale }: Props) {
 
       <footer className="site-footer">
         <div className="container">
+          <nav className="footer-nav" aria-label={s.footer.pages}>
+            <Link to={prefix}>{s.nav.home}</Link>
+            {navLinks.map(link => <Link key={link.to} to={link.to}>{link.label}</Link>)}
+          </nav>
           <p>{s.footer.copyright} · <Link to={`${prefix}/privacy`}>{s.footer.privacy}</Link></p>
           <div className="social-links">
             {SOCIAL_LINKS.map(link => (

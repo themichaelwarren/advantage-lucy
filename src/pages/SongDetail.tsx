@@ -6,6 +6,7 @@ import { t } from '../i18n/translations';
 import { useSongs, useTracklists, useSetlists, useEvents, useAlbums, usePeople } from '../hooks/useSheetData';
 import { formatDateWithDay } from '../utils/format';
 import PageLoader from '../components/PageLoader';
+import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import NowPlaying from '../components/NowPlaying';
 
@@ -60,18 +61,7 @@ export default function SongDetail({ locale }: Props) {
   if (songsLoading) return <PageLoader locale={locale} />;
 
   if (!song) {
-    return (
-      <div className="text-center mt-2">
-        <p style={{ background: 'var(--surface)', padding: '2rem', fontSize: '1.2rem' }}>
-          {s.songs.noSong}
-        </p>
-        <div className="mt-1">
-          <Link to={`${prefix}/releases`} className="tag">
-            <span>← {s.music.subtitle}</span>
-          </Link>
-        </div>
-      </div>
-    );
+    return <NotFound locale={locale} what={locale === 'ja' ? 'この曲' : 'This song'} back={{ to: `${prefix}/releases`, label: s.music.subtitle }} />;
   }
 
   // Albums this song appears on (via Tracklists)

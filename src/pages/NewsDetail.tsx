@@ -6,6 +6,7 @@ import { t } from '../i18n/translations';
 import { useNews } from '../hooks/useSheetData';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import PageLoader from '../components/PageLoader';
+import NotFound from '../components/NotFound';
 import type { NewsPost } from '../types';
 
 /** A line that is only [text](url) links: those become buttons. */
@@ -80,14 +81,7 @@ export default function NewsDetail({ locale }: Props) {
   const post = sorted[at];
 
   if (!post) {
-    return (
-      <div className="text-center mt-2">
-        <p style={{ background: 'var(--surface)', padding: '2rem', fontSize: '1.2rem' }}>{s.news.notFound}</p>
-        <div className="mt-1">
-          <Link to={`${prefix}/news`} className="tag"><span>← {s.news.title}</span></Link>
-        </div>
-      </div>
-    );
+    return <NotFound locale={locale} what={locale === 'ja' ? 'この記事' : 'This post'} back={{ to: `${prefix}/news`, label: s.news.all }} />;
   }
 
   // Fall back to the other language when a translation is missing

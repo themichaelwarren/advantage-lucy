@@ -1,59 +1,29 @@
-import { useParams, Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useBlog } from '../hooks/useSheetData';
-import { formatDate } from '../utils/format';
-import InstagramEmbed from '../components/InstagramEmbed';
 import PageLoader from '../components/PageLoader';
+import NotFound from '../components/NotFound';
 
 interface Props {
   locale: Locale;
 }
 
+/**
+ * Blog posts don't have their own page any more: the list opens them on
+ * Instagram. Old /blog/:id links (shared before) go on to the post there.
+ */
 export default function BlogDetail({ locale }: Props) {
   const s = t(locale);
-  const prefix = `/${locale}`;
   const { id } = useParams<{ id: string }>();
   const { blog, loading } = useBlog();
-
-  if (loading) return <PageLoader locale={locale} />;
-
   const post = blog.find(b => b.id === id);
 
-  if (!post) {
-    return (
-      <div className="text-center mt-2">
-        <p style={{ background: 'var(--surface)', padding: '2rem', fontSize: '1.2rem' }}>
-          {locale === 'en' ? 'Post not found.' : '記事が見つかりません。'}
-        </p>
-        <div className="mt-1">
-          <Link to={`${prefix}/blog`} className="tag">
-            <span>← {s.blog.title}</span>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (post?.instagram_url) window.location.replace(post.instagram_url);
+  }, [post]);
 
-  const title = locale === 'ja' ? post.title_ja : post.title_en;
-
-  return (
-    <article className="blog-detail">
-      {title && (
-        <header className="news-detail-header">
-          <h1 className="news-detail-title">{title}</h1>
-        </header>
-      )}
-
-      <time className="blog-detail-date">{formatDate(post.date, locale)}</time>
-
-      <InstagramEmbed url={post.instagram_url} />
-
-      <div className="mt-2">
-        <Link to={`${prefix}/blog`} className="tag">
-          <span>← {s.blog.title}</span>
-        </Link>
-      </div>
-    </article>
-  );
+  if (loading || post?.instagram_url) return <PageLoader locale={locale} />;
+  return <NotFound locale={locale} what={locale === 'ja' ? 'この投稿' : 'This post'} back={{ to: `/${locale}/blog`, label: s.blog.title }} />;
 }

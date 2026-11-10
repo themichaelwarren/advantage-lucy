@@ -4,6 +4,7 @@ import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useAlbums, useTracklists, useSongs } from '../hooks/useSheetData';
 import PageLoader from '../components/PageLoader';
+import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import { linkify } from '../utils/linkify';
 
@@ -29,18 +30,7 @@ export default function AlbumDetail({ locale }: Props) {
     : [];
 
   if (!album) {
-    return (
-      <div className="text-center mt-2">
-        <p style={{ background: 'var(--surface)', padding: '2rem', fontSize: '1.2rem' }}>
-          {locale === 'en' ? 'Album not found.' : 'アルバムが見つかりません。'}
-        </p>
-        <div className="mt-1">
-          <Link to={`${prefix}/releases`} className="tag">
-            <span>← {s.music.subtitle}</span>
-          </Link>
-        </div>
-      </div>
-    );
+    return <NotFound locale={locale} what={locale === 'ja' ? 'このリリース' : 'This release'} back={{ to: `${prefix}/releases`, label: s.music.subtitle }} />;
   }
 
   // Fall back to the other language when a translation is missing

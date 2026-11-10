@@ -73,8 +73,11 @@ export function publicView(tab: string, data: unknown, events?: Row[]): unknown 
       return rows.filter(e => e.status !== 'private');
     case 'news':
     case 'blog':
-    case 'photos':
       return rows.filter(x => isLive(x, now));
+    case 'photos':
+      // The About page photo is shown there even when it's hidden from the
+      // home page slideshow (the home page leaves out hidden ones itself)
+      return rows.filter(x => isLive(x, now) || x.profile_photo === 'yes');
     case 'setlists': {
       const open = new Set(
         (events || [])

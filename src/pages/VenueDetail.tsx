@@ -6,6 +6,7 @@ import { useEvents, useSetlists, useVenues } from '../hooks/useSheetData';
 import { formatDateWithDay } from '../utils/format';
 import { todayInJapan } from '../utils/showDates';
 import PageLoader from '../components/PageLoader';
+import NotFound from '../components/NotFound';
 
 interface Props {
   locale: Locale;
@@ -32,12 +33,7 @@ export default function VenueDetail({ locale }: Props) {
   if (loading || eventsLoading) return <PageLoader locale={locale} />;
 
   if (!venue) {
-    return (
-      <div className="text-center mt-2">
-        <p className="events-empty-note">{s.venues.notFound}</p>
-        <Link to={`${prefix}/events`} className="tag"><span>← {s.events.title}</span></Link>
-      </div>
-    );
+    return <NotFound locale={locale} what={locale === 'ja' ? 'この会場' : 'This venue'} back={{ to: `${prefix}/events`, label: s.events.title }} />;
   }
 
   const name = pick(venue.name_en, venue.name_ja) || venue.id;
@@ -52,6 +48,12 @@ export default function VenueDetail({ locale }: Props) {
   ].filter(Boolean).join(', ') : '';
   const upcoming = shows.filter(e => (e.end_date || e.date) >= today).reverse();
   const past = shows.filter(e => (e.end_date || e.date) < today);
+  const pastByYear: [string, typeof past][] = [];
+  for (const e of past) {
+    const y = e.date.slice(0, 4);
+    const last = pastByYear[pastByYear.length - 1];
+    if (last && last[0] === y) last[1].push(e); else pastByYear.push([y, [e]]);
+  }
   const setlistLabel = locale === 'ja' ? 'セットリストあり' : 'Has setlist';
 
   const row = (e: typeof shows[number]) => {
@@ -61,8 +63,9 @@ export default function VenueDetail({ locale }: Props) {
         <Link to={`${prefix}/events/${e.id}`} className={`tl-row venue-show-row${e.featured ? ' is-featured' : ''}`}>
           <time dateTime={e.date}>{formatDateWithDay(e.date, locale)}</time>
           <span className="tl-main">
-            {/* Untitled shows: who else played says more than the venue name again */}
-            <strong>{title || (e.performers ? `w/ ${e.performers}` : name)}</strong>
+            {/* Untitled shows: who else played says more than the venue name
+                again; with no lineup either, it was just the band */}
+            <strong>{title || (e.performers ? `w/ ${e.performers}` : 'advantage Lucy')}</strong>
             {title && e.performers && <span>w/ {e.performers}</span>}
           </span>
           {withSetlist.has(e.id) && <span className="tl-setlist" title={setlistLabel} aria-label={setlistLabel}>♪</span>}
@@ -93,7 +96,20 @@ export default function VenueDetail({ locale }: Props) {
       )}
       <section className="venue-section">
         <h2 className="section-label">{s.venues.showsHere} <span className="music-count">{past.length}</span></h2>
-        {past.length === 0 ? <p className="events-empty-note">{s.venues.noShows}</p> : <ul className="tl-list">{past.map(row)}</ul>}
+        {past.length === 0 ? <p className="events-empty-note">{s.venues.noShows}</p> : (
+          // By year, as on the Events page
+          <div className="timeline">
+            {pastByYear.map(([year, list]) => (
+              <section key={year} className="tl-year">
+                <h3 className="tl-year-label">
+                  {year}
+                  <span>{list.length}{locale === 'ja' ? '公演' : list.length === 1 ? ' show' : ' shows'}</span>
+                </h3>
+                <ul className="tl-list">{list.map(row)}</ul>
+              </section>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="mt-1">

@@ -137,7 +137,7 @@ export default function AdminBlogForm() {
 
       <SaveBar
         s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty}
-        viewHref={!isNew ? `/${locale}/blog/${form.id}` : undefined}
+        viewHref={!isNew ? `/${locale}/blog` : undefined}
         backHref={`${prefix}/blog`}
       />
     </form>

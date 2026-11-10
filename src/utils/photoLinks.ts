@@ -1,6 +1,6 @@
 import type { Event, SplashPhoto } from '../types';
 import type { Locale } from '../i18n/translations';
-import { todayInJapan } from './showDates';
+import { todayInJapan, isLive } from './showDates';
 
 /**
  * Home-page photo links. A photo's `link` is one of:
@@ -50,7 +50,7 @@ function shortDate(iso: string, locale: Locale): string {
 export function photoSlides(photos: SplashPhoto[], events: Event[], locale: Locale, today = todayInJapan()): Slide[] {
   const slides: Slide[] = [];
   for (const p of photos) {
-    if (!p.image_url) continue;
+    if (!p.image_url || !isLive(p)) continue; // hidden: may still be the About page photo
     const caption = (locale === 'ja' ? p.caption_ja || p.caption_en : p.caption_en || p.caption_ja) || undefined;
     const showId = showLinkId(p.link);
     if (showId) {

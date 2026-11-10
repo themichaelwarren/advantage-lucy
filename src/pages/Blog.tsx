@@ -1,8 +1,6 @@
-import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useBlog } from '../hooks/useSheetData';
-import { formatDate } from '../utils/format';
 import InstagramEmbed from '../components/InstagramEmbed';
 import PageLoader from '../components/PageLoader';
 
@@ -10,9 +8,13 @@ interface Props {
   locale: Locale;
 }
 
+/**
+ * Blog: one Instagram post per row, with its date and title beside it
+ * (stacked on phones). The date and title open the post on Instagram;
+ * there's no separate page.
+ */
 export default function Blog({ locale }: Props) {
   const s = t(locale);
-  const prefix = `/${locale}`;
   const { blog, loading } = useBlog();
 
   const sorted = [...blog].sort((a, b) => b.date.localeCompare(a.date));
@@ -21,8 +23,9 @@ export default function Blog({ locale }: Props) {
 
   return (
     <>
-      <header className="news-detail-header">
+      <header className="news-detail-header blog-index-header">
         <h1 className="news-detail-title">{s.blog.title}</h1>
+        <p className="blog-index-intro">{s.blog.intro}</p>
       </header>
 
       {sorted.length === 0 && (
@@ -31,17 +34,15 @@ export default function Blog({ locale }: Props) {
         </p>
       )}
 
-      <div className="blog-list">
+      <div className="blog-rows">
         {sorted.map(post => {
-          const title = locale === 'ja' ? post.title_ja : post.title_en;
+          const title = (locale === 'ja' ? post.title_ja || post.title_en : post.title_en || post.title_ja) || '';
           return (
-            <article key={post.id} className="blog-post">
-              {title && (
-                <h2 className="blog-post-title">
-                  <Link to={`${prefix}/blog/${post.id}`}>{title}</Link>
-                </h2>
-              )}
-              <time className="blog-post-date">{formatDate(post.date, locale)}</time>
+            <article key={post.id} className="blog-card">
+              <a href={post.instagram_url} target="_blank" rel="noopener noreferrer" className="blog-card-head">
+                <time dateTime={post.date}>{post.date.replace(/-/g, '.')}</time>
+                {title && <h2 className="blog-card-title">{title} <span className="blog-card-out" aria-hidden="true">↗</span></h2>}
+              </a>
               <InstagramEmbed url={post.instagram_url} />
             </article>
           );

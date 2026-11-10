@@ -1,6 +1,7 @@
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { usePhotos } from '../hooks/useSheetData';
+import { useFitsViewport } from '../hooks/useFitsViewport';
 
 interface Props {
   locale: Locale;
@@ -10,6 +11,7 @@ export default function About({ locale }: Props) {
   const s = t(locale);
   const { photos } = usePhotos();
   const profilePhoto = photos.find(p => p.profile_photo === 'yes');
+  const panel = useFitsViewport<HTMLDivElement>();
 
   return (
     <>
@@ -17,13 +19,16 @@ export default function About({ locale }: Props) {
         <h1 className="news-detail-title">{s.about.title}</h1>
       </header>
 
-      {profilePhoto && (
-        <div className="about-photo">
-          <img src={profilePhoto.image_url} alt={locale === 'ja' ? profilePhoto.caption_ja || '' : profilePhoto.caption_en || ''} />
-        </div>
-      )}
-
-      {locale === 'ja' ? <AboutJa /> : <AboutEn />}
+      {/* Computers: photo on the left (stays in view while it fits), text on
+          the right at reading width. Phones: photo, then text. */}
+      <div className={`about-layout${profilePhoto ? ' has-photo' : ''}`}>
+        {profilePhoto && (
+          <div ref={panel.ref} className={`about-photo${panel.fits ? ' is-sticky' : ''}`} style={{ top: panel.top }}>
+            <img src={profilePhoto.image_url} alt={locale === 'ja' ? profilePhoto.caption_ja || '' : profilePhoto.caption_en || ''} />
+          </div>
+        )}
+        {locale === 'ja' ? <AboutJa /> : <AboutEn />}
+      </div>
     </>
   );
 }

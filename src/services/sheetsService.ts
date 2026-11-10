@@ -216,11 +216,11 @@ export async function getAllPhotos(): Promise<SplashPhoto[]> {
   }
 }
 
-/** Published splash photos only. */
+/** Published photos, plus the About page photo even if it's hidden from the home page. */
 export async function getPhotos(): Promise<SplashPhoto[]> {
   try {
     const all = await fetchWithCache('photos', () => fetchJson<SplashPhoto[]>('/api/sheets/photos'));
-    return all.filter(p => isLive(p));
+    return all.filter(p => isLive(p) || p.profile_photo === 'yes');
   } catch (err) {
     console.warn('Failed to fetch photos from API:', err);
     return [];
