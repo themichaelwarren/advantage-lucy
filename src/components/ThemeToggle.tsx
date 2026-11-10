@@ -20,6 +20,8 @@ function storedTheme(): Theme | null {
 /**
  * Sun/moon switch. The initial theme is applied before first paint by the
  * inline script in index.html (saved choice, else the system setting).
+ * A choice is only saved while it differs from the system setting; switch
+ * back to match it and the site follows the system again.
  */
 export default function ThemeToggle({ locale, onMouseEnter, onMouseLeave, noTitle }: {
   locale: Locale;
@@ -46,7 +48,13 @@ export default function ThemeToggle({ locale, onMouseEnter, onMouseLeave, noTitl
   const toggle = useCallback(() => {
     const next: Theme = currentTheme() === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
-    try { localStorage.setItem(STORAGE_KEY, next); } catch { /* private mode: still works for this visit */ }
+    // Switching to what the system already shows means "follow the system":
+    // forget the choice, so the site changes with the system again
+    const system: Theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    try {
+      if (next === system) localStorage.removeItem(STORAGE_KEY);
+      else localStorage.setItem(STORAGE_KEY, next);
+    } catch { /* private mode: still works for this visit */ }
     setTheme(next);
   }, []);
 
