@@ -98,6 +98,8 @@ export default function SuggestInput({
         onBlur={e => { setOpen(false); setActive(-1); input.onBlur?.(e); }}
         onChange={e => { onChange(e.target.value); setOpen(true); setActive(e.target.value.trim() ? 0 : -1); }}
         onKeyDown={e => {
+          input.onKeyDown?.(e);
+          if (e.defaultPrevented) return;
           if (e.nativeEvent.isComposing || e.keyCode === 229) return; // Japanese IME converting
           if (e.key === 'ArrowDown') {
             e.preventDefault();

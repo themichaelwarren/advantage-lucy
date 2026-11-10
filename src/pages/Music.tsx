@@ -8,6 +8,7 @@ import PageLoader from '../components/PageLoader';
 import { normalize } from '../utils/text';
 import { useQueryParam } from '../hooks/useQueryParam';
 import PageTitle from '../components/PageTitle';
+import { songTitle, songAltTitle, compareSongs, songSearchText, songQuery } from '../utils/songTitles';
 
 interface Props {
   locale: Locale;
@@ -60,15 +61,17 @@ export default function Music({ locale }: Props) {
     return m;
   }, [tracklists]);
 
+  // 50音順 by 読み on Japanese pages, A–Z by the English title on English pages
   const sortedSongs = useMemo(
-    () => [...songs].filter(x => x.title && x.id).sort((a, b) => a.title.localeCompare(b.title, 'ja')),
-    [songs],
+    () => [...songs].filter(x => x.title && x.id).sort(compareSongs(locale)),
+    [songs, locale],
   );
 
-  const songMatches = useMemo(
-    () => (q ? sortedSongs.filter(x => normalize(x.title).includes(q) || normalize(x.original_artist || '').includes(q)) : sortedSongs),
-    [q, sortedSongs],
-  );
+  // Any of the titles finds a song: シトラス, しとらす, citrus
+  const songMatches = useMemo(() => {
+    const sq = songQuery(query);
+    return sq ? sortedSongs.filter(x => songSearchText(x).includes(sq)) : sortedSongs;
+  }, [query, sortedSongs]);
   const releaseMatches = useMemo(() => {
     if (!q) return albums.map(a => ({ album: a, tracks: [] as string[] }));
     return albums
@@ -90,7 +93,7 @@ export default function Music({ locale }: Props) {
       <li key={x.id || `title:${x.title}`}>
         <Link to={`${prefix}/songs/${x.id}`} className="tl-row song-row">
           <span className="tl-main">
-            <strong>{x.title}</strong>
+            <strong>{songTitle(x, locale)}{songAltTitle(x, locale) && <span className="song-alt-title">{songAltTitle(x, locale)}</span>}</strong>
             <span>
               {x.original_artist
                 ? s.songs.coverOf.replace('{artist}', x.original_artist)

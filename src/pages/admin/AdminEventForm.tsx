@@ -5,7 +5,7 @@ import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, getR
 import ShowVideos, { toShowVideos, fromShowVideos, videosSnapshot, type ShowVideo } from '../../components/admin/ShowVideos';
 import { useAdminT } from '../../i18n/admin';
 import {
-  Section, Field, BilingualRow, Switch, SaveBar, ImageField, DeleteButton, EditDialog, LockHint,
+  Section, Field, FieldGroup, BilingualRow, Switch, SaveBar, ImageField, DeleteButton, EditDialog, LockHint,
   useUnsavedWarning, makeId, errorText,
 } from '../../components/admin/ui';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
@@ -259,14 +259,14 @@ export default function AdminEventForm() {
   const whenWhereFields = (
     <>
       <div className="lu-grid-2">
-        <Field label={s.date} error={errors.date}>
+        <Field label={s.date} error={errors.date} required s={s}>
           {fid => <input id={fid} type="date" value={form.date} onChange={e => set('date', e.target.value)} />}
         </Field>
         <Field label={s.endDate} hint={s.endDateHint} optional s={s}>
           {fid => <input id={fid} type="date" value={form.end_date} min={form.date} onChange={e => set('end_date', e.target.value)} />}
         </Field>
       </div>
-      <Field label={s.venue} error={errors.venue}>
+      <Field label={s.venue} error={errors.venue} required s={s}>
         {fid => (
           <VenuePicker
             s={s} locale={locale} id={fid}
@@ -584,7 +584,7 @@ export default function AdminEventForm() {
         </div>
       </div>
 
-      <EditDialog s={s} title={s.secDetails} open={dialog === 'details'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}
+      <EditDialog s={s} title={s.secDetails} open={dialog === 'details'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={formDirty}
         footer={<DeleteButton s={s} onConfirm={async () => {
           try {
             if (setlists.some(x => x.event === form.id)) await replaceRows('Setlists', form.id, []);
@@ -593,17 +593,17 @@ export default function AdminEventForm() {
           } catch (err) { setError(errorText(err)); }
         }} />}
       >
-        {whenWhereFields}
-        {aboutFields}
-        {visibilityFields}
+        <FieldGroup title={s.groupWhen}>{whenWhereFields}</FieldGroup>
+        <FieldGroup title={s.groupShow}>{aboutFields}</FieldGroup>
+        <FieldGroup title={s.groupVisibility}>{visibilityFields}</FieldGroup>
       </EditDialog>
-      <EditDialog s={s} title={s.secTickets} open={dialog === 'tickets'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}>
+      <EditDialog s={s} title={s.secTickets} open={dialog === 'tickets'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={formDirty}>
         {ticketFields}
       </EditDialog>
-      <EditDialog s={s} title={s.description} open={dialog === 'notes'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}>
+      <EditDialog s={s} title={s.description} open={dialog === 'notes'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={formDirty}>
         {notesFields}
       </EditDialog>
-      <EditDialog s={s} title={s.secPoster} open={dialog === 'poster'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}>
+      <EditDialog s={s} title={s.secPoster} open={dialog === 'poster'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={formDirty}>
         <ImageField s={s} value={form.poster_url} onChange={v => set('poster_url', v)} onError={setError} />
       </EditDialog>
     </div>

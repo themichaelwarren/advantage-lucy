@@ -10,6 +10,7 @@ import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import NowPlaying from '../components/NowPlaying';
 import PageTitle from '../components/PageTitle';
+import { songTitle, songAltTitle } from '../utils/songTitles';
 
 interface Props {
   locale: Locale;
@@ -94,7 +95,7 @@ export default function SongDetail({ locale }: Props) {
 
   return (
     <article className="song-detail">
-      <PageTitle title={song.title} />
+      <PageTitle title={songTitle(song, locale)} />
       <NowPlaying title={song.title} locale={locale} watch=".song-head .song-detail-title" />
       {/* Wide screens: title, credits and releases in a sticky panel on the
           left, lyrics on the right. Phones: title, credits, lyrics, releases. */}
@@ -102,7 +103,8 @@ export default function SongDetail({ locale }: Props) {
         <aside ref={panel.ref} className="song-aside is-sticky" style={{ top: panel.top }}>
           <div className="song-head">
             <header className="song-detail-header">
-              <h1 className="song-detail-title">{song.title}</h1>
+              <h1 className="song-detail-title">{songTitle(song, locale)}</h1>
+              {songAltTitle(song, locale) && <p className="song-alt-subtitle" lang={locale === 'en' ? 'ja' : 'en'}>{songAltTitle(song, locale)}</p>}
               {song.original_artist && (
                 <p className="song-cover-of">{s.songs.coverOf.replace('{artist}', song.original_artist)}</p>
               )}

@@ -86,6 +86,8 @@ export interface Song {
   lyrics_by?: string;    // People ID
   lyrics_doc_id?: string;
   original_artist?: string;  // covers: who did it first, e.g. "The Smiths"
+  title_en?: string;         // English title (mostly romaji, as on streaming services); shown first on English pages
+  title_kana?: string;       // 読み in kana, for 50音順 and search
 }
 
 export interface SetlistEntry {

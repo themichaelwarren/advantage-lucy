@@ -9,13 +9,13 @@ import { retitleEverywhere } from '../../components/admin/songs';
 import { createDriveDoc } from '../../services/driveService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
-import { Section, Field, SaveBar, DeleteButton, EditDialog, LockHint, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
+import { Section, Field, FieldGroup, SaveBar, DeleteButton, EditDialog, LockHint, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
 import PeoplePicker from '../../components/admin/PeoplePicker';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
-const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist'] as const;
+const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist', 'title_en', 'title_kana'] as const;
 type SongField = typeof SONG_COLUMNS[number];
 type Form = Record<SongField, string>;
 const emptyForm = (): Form => Object.fromEntries(SONG_COLUMNS.map(c => [c, ''])) as Form;
@@ -105,6 +105,7 @@ export default function AdminSongForm() {
       id: song.id, title: song.title || '', lyrics_by: song.lyrics_by || '',
       music_by: song.music_by || '', lyrics_doc_id: song.lyrics_doc_id || '',
       original_artist: song.original_artist || '',
+      title_en: song.title_en || '', title_kana: song.title_kana || '',
     };
     setForm(f);
     setBaseline(JSON.stringify(f));
@@ -199,23 +200,37 @@ export default function AdminSongForm() {
   // The edit fields, used by the new-song form and the edit windows
   const detailsFields = (
     <>
-      <Field label={s.songTitle} error={titleError}>
-        {fid => <input id={fid} value={form.title} onChange={e => set('title', e.target.value)} />}
-      </Field>
-      {renaming && (showCount > 0 || releaseCount > 0) && (
-        <p className="lu-note">{s.renameCascade.replace('{shows}', String(showCount)).replace('{releases}', String(releaseCount))}</p>
-      )}
-      <Field label={s.originalArtist} hint={s.originalArtistHint} optional s={s}>
-        {fid => <input id={fid} placeholder="The Smiths" value={form.original_artist} onChange={e => set('original_artist', e.target.value)} />}
-      </Field>
-      <div className="lu-grid-2">
-        <Field label={s.musicBy} optional s={s}>
-          {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.music_by} onChange={v => set('music_by', v)} people={people} personHref={pid => `${prefix}/people/${pid}`} />}
+      <FieldGroup title={s.groupTitles}>
+        <Field label={s.songTitle} error={titleError} required s={s}>
+          {fid => <input id={fid} value={form.title} onChange={e => set('title', e.target.value)} />}
         </Field>
-        <Field label={s.lyricsBy} optional s={s}>
-          {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.lyrics_by} onChange={v => set('lyrics_by', v)} people={people} personHref={pid => `${prefix}/people/${pid}`} />}
+        {renaming && (showCount > 0 || releaseCount > 0) && (
+          <p className="lu-note">{s.renameCascade.replace('{shows}', String(showCount)).replace('{releases}', String(releaseCount))}</p>
+        )}
+        <div className="lu-grid-2">
+          <Field label={s.titleEn} hint={s.titleEnHint} s={s}>
+            {fid => <input id={fid} lang="en" placeholder={`${s.eg}Kaze ni Azukete`} value={form.title_en} onChange={e => set('title_en', e.target.value)} />}
+          </Field>
+          <Field label={s.titleKana} hint={s.titleKanaHint} s={s}>
+            {fid => <input id={fid} lang="ja" placeholder={`${s.eg}かぜにあずけて`} value={form.title_kana} onChange={e => set('title_kana', e.target.value)} />}
+          </Field>
+        </div>
+      </FieldGroup>
+      <FieldGroup title={s.groupCredits}>
+        <div className="lu-grid-2">
+          <Field label={s.musicBy} s={s}>
+            {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.music_by} onChange={v => set('music_by', v)} people={people} personHref={pid => `${prefix}/people/${pid}`} />}
+          </Field>
+          <Field label={s.lyricsBy} s={s}>
+            {fid => <PeoplePicker s={s} locale={locale} id={fid} value={form.lyrics_by} onChange={v => set('lyrics_by', v)} people={people} personHref={pid => `${prefix}/people/${pid}`} />}
+          </Field>
+        </div>
+      </FieldGroup>
+      <FieldGroup title={s.groupCover}>
+        <Field label={s.originalArtist} hint={s.originalArtistHint} s={s}>
+          {fid => <input id={fid} placeholder={`${s.eg}The Smiths`} value={form.original_artist} onChange={e => set('original_artist', e.target.value)} />}
         </Field>
-      </div>
+      </FieldGroup>
     </>
   );
   const lyricsFields = (
@@ -291,6 +306,12 @@ export default function AdminSongForm() {
               {editBtn('details')}
             </div>
             <h1>{saved.title}</h1>
+            {(saved.title_en && saved.title_en !== saved.title || saved.title_kana) && (
+              <p className="lu-song-alt">
+                {saved.title_en && saved.title_en !== saved.title && <span lang="en">{saved.title_en}</span>}
+                {saved.title_kana && <span lang="ja">{saved.title_kana}</span>}
+              </p>
+            )}
             <dl className="lu-song-credits">
               {saved.original_artist && (<><dt>{s.coverTag}</dt><dd>{saved.original_artist}</dd></>)}
               {saved.music_by && (<><dt>{s.musicBy}</dt><dd>{names(saved.music_by)}</dd></>)}
@@ -417,7 +438,7 @@ export default function AdminSongForm() {
         </div>
       </div>
 
-      <EditDialog s={s} title={s.secDetails} open={dialog === 'details'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}
+      <EditDialog s={s} title={s.secDetails} open={dialog === 'details'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={dirty}
         footer={<DeleteButton s={s} onConfirm={async () => {
           try { await deleteRow('Songs', form.id); navigate(`${prefix}/songs`); }
           catch (err) { setError(errorText(err)); }
@@ -425,11 +446,11 @@ export default function AdminSongForm() {
       >
         {detailsFields}
       </EditDialog>
-      <EditDialog s={s} title={s.songKey} open={dialog === 'keys'} saving={keysSaving} error={keysError} onSave={saveKeys}
+      <EditDialog s={s} title={s.songKey} open={dialog === 'keys'} saving={keysSaving} error={keysError} onSave={saveKeys} dirty={keysDirty}
         onClose={() => { if (keysDirty && !window.confirm(s.songDiscard)) return; setDialog(null); }}>
         <KeysEditor s={s} keys={keyDraft} onChange={setKeyDraft} />
       </EditDialog>
-      <EditDialog s={s} title={s.secLyrics} open={dialog === 'lyrics'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error}>
+      <EditDialog s={s} title={s.secLyrics} open={dialog === 'lyrics'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={dirty}>
         {lyricsFields}
       </EditDialog>
     </div>

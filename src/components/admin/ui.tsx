@@ -26,12 +26,19 @@ export function Section({ title, children, aside, id, badge }: {
   );
 }
 
-/** Label + control + optional hint/error. Pass the control as a render prop to get the id. */
-export function Field({ label, hint, error, optional, s, children, wide }: {
+/**
+ * Label + control + error. Pass the control as a render prop to get the id.
+ * Most fields are optional, so only `required` ones are marked. A hint
+ * sits behind an ⓘ beside the label (hover, focus or tap) instead of a
+ * line of text under every field.
+ */
+export function Field({ label, hint, error, required, s, children, wide }: {
   label: string;
   hint?: string;
   error?: string;
+  /** Kept for old call sites; optional is the default now and isn't shown */
   optional?: boolean;
+  required?: boolean;
   s?: AdminStrings;
   wide?: boolean;
   children: (id: string) => ReactNode;
@@ -39,12 +46,46 @@ export function Field({ label, hint, error, optional, s, children, wide }: {
   const id = useId();
   return (
     <div className={`lu-field${error ? ' has-error' : ''}${wide ? ' is-wide' : ''}`}>
-      <label htmlFor={id}>
-        {label}
-        {optional && s && <span className="lu-optional"> · {s.optional}</span>}
-      </label>
+      <span className="lu-field-label">
+        <label htmlFor={id}>{label}</label>
+        {required && s && <span className="lu-required">{s.required}</span>}
+        {hint && <InfoHint text={hint} />}
+      </span>
       {children(id)}
-      {error ? <p className="lu-field-error">{error}</p> : hint ? <p className="lu-hint">{hint}</p> : null}
+      {error && <p className="lu-field-error">{error}</p>}
+    </div>
+  );
+}
+
+/** ⓘ with a short explanation on hover, keyboard focus or tap. */
+export function InfoHint({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: Event) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [open]);
+  return (
+    <span ref={ref} className={`lu-lock lu-info${open ? ' is-open' : ''}`}>
+      <button type="button" className="lu-lock-btn" aria-label={text} aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" />
+        </svg>
+      </button>
+      <span className="lu-lock-tip" role="tooltip">{text}</span>
+    </span>
+  );
+}
+
+/** A small heading over related fields inside a form or edit window. */
+export function FieldGroup({ title, children }: { title?: string; children: ReactNode }) {
+  const id = useId();
+  return (
+    <div className="lu-fieldgroup" role="group" aria-labelledby={title ? id : undefined}>
+      {title && <p className="lu-fieldgroup-title" id={id}>{title}</p>}
+      <div className="lu-fieldgroup-body">{children}</div>
     </div>
   );
 }
@@ -292,7 +333,7 @@ export function ConfirmDialog({ s, open, title, body, confirmLabel, onConfirm, o
  * A small window for editing one section of a read-mode page. Esc or a
  * click outside cancels; the form inside submits with Save (or Enter).
  */
-export function EditDialog({ s, title, open, onClose, onSave, saving, error, children, footer }: {
+export function EditDialog({ s, title, open, onClose, onSave, saving, error, children, footer, dirty = true }: {
   s: AdminStrings;
   title: string;
   open: boolean;
@@ -303,34 +344,57 @@ export function EditDialog({ s, title, open, onClose, onSave, saving, error, chi
   children: ReactNode;
   /** Left side of the buttons row, e.g. Delete */
   footer?: ReactNode;
+  /** Save only lights up once something has changed */
+  dirty?: boolean;
 }) {
   const box = useRef<HTMLFormElement>(null);
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  // Focus the first field once, when the window opens (not on every change)
+  useEffect(() => {
+    if (open) box.current?.querySelector<HTMLElement>('.lu-edit-dialog-body :is(input, select, textarea)')?.focus();
+  }, [open]);
   useEffect(() => {
     if (!open) return;
-    box.current?.querySelector<HTMLElement>('input, select, textarea')?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !saving) onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !saving) onClose();
+      // ⌘↵ / Ctrl+↵ saves from anywhere in the window
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !saving && dirty) { e.preventDefault(); onSave(); }
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [open, saving, onClose]);
+  }, [open, saving, onClose, onSave, dirty]);
+  // The page behind doesn't scroll while the window is open
+  useEffect(() => {
+    if (!open) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = overflow; };
+  }, [open]);
   if (!open) return null;
   return (
-    <div className="lu-modal-overlay" onClick={() => !saving && onClose()}>
+    <div className="lu-modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget && !saving) onClose(); }}>
       <form
         ref={box}
         className="lu-modal lu-edit-dialog"
         role="dialog" aria-modal="true" aria-label={title}
-        onClick={e => e.stopPropagation()}
-        onSubmit={e => { e.preventDefault(); onSave(); }}
+        onSubmit={e => { e.preventDefault(); if (dirty) onSave(); }}
         noValidate
       >
-        <h3>{title}</h3>
+        <header className="lu-edit-dialog-head">
+          <h3>{title}</h3>
+          <button type="button" className="lu-icon-btn" onClick={onClose} disabled={saving} aria-label={s.close}>✕</button>
+        </header>
         <div className="lu-edit-dialog-body">{children}</div>
-        {error && <p className="lu-field-error">{s.errorPrefix} {error}</p>}
-        <div className="lu-modal-actions">
-          {footer && <span className="lu-edit-dialog-footer">{footer}</span>}
-          <button type="button" className="lu-btn" onClick={onClose} disabled={saving}>{s.cancel}</button>
-          <button type="submit" className="lu-btn lu-btn-primary" disabled={saving}>{saving ? s.saving : s.save}</button>
-        </div>
+        <footer className="lu-edit-dialog-foot">
+          {error && <p className="lu-field-error lu-edit-dialog-error">{s.errorPrefix} {error}</p>}
+          <div className="lu-modal-actions">
+            {footer && <span className="lu-edit-dialog-footer">{footer}</span>}
+            <button type="button" className="lu-btn" onClick={onClose} disabled={saving}>{s.cancel}</button>
+            <button type="submit" className="lu-btn lu-btn-primary" disabled={saving || !dirty} title={isMac ? '⌘↵' : 'Ctrl+Enter'}>
+              {saving ? s.saving : s.save}
+            </button>
+          </div>
+        </footer>
       </form>
     </div>
   );

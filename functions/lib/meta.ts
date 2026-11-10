@@ -133,7 +133,9 @@ export async function pageMeta(pathname: string, origin: string, load: Load): Pr
         : album
           ? (locale === 'ja' ? `「${album.title}」収録` : `From “${album.title}”`)
           : TAGLINE[locale];
-      return make(s.title, desc, album?.coverUrl, 'music.song');
+      // English pages: the English title (mostly romaji) first, the original after it
+      const title = locale === 'en' && s.title_en && s.title_en !== s.title ? `${s.title_en} (${s.title})` : s.title;
+      return make(title, desc, album?.coverUrl, 'music.song');
     }
 
     if (section === 'news') {

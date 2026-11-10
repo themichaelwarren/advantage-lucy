@@ -2164,3 +2164,7 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
   color: var(--text);
 }
 .blog-rows .blog-card-title { font-size: 1.15rem; }
+
+/* A song's title in the other language: muted, beside or under the main one */
+.song-alt-title { margin-left: 0.5em; font-weight: 400; font-size: 0.85em; color: var(--text-muted); }
+.song-alt-subtitle { margin: 0.4rem 0 0; font-size: 1.05rem; color: var(--text-muted); }

@@ -146,6 +146,9 @@ export async function fetchSongs(sheetId: string, email: string, key: string) {
     lyrics_by: r.lyrics_by || undefined, lyrics_doc_id: r.lyrics_doc_id || undefined,
     // Covers: who did it first ("The Smiths"); blank for the band's own songs
     original_artist: r.original_artist || undefined,
+    // The title in English (mostly romaji, as on streaming services) and its 読み for 50音 order
+    title_en: (r.title_en || '').trim() || undefined,
+    title_kana: (r.title_kana || '').trim() || undefined,
   }));
 }
 
@@ -217,7 +220,7 @@ export async function fetchHeaders(sheetId: string, tab: string, email: string, 
  * known names, never arbitrary fields.
  */
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
-  Songs: ['original_artist'],
+  Songs: ['original_artist', 'title_en', 'title_kana'],
   Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until'],
   News: ['publish_at'],
   Blog: ['publish_at'],

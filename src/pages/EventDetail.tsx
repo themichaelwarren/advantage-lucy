@@ -13,6 +13,7 @@ import SetlistTip from '../components/SetlistTip';
 import ReserveForm from '../components/ReserveForm';
 import { useState } from 'react';
 import PageTitle from '../components/PageTitle';
+import { songTitle } from '../utils/songTitles';
 
 
 interface Props {
@@ -214,7 +215,7 @@ export default function EventDetail({ locale }: Props) {
                         const song = songs.find(x => x.id && normalize(x.title || '') === normalize(entry.song || ''));
                         return (
                           <li key={`${setKey}-${i}`} value={entry.order}>
-                            {song ? <Link to={`${prefix}/songs/${song.id}`}>{entry.song}</Link> : entry.song}
+                            {song ? <Link to={`${prefix}/songs/${song.id}`}>{songTitle(song, locale)}</Link> : entry.song}
                             {/* Covers say so automatically (from Songs); a note that only says "… cover" would repeat it */}
                             {song?.original_artist && (
                               <span className="setlist-note setlist-cover">({s.songs.coverOf.replace('{artist}', song.original_artist)})</span>

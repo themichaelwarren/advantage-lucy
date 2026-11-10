@@ -8,6 +8,7 @@ import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import { linkify } from '../utils/linkify';
 import PageTitle from '../components/PageTitle';
+import { songTitle } from '../utils/songTitles';
 
 interface Props {
   locale: Locale;
@@ -114,7 +115,7 @@ export default function AlbumDetail({ locale }: Props) {
                   return (
                     <li key={tr.track} value={tr.track}>
                       {song
-                        ? <Link to={`${prefix}/songs/${song.id}`}>{tr.title}</Link>
+                        ? <Link to={`${prefix}/songs/${song.id}`}>{songTitle(song, locale)}</Link>
                         : tr.title
                       }
                     </li>
