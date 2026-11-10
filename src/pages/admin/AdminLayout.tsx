@@ -14,6 +14,12 @@ import { getMessages } from '../../services/adminService';
  *    sections (Home, Shows, News, Blog) become a bottom tab bar and the rest
  *    live under "More".
  */
+const COLLAPSE_KEY = 'admin-sidebar-collapsed';
+
+const Svg = ({ d, size = 18 }: { d: string; size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>
+);
+
 export default function AdminLayout() {
   const location = useLocation();
   const { s, locale, prefix } = useAdminT();
@@ -33,6 +39,52 @@ export default function AdminLayout() {
   }, [location.pathname]);
   const menuButton = useRef<HTMLButtonElement>(null);
 
+  // Computers: the sidebar can fold down to icons (remembered on this device)
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
+  });
+  const toggleCollapsed = () => setCollapsed(c => {
+    try { localStorage.setItem(COLLAPSE_KEY, c ? '0' : '1'); } catch { /* private mode: just for this visit */ }
+    return !c;
+  });
+  // ⌘\ / Ctrl+\ folds and unfolds it, as in Notion and VS Code
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key !== '\\') return;
+      e.preventDefault();
+      // Computers fold the sidebar; narrower screens open/close the menu
+      if (window.matchMedia('(min-width: 980px)').matches) toggleCollapsed();
+      else setNavOpen(o => !o);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+  // Folded: each icon's name shows beside it on hover or keyboard focus
+  // Unfolded, the round tool buttons (data-tip-always) still get one, above
+  // them, so it doesn't cover the next button. Shortcuts show as keys.
+  const [tip, setTip] = useState<{ text: string; keys?: string; top: number; left: number; above: boolean } | null>(null);
+  const showTip = (e: React.SyntheticEvent) => {
+    if (!window.matchMedia('(hover: hover)').matches && e.type !== 'focus') return;
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-tip]');
+    const folded = collapsed && window.matchMedia('(min-width: 980px)').matches;
+    if (!el || !(folded || el.hasAttribute('data-tip-always'))) { setTip(null); return; }
+    const r = el.getBoundingClientRect();
+    const above = !folded && el.dataset.tipAt !== 'right';
+    setTip({
+      text: el.dataset.tip || '', keys: el.dataset.tipKeys,
+      top: above ? r.top - 8 : r.top + r.height / 2,
+      left: above ? r.left + r.width / 2 : r.right + 10,
+      above,
+    });
+  };
+  useEffect(() => { setTip(null); }, [collapsed, location.pathname]);
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  const keys = {
+    search: isMac ? '⌘ K' : 'Ctrl K',
+    fold: isMac ? '⌘ \\' : 'Ctrl \\',
+    theme: isMac ? '⌘ ⇧ D' : 'Ctrl ⇧ D',
+  };
+
   useEffect(() => { setNavOpen(false); setPaletteOpen(false); }, [location.pathname]);
   // ⌘K / Ctrl+K: search everything. Text boxes that use ⌘K themselves
   // (the link button in notes) handle it first and stop it here.
@@ -45,7 +97,6 @@ export default function AdminLayout() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   // Phone/tablet menu: Esc closes it; the page behind doesn't scroll while open
   useEffect(() => {
     if (!navOpen) return;
@@ -89,10 +140,37 @@ export default function AdminLayout() {
     <div className="admin-shell lu-shell">
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
       {navOpen && <div className="lu-nav-backdrop" onClick={() => setNavOpen(false)} aria-hidden="true" />}
-      <aside id="lu-menu" className={`lu-sidebar${navOpen ? ' is-open' : ''}`} aria-label="Admin">
-        <Link to={prefix} className="lu-brand band-name">{s.brand}</Link>
-        <button type="button" className="lu-side-search" onClick={() => { setNavOpen(false); setPaletteOpen(true); }}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg> {s.searchEverythingShort}
+      <aside
+        id="lu-menu"
+        className={`lu-sidebar${navOpen ? ' is-open' : ''}${collapsed ? ' is-collapsed' : ''}`}
+        aria-label="Admin"
+        onMouseOver={showTip}
+        onFocus={showTip}
+        onMouseLeave={() => setTip(null)}
+        onBlur={() => setTip(null)}
+      >
+        <div className="lu-side-head">
+          <Link to={prefix} className="lu-brand band-name" data-tip={s.home}>
+            <span className="lu-brand-full">{s.brand}</span>
+            <span className="lu-brand-short" aria-hidden="true">L</span>
+          </Link>
+          <button
+            type="button"
+            className="lu-side-tool lu-side-collapse"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? s.expandMenu : s.collapseMenu}
+            aria-pressed={collapsed}
+            data-tip={collapsed ? s.expandMenu : s.collapseMenu}
+            data-tip-keys={keys.fold}
+            data-tip-always
+            data-tip-at="right"
+          >
+            <Svg d={collapsed ? 'm13 6 6 6-6 6M5 6l6 6-6 6' : 'm11 18-6-6 6-6M19 18l-6-6 6-6'} size={17} />
+          </button>
+        </div>
+        <button type="button" className="lu-side-search" data-tip={s.searchEverythingShort} data-tip-keys={keys.search} aria-label={s.searchEverything} onClick={() => { setNavOpen(false); setPaletteOpen(true); }}>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg>
+          <span className="lu-side-label">{s.searchEverythingShort}</span>
           <kbd>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
         </button>
         <nav className="lu-side-nav">
@@ -102,10 +180,11 @@ export default function AdminLayout() {
               {g.links.map(l => (
                 <NavLink
                   key={l.to} to={l.to} end={l.end}
+                  data-tip={l.badge ? `${l.label} · ${l.badge} ${s.msgNew}` : l.label}
                   className={({ isActive }) => `lu-side-link${isActive || (l.to.endsWith('/areas') && /\/(prefectures|countries)(\/|$)/.test(location.pathname)) ? ' active' : ''}`}
                 >
                   <span className="lu-side-icon" aria-hidden="true">{l.icon}</span>
-                  {l.label}
+                  <span className="lu-side-label">{l.label}</span>
                   {!!l.badge && <span className="lu-side-badge" aria-label={`${l.badge} ${s.msgNew}`}>{l.badge}</span>}
                 </NavLink>
               ))}
@@ -113,29 +192,38 @@ export default function AdminLayout() {
           ))}
         </nav>
         <div className="lu-side-foot">
-          <div className="lu-side-row">
-            <Link to={otherPath} className="lu-pill" lang={otherLocale}>{otherLocale === 'ja' ? '日本語' : 'English'}</Link>
-            <ThemeToggle locale={locale} />
-            <NavLink to={`${prefix}/help`} className="lu-help-btn" aria-label={s.help} title={s.help}>?</NavLink>
+          <div className="lu-side-tools">
+            <Link to={otherPath} className="lu-side-tool lu-side-lang" lang={otherLocale} data-tip={otherLocale === 'ja' ? '日本語に切り替え' : 'Switch to English'} data-tip-always>
+              {otherLocale === 'ja' ? <><span className="lu-side-label">日本語</span><span className="lu-side-short" aria-hidden="true">日</span></> : <><span className="lu-side-label">English</span><span className="lu-side-short" aria-hidden="true">EN</span></>}
+            </Link>
+            <span data-tip={locale === 'ja' ? 'ライト／ダーク' : 'Light / dark'} data-tip-keys={keys.theme} data-tip-always><ThemeToggle locale={locale} noTitle /></span>
+            <NavLink to={`${prefix}/help`} className="lu-side-tool" aria-label={s.help} data-tip={s.help} data-tip-always>?</NavLink>
+            <Link to={`/${locale}`} className="lu-side-tool" aria-label={s.viewSite} data-tip={s.viewSite} data-tip-always>
+              <Svg d="M7 17 17 7M8 7h9v9" size={17} />
+            </Link>
           </div>
-          <Link to={`/${locale}`} className="lu-side-link">
-            <span className="lu-side-icon" aria-hidden="true">↗</span>
-            {s.viewSite}
-          </Link>
           {user && (
             <div className="lu-side-user">
-              <span className="lu-avatar-btn" aria-hidden="true">
+              <span className="lu-avatar-btn" aria-hidden="true" data-tip={`${user.name} · ${user.email}`}>
                 {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" /> : <span>{user.name.slice(0, 1)}</span>}
               </span>
               <span className="lu-side-user-text">
                 <strong>{user.name}</strong>
                 <span>{user.email}</span>
               </span>
-              <button type="button" className="lu-btn lu-btn-quiet lu-side-signout" onClick={logout}>{s.signOut}</button>
+              <button type="button" className="lu-side-tool lu-side-signout" onClick={logout} aria-label={s.signOut} data-tip={s.signOut} data-tip-always>
+                <Svg d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" size={17} />
+              </button>
             </div>
           )}
         </div>
       </aside>
+      {tip && (
+        <div className={`lu-side-tip${tip.above ? ' is-above' : ''}`} role="tooltip" style={{ top: tip.top, left: tip.left }}>
+          {tip.text}
+          {tip.keys && <span className="lu-side-tip-keys">{tip.keys.split(' ').map((k, i) => <kbd key={i}>{k}</kbd>)}</span>}
+        </div>
+      )}
 
       {/* Phones and tablets: logo, search and a menu button; the sidebar slides in as the menu */}
       <header className="lu-topbar">

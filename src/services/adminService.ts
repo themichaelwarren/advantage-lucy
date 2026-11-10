@@ -57,6 +57,17 @@ export async function updateRow(tab: string, id: string, fields: Record<string, 
   return result;
 }
 
+/** Put a tab's rows in this order (by id). The sheet's row order is the site's order. */
+export async function reorderRows(tab: string, ids: string[]) {
+  const result = await adminFetch(`/api/admin/${tab}/order`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  invalidateCache(tab);
+  return result;
+}
+
 export async function deleteRow(tab: string, id: string) {
   const result = await adminFetch(`/api/admin/${tab}?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',

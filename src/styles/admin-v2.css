@@ -646,10 +646,52 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
   transition: transform 200ms var(--ease-bounce), box-shadow 120ms ease, border-color 120ms ease;
 }
 .lu-photo-card:hover { transform: translate(-2px, -2px) rotate(-0.5deg); border-color: var(--text); box-shadow: 5px 5px 0 var(--pop); }
+.lu-photo-card { position: relative; }
+.lu-photo-card-link { display: flex; flex-direction: column; flex: 1; color: inherit; text-decoration: none; }
 .lu-photo-card img { aspect-ratio: 3 / 2; width: 100%; object-fit: cover; }
+.lu-photo-card.is-movable { cursor: grab; }
+.lu-photo-card.is-dragging { opacity: 0.4; transform: none; box-shadow: none; }
+.lu-photo-num {
+  display: inline-grid; place-items: center;
+  min-width: 1.5rem; height: 1.5rem; padding: 0 0.3rem;
+  border-radius: var(--pill);
+  background: var(--text); color: var(--bg);
+  font-size: 0.75rem; font-weight: 700;
+}
+.lu-photo-caption { flex: 1; font-weight: 600; min-width: 6rem; }
+.lu-tag.is-link { background: var(--surface-hover); color: var(--text); }
+/* ‹ › to move a photo (for phones, and anyone who'd rather not drag) */
+.lu-photo-move { position: absolute; top: 0.45rem; right: 0.45rem; display: flex; gap: 0.3rem; }
+.lu-photo-move .lu-icon-btn {
+  width: 2rem; height: 2rem;
+  background: var(--surface); border: 1.5px solid var(--text); border-radius: 50%;
+  font-size: 1.1rem; font-weight: 700; line-height: 1; color: var(--text);
+}
+.lu-photo-move .lu-icon-btn:disabled { opacity: 0.35; }
+/* Table: ⇅ handle, position, ↑ ↓ */
+.lu-td-order { width: 1%; white-space: nowrap; }
+.lu-order-cell { display: inline-flex; align-items: center; gap: 0.35rem; }
+/* Six-dot handle: faint until you're on the row, like Notion */
+.lu-row-grip {
+  display: inline-grid; place-items: center;
+  width: 1.6rem; height: 2rem;
+  padding: 0; border: none; border-radius: 6px;
+  background: none; color: var(--text-muted);
+  cursor: grab; touch-action: none;
+  opacity: 0.45;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+.lu-row-grip svg { fill: currentColor; }
+.lu-table tr:hover .lu-row-grip, .lu-row-grip:focus-visible { opacity: 1; }
+.lu-row-grip:hover { background: var(--surface-hover); color: var(--text); }
+.lu-row-grip:active { cursor: grabbing; }
+@media (hover: none) { .lu-row-grip { opacity: 1; } }
+.lu-table tr.is-dragging { opacity: 0.45; background: var(--surface-hover); }
+body:has(tr.is-dragging) { cursor: grabbing; user-select: none; }
+.lu-order-state { min-height: 1.3em; margin: -0.6rem 0 0.8rem; }
+.lu-order-state.is-error { color: var(--danger, #c0392b); }
 .lu-photo-card.is-hidden img { opacity: 0.45; }
 .lu-photo-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; padding: 0.6rem 0.8rem; font-size: 0.9rem; min-height: 2.6rem; }
-.lu-photo-meta > span:first-child:not(.lu-tag) { flex: 1; font-weight: 600; }
 
 /* ---------- ACCOUNT MENU ---------- */
 .lu-account { position: relative; }
@@ -946,6 +988,7 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-cover-tag { align-self: center; margin-right: 0.2rem; cursor: help; }
 
 /* ---------- SIDEBAR CONTENTS (desktop sidebar and phone/tablet menu) ---------- */
+.lu-side-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .lu-sidebar .lu-brand { align-self: flex-start; margin-left: 0.4rem; }
 .lu-side-nav { display: flex; flex-direction: column; gap: 1.1rem; flex: 1; }
 .lu-side-group { display: flex; flex-direction: column; gap: 0.15rem; }
@@ -974,22 +1017,101 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-side-icon { width: 1.2rem; text-align: center; opacity: 0.75; flex-shrink: 0; }
 .lu-side-link.active .lu-side-icon { opacity: 1; }
 
-.lu-side-foot { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.9rem; border-top: 1px solid var(--rule); }
-.lu-side-row { display: flex; align-items: center; gap: 0.4rem; padding-left: 0.4rem; }
-.lu-side-row .theme-toggle { border-radius: 50%; background: none; cursor: pointer; color: var(--text); }
-.lu-side-user {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.15rem 0.6rem;
-  align-items: center;
-  padding: 0.6rem 0.5rem 0.2rem;
+.lu-side-foot { display: flex; flex-direction: column; gap: 0.7rem; padding-top: 0.9rem; border-top: 1px solid var(--rule); }
+
+/* One row of round tools: language, theme, help, view site, fold */
+.lu-side-tools { display: flex; align-items: center; gap: 0.35rem; padding-left: 0.2rem; }
+.lu-side-tool, .lu-side-tools .theme-toggle {
+  width: 2.2rem; height: 2.2rem;
+  display: inline-grid; place-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1.5px solid var(--border) !important;
+  border-radius: 50%;
+  background: none;
+  color: var(--text);
+  font-weight: 700; font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
-.lu-side-user .lu-avatar-btn { cursor: default; grid-row: span 2; }
-.lu-side-user-text { display: flex; flex-direction: column; min-width: 0; }
-.lu-side-user-text strong { font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lu-side-user-text span { font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lu-side-signout { grid-column: 2; justify-self: start; padding: 0.15em 0 !important; font-size: 0.82rem; color: var(--text-muted); text-decoration: underline; }
-.lu-side-signout:hover { color: #d23c42; background: none !important; }
+.lu-side-tool:hover, .lu-side-tools .theme-toggle:hover { border-color: var(--text) !important; background: var(--surface-hover); }
+.lu-side-tool.active { background: var(--text); color: var(--bg) !important; border-color: var(--text) !important; }
+.lu-side-tools > span[data-tip] { display: inline-flex; }
+/* The language switch is a word when there's room */
+.lu-side-lang { width: auto; padding: 0 0.75rem; border-radius: var(--pill); font-size: 0.82rem; }
+.lu-side-short { display: none; }
+.lu-side-collapse { border-color: transparent !important; color: var(--text-muted); }
+.lu-side-collapse:hover { color: var(--text); }
+
+/* Account: picture, name and email, sign-out icon */
+.lu-side-user {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.5rem 0.2rem 0.1rem 0.2rem;
+}
+.lu-side-user .lu-avatar-btn { cursor: default; flex-shrink: 0; width: 2.2rem; height: 2.2rem; }
+.lu-side-user-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.lu-side-user-text strong { font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-side-user-text span { font-size: 0.75rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-side-signout { border-color: transparent !important; color: var(--text-muted); }
+.lu-side-signout:hover { color: #d23c42; }
+
+/* Folded sidebar's name tags */
+.lu-side-tip {
+  position: fixed;
+  z-index: 80;
+  transform: translateY(-50%);
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 3px 3px 0 var(--pop);
+}
+.lu-side-tip { display: flex; align-items: center; gap: 0.5rem; }
+.lu-side-tip.is-above { transform: translate(-50%, -100%); }
+.lu-side-tip-keys { display: inline-flex; gap: 0.2rem; }
+.lu-side-tip kbd {
+  min-width: 1.3rem; padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg) 30%, transparent);
+  font-family: var(--font-main); font-size: 0.75rem; text-align: center; line-height: 1.3;
+}
+.lu-brand-short { display: none; }
+@media (max-width: 979px) { .lu-side-collapse { display: none; } }
+
+/* ---------- FOLDED SIDEBAR (computers): icons only ---------- */
+@media (min-width: 980px) {
+  .lu-sidebar { transition: width 180ms ease, padding 180ms ease; }
+  .lu-sidebar.is-collapsed { width: 4.6rem; padding: 1rem 0.65rem 0.8rem; gap: 0.9rem; align-items: center; }
+  .lu-sidebar.is-collapsed > * { flex-shrink: 0; }
+  .lu-sidebar.is-collapsed :is(.lu-side-label, .lu-side-search kbd, .lu-brand-full, .lu-side-user-text, .lu-side-title) { display: none; }
+  .lu-sidebar.is-collapsed .lu-side-head { flex-direction: column; gap: 0.5rem; }
+  .lu-sidebar.is-collapsed .lu-brand { align-self: center; margin: 0; }
+  .lu-sidebar.is-collapsed .lu-brand-short { display: inline; }
+  .lu-sidebar.is-collapsed .lu-side-search { width: 2.5rem; height: 2.4rem; margin: 0; padding: 0; justify-content: center; }
+  .lu-sidebar.is-collapsed .lu-side-nav { gap: 0.45rem; width: 100%; align-items: center; }
+  .lu-sidebar.is-collapsed .lu-side-group { align-items: center; width: 100%; }
+  .lu-sidebar.is-collapsed .lu-side-group { gap: 0.1rem; }
+  .lu-sidebar.is-collapsed .lu-side-group + .lu-side-group { padding-top: 0.45rem; border-top: 1px solid var(--rule); }
+  .lu-sidebar.is-collapsed .lu-side-link { position: relative; width: 2.8rem; height: 2.35rem; padding: 0; justify-content: center; }
+  .lu-sidebar.is-collapsed .lu-side-icon { width: auto; font-size: 1.05rem; }
+  /* A count becomes a dot on the icon */
+  .lu-sidebar.is-collapsed .lu-side-badge { position: absolute; top: 0.3rem; right: 0.35rem; min-width: 0; width: 0.6rem; height: 0.6rem; padding: 0; font-size: 0; border: 1.5px solid var(--bg); }
+  /* Pinned to the bottom, so fold/unfold is always in reach on short windows */
+  .lu-sidebar.is-collapsed .lu-side-foot { align-items: center; width: 100%; gap: 0.4rem; padding-top: 0.6rem; position: sticky; bottom: -0.8rem; padding-bottom: 0.8rem; margin-bottom: -0.8rem; background: inherit; }
+  .lu-sidebar.is-collapsed :is(.lu-side-tool, .theme-toggle) { width: 2.1rem; height: 2.1rem; }
+  .lu-sidebar.is-collapsed .lu-side-tools { gap: 0.3rem; }
+  .lu-sidebar.is-collapsed .lu-side-tools { flex-direction: column; padding: 0; }
+  .lu-sidebar.is-collapsed .lu-side-lang { width: 2.2rem; padding: 0; border-radius: 50%; }
+  .lu-sidebar.is-collapsed .lu-side-short { display: inline; font-size: 0.78rem; }
+  .lu-sidebar.is-collapsed .lu-side-user { flex-direction: column; padding: 0.2rem 0 0; gap: 0.3rem; }
+  .lu-sidebar.is-collapsed .lu-side-user .lu-avatar-btn { width: 2rem; height: 2rem; }
+}
 
 /* ---------- PHONES & TABLETS: the sidebar slides in as the menu ---------- */
 .lu-menu-btn {
@@ -1238,19 +1360,6 @@ a.lu-tag { text-decoration: none; flex-shrink: 0; }
 .lu-door-row.is-in .lu-door-name { color: var(--text-muted); }
 
 /* ---------- HELP ---------- */
-/* The "?" beside the language and theme switches; same size as the theme toggle */
-.lu-help-btn {
-  width: 2.3rem; height: 2.3rem;
-  display: inline-grid; place-items: center;
-  border: 1.5px solid var(--text);
-  border-radius: 50%;
-  font-weight: 700;
-  font-size: 1.05rem;
-  text-decoration: none;
-  color: var(--text);
-}
-.lu-help-btn:hover, .lu-help-btn.active { background: var(--text); color: var(--bg) !important; }
-
 .lu-help-toc { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.6rem; }
 .lu-help-toc .lu-pill { background: none; cursor: pointer; color: var(--text); font-size: 0.85rem; padding: 0.35em 0.85em; }
 .lu-help-section {

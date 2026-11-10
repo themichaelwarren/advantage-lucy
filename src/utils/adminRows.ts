@@ -73,13 +73,13 @@ export function blogToRow(p: BlogPost): BlogRow {
   };
 }
 
-export const PHOTO_COLUMNS = ['id', 'image_url', 'caption_en', 'caption_ja', 'status', 'profile_photo'] as const;
+export const PHOTO_COLUMNS = ['id', 'image_url', 'caption_en', 'caption_ja', 'status', 'profile_photo', 'link'] as const;
 export type PhotoRow = Record<typeof PHOTO_COLUMNS[number], string>;
 
 export function photoToRow(p: SplashPhoto): PhotoRow {
   return {
     id: p.id, image_url: p.image_url || '', caption_en: p.caption_en || '', caption_ja: p.caption_ja || '',
-    status: p.status || 'published', profile_photo: p.profile_photo || '',
+    status: p.status || 'published', profile_photo: p.profile_photo || '', link: p.link || '',
   };
 }
 

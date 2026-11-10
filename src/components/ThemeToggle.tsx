@@ -21,8 +21,10 @@ function storedTheme(): Theme | null {
  * Sun/moon switch. The initial theme is applied before first paint by the
  * inline script in index.html (saved choice, else the system setting).
  */
-export default function ThemeToggle({ locale, onMouseEnter, onMouseLeave }: {
+export default function ThemeToggle({ locale, onMouseEnter, onMouseLeave, noTitle }: {
   locale: Locale;
+  /** Leave off the browser tooltip (when the page shows its own) */
+  noTitle?: boolean;
   onMouseEnter?: React.MouseEventHandler<HTMLElement>;
   onMouseLeave?: React.MouseEventHandler<HTMLElement>;
 }) {
@@ -48,6 +50,23 @@ export default function ThemeToggle({ locale, onMouseEnter, onMouseLeave }: {
     setTheme(next);
   }, []);
 
+  // ⌘⇧D or ⌘⇧L (Ctrl+Shift on Windows) switches too. There's no one
+  // standard, so both; the browser's own use of them is skipped where it
+  // lets a page do that.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k !== 'd' && k !== 'l') return;
+      e.preventDefault();
+      toggle();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [toggle]);
+
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  const keys = isMac ? '⌘⇧D' : 'Ctrl+Shift+D';
   const label = locale === 'ja'
     ? (theme === 'dark' ? 'ライトモードにする' : 'ダークモードにする')
     : (theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
@@ -60,7 +79,8 @@ export default function ThemeToggle({ locale, onMouseEnter, onMouseLeave }: {
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       aria-label={label}
-      title={label}
+      aria-keyshortcuts="Meta+Shift+D Control+Shift+D Meta+Shift+L Control+Shift+L"
+      title={noTitle ? undefined : `${label} (${keys})`}
     >
       <svg className="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
         <circle cx="12" cy="12" r="4.2" fill="currentColor" />

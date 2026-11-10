@@ -187,12 +187,13 @@ export async function fetchBlog(sheetId: string, email: string, key: string) {
 }
 
 export async function fetchPhotos(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'Photos!A:F', email, key);
+  const rows = await fetchSheet(sheetId, 'Photos', email, key);
   return rowsToObjects(rows).map(r => ({
     id: r.id, image_url: r.image_url || '',
     caption_en: r.caption_en || undefined, caption_ja: r.caption_ja || undefined,
     status: r.status || 'published',
     profile_photo: r.profile_photo || undefined,
+    link: (r.link || '').trim() || undefined,
   }));
 }
 
@@ -220,6 +221,7 @@ const OPTIONAL_COLUMNS: Record<string, string[]> = {
   Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until'],
   News: ['publish_at'],
   Blog: ['publish_at'],
+  Photos: ['link'],
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */
@@ -380,4 +382,47 @@ export async function replaceRows(
     });
     if (!appRes.ok) { const err = await appRes.text(); throw new Error(`Sheets append error: ${appRes.status} ${err}`); }
   }
+}
+
+/**
+ * Put a tab's rows in the order of `ids` (by the id in column A), by moving
+ * rows rather than rewriting them. Rows not listed keep their order after
+ * the listed ones. Used for photo order: the sheet's row order is the order
+ * on the site, so it reads the same in the sheet.
+ */
+export async function reorderRows(sheetId: string, tab: string, ids: string[], email: string, privateKey: string): Promise<void> {
+  const token = await getToken(email, privateKey);
+  const [metaRes, colA] = await Promise.all([
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties(sheetId,title)`, { headers: { Authorization: `Bearer ${token}` } }),
+    fetchSheet(sheetId, `${tab}!A:A`, email, privateKey),
+  ]);
+  if (!metaRes.ok) throw new Error(`Failed to get sheet metadata: ${metaRes.status}`);
+  const meta: any = await metaRes.json();
+  const sheet = meta.sheets?.find((s: any) => s.properties.title === tab);
+  if (!sheet) throw new Error(`Tab "${tab}" not found`);
+
+  // Current order of data rows (sheet row 2 onwards), as ids
+  const current = colA.slice(1).map(r => (r[0] || '').trim());
+  const requests: unknown[] = [];
+  let pos = 0;
+  for (const id of ids) {
+    const at = current.indexOf(id, pos);
+    if (at === -1) continue; // gone since the page loaded: skip it
+    if (at !== pos) {
+      // Move that one row up to `pos` (+1 for the heading row)
+      requests.push({ moveDimension: {
+        source: { sheetId: sheet.properties.sheetId, dimension: 'ROWS', startIndex: at + 1, endIndex: at + 2 },
+        destinationIndex: pos + 1,
+      } });
+      current.splice(pos, 0, current.splice(at, 1)[0]);
+    }
+    pos++;
+  }
+  if (!requests.length) return;
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requests }),
+  });
+  if (!res.ok) throw new Error(`Sheets reorder error: ${res.status} ${await res.text()}`);
 }

@@ -37,7 +37,8 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
         'Most things have English and Japanese fields. Fill in whichever you can: the site shows the other language when one is missing.',
         'If you try to leave a page with unsaved changes, it asks whether to save first.',
         'Deleting is permanent: it removes the row from the sheet. To take something off the site for now, hide it instead.',
-        'At the bottom of the menu: switch the admin between English and 日本語, light and dark mode, and this help page.',
+        'At the bottom of the menu: switch the admin between English and 日本語, light and dark mode, this help page, and the website itself.',
+        `On a computer, the « beside the logo folds the menu down to icons (hover one to see its name). ${isMac ? '⌘\\' : 'Ctrl+\\'} does the same, and ${isMac ? '⌘⇧D' : 'Ctrl+Shift+D'} switches light and dark mode.`,
       ],
     },
     {
@@ -79,7 +80,9 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       points: [
         'News: a title and text in each language, an optional image, and when it goes live. Line breaks are kept as you type; a blank line starts a new paragraph. Select words and use Link or Bold.',
         'Blog posts are Instagram posts: open the post on Instagram, tap ⋯ → Copy link, and paste it in.',
-        'Photos rotate on the home page. One of them can also be the About page photo.',
+        'Photos rotate on the home page in the order shown in Photos. Drag them to change it (or use ‹ › on a phone).',
+        'A photo can link to a show or any page: its caption on the home page becomes a button. For a show, leave the caption blank to show the date and venue. A flyer linked to a show disappears from the home page by itself once the show is over.',
+        'One photo can also be the About page photo.',
       ],
     },
     {
@@ -125,7 +128,8 @@ const ja: typeof en = {
         'ほとんどの項目に英語と日本語の欄があります。書ける方だけで大丈夫です。片方がないときは、サイトにもう片方の言語が表示されます。',
         '保存していない変更があるままページを離れようとすると、保存するか確認が出ます。',
         '削除は元に戻せません（シートから行が消えます）。一時的にサイトから下げたいときは、削除せず「非公開」にしてください。',
-        'メニューの一番下で、管理画面の言語（English／日本語）、ライト／ダークモード、このヘルプを切り替えられます。',
+        'メニューの一番下に、管理画面の言語（English／日本語）、ライト／ダークモード、このヘルプ、サイトを見るボタンがあります。',
+        `パソコンでは、ロゴの横の « でメニューをアイコンだけにたためます（アイコンにマウスを乗せると名前が出ます）。${isMac ? '⌘\\' : 'Ctrl+\\'} でも同じで、${isMac ? '⌘⇧D' : 'Ctrl+Shift+D'} でライト／ダークを切り替えられます。`,
       ],
     },
     {
@@ -167,7 +171,9 @@ const ja: typeof en = {
       points: [
         'ニュース：各言語のタイトルと本文、画像（任意）、公開のタイミングを入れます。改行は入力したとおりに反映され、空行で段落が分かれます。文字を選んでリンクや太字にできます。',
         'ブログはInstagramの投稿です。Instagramで投稿を開き、⋯ →「リンクをコピー」して貼り付けます。',
-        '写真はホームで順番に表示されます。そのうち1枚をプロフィールページの写真にできます。',
+        '写真は「写真」に並んでいる順番でホームに表示されます。ドラッグで順番を変えられます（スマホでは ‹ › ボタン）。',
+        '写真にはライブやほかのページへのリンクをつけられます。ホームのキャプションがそのページへのボタンになります。ライブの場合、キャプションが空欄なら日付と会場が表示されます。ライブにリンクしたフライヤーは、ライブが終わるとホームから自動で消えます。',
+        '1枚をプロフィールページの写真にすることもできます。',
       ],
     },
     {

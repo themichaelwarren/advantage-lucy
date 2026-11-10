@@ -3,6 +3,7 @@ import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import { useEvents, useNews, useBlog, usePhotos } from '../hooks/useSheetData';
 import PhotoPile from '../components/PhotoPile';
+import { photoSlides } from '../utils/photoLinks';
 import ShowCard from '../components/ShowCard';
 import PageLoader from '../components/PageLoader';
 
@@ -69,7 +70,7 @@ export default function Home({ locale }: Props) {
   return (
     <>
       <h1 className="visually-hidden band-name">advantage Lucy</h1>
-      <PhotoPile photos={photos} locale={locale} />
+      <PhotoPile slides={photoSlides(photos, events, locale)} locale={locale} />
 
       {featured && (
         <section className="home-section">

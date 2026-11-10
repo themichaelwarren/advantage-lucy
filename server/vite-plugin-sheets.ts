@@ -3,7 +3,7 @@
  * Keeps the service account key server-side.
  */
 import type { Plugin } from 'vite';
-import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews, fetchBlog, fetchPhotos, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, replaceRows, fetchHeaders, clearSheetCache } from './sheets';
+import { fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchPeople, fetchSetlists, fetchNews, fetchBlog, fetchPhotos, fetchVenues, fetchAreas, fetchPrefectures, fetchCountries, appendRow, updateRow, deleteRow, replaceRows, reorderRows, fetchHeaders, clearSheetCache } from './sheets';
 import { fetchDocText, createDoc } from './docs';
 import { checkAdmin } from '../functions/lib/adminAuth';
 import { checkContact, saveMessage, listMessages, setMessageStatus, verifyTurnstile, showForEmail } from '../functions/lib/messages';
@@ -264,6 +264,14 @@ export default function sheetsPlugin(): Plugin {
               res.end(JSON.stringify({ headers }));
               return;
             }
+          }
+
+          // POST /api/admin/:tab/order {ids} → put the rows in that order
+          if (req.method === 'POST' && /^\/api\/admin\/[a-zA-Z]+\/order/.test(req.url || '')) {
+            await reorderRows(sheetId, tab, (body.ids as string[]).map(String), email, privateKey);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ ok: true }));
+            return;
           }
 
           if (req.method === 'POST') {

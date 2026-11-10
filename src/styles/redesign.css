@@ -206,13 +206,35 @@ main {
 }
 .photo-pile-frame > * { grid-area: 1 / 1; min-height: 0; }
 
+.photo-pile-frame:is(a) { color: inherit; text-decoration: none; }
 .photo-pile-img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--radius-lg) - clamp(6px, 1.2vw, 12px));
+  background: var(--photo-card);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.photo-pile-img img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: calc(var(--radius-lg) - clamp(6px, 1.2vw, 12px));
-  user-select: none;
   -webkit-user-drag: none;
+}
+/* Tall images (flyers): the whole thing, on a soft blurred copy of itself */
+.photo-pile-img.is-tall img:not(.photo-pile-blur) { object-fit: contain; }
+/* Oversized so the blur's soft edges fall outside the frame: the bands
+   carry on the flyer's own colours instead of fading to grey */
+.photo-pile-img img.photo-pile-blur {
+  inset: -15%;
+  width: 130%;
+  height: 130%;
+  object-fit: cover;
+  filter: blur(36px) saturate(1.1);
 }
 .photo-pile-img-reveal {
   z-index: 1;
@@ -247,6 +269,25 @@ main {
   box-shadow: 3px 3px 0 var(--text);
   transform: rotate(-2deg);
 }
+
+/* A caption with a link is a button: it lifts and fills on hover */
+.photo-pile-caption.is-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 200ms var(--ease-bounce), box-shadow 120ms ease, background-color 200ms ease;
+}
+.photo-pile-caption.is-link:hover { background: var(--mat); color: var(--on-pop); transform: rotate(-2deg) translate(-2px, -2px); box-shadow: 5px 5px 0 var(--text); }
+.photo-pile-caption.is-link:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+
+/* Where you are: small dots under the card */
+.photo-pile-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: clamp(1rem, 2vw, 1.4rem);
+}
+.photo-pile-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text); opacity: 0.3; transition: opacity 300ms ease, width 300ms ease; }
+.photo-pile-dots span.is-on { opacity: 0.9; width: 16px; border-radius: 3px; }
 
 /* ← → buttons, bottom right */
 .photo-pile-arrows { display: flex; gap: 0.45rem; margin-left: auto; }
