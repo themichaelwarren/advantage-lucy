@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect, Fragment, type ReactNode } from 'react';
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Events from './pages/Events';
@@ -100,6 +100,15 @@ function WithLanguage() {
   return <Navigate to={`/${lang}${pathname}${search}`} replace />;
 }
 
+/**
+ * An admin page that starts over when its id changes: going from one show
+ * to "new show" (say, from ⌘K) must not carry the last show's fields over.
+ */
+function Fresh({ children }: { children: ReactNode }) {
+  const { id } = useParams();
+  return <Fragment key={id}>{children}</Fragment>;
+}
+
 export default function App() {
   const location = useLocation();
 
@@ -158,32 +167,32 @@ export default function App() {
         <Route element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="events" element={<AdminEvents />} />
-          <Route path="events/:id" element={<AdminEventForm />} />
+          <Route path="events/:id" element={<Fresh><AdminEventForm /></Fresh>} />
           <Route path="venues" element={<AdminVenues />} />
-          <Route path="venues/:id" element={<AdminVenueForm />} />
+          <Route path="venues/:id" element={<Fresh><AdminVenueForm /></Fresh>} />
           <Route path="areas" element={<AdminAreas />} />
-          <Route path="areas/:id" element={<AdminAreaForm />} />
+          <Route path="areas/:id" element={<Fresh><AdminAreaForm /></Fresh>} />
           <Route path="prefectures" element={<AdminPrefectures />} />
-          <Route path="prefectures/:id" element={<AdminPrefectureForm />} />
+          <Route path="prefectures/:id" element={<Fresh><AdminPrefectureForm /></Fresh>} />
           <Route path="countries" element={<AdminCountries />} />
-          <Route path="countries/:id" element={<AdminCountryForm />} />
+          <Route path="countries/:id" element={<Fresh><AdminCountryForm /></Fresh>} />
           <Route path="people" element={<AdminPeople />} />
-          <Route path="people/:id" element={<AdminPersonForm />} />
+          <Route path="people/:id" element={<Fresh><AdminPersonForm /></Fresh>} />
           <Route path="releases" element={<AdminMusic />} />
-          <Route path="releases/:id" element={<AdminAlbumForm />} />
+          <Route path="releases/:id" element={<Fresh><AdminAlbumForm /></Fresh>} />
           <Route path="songs" element={<AdminSongs />} />
           <Route path="videos" element={<AdminVideos />} />
-          <Route path="songs/:id" element={<AdminSongForm />} />
+          <Route path="songs/:id" element={<Fresh><AdminSongForm /></Fresh>} />
           <Route path="news" element={<AdminNews />} />
-          <Route path="news/:id" element={<AdminNewsForm />} />
+          <Route path="news/:id" element={<Fresh><AdminNewsForm /></Fresh>} />
           <Route path="blog" element={<AdminBlog />} />
-          <Route path="blog/:id" element={<AdminBlogForm />} />
+          <Route path="blog/:id" element={<Fresh><AdminBlogForm /></Fresh>} />
           <Route path="photos" element={<AdminPhotos />} />
-          <Route path="photos/:id" element={<AdminPhotoForm />} />
+          <Route path="photos/:id" element={<Fresh><AdminPhotoForm /></Fresh>} />
           <Route path="messages" element={<AdminMessages />} />
-          <Route path="messages/:id" element={<AdminMessage />} />
+          <Route path="messages/:id" element={<Fresh><AdminMessage /></Fresh>} />
           <Route path="reservations" element={<AdminReservations />} />
-          <Route path="reservations/:id" element={<AdminShowReservations />} />
+          <Route path="reservations/:id" element={<Fresh><AdminShowReservations /></Fresh>} />
           <Route path="activity" element={<AdminActivity />} />
           <Route path="data" element={<AdminData />} />
           <Route path="help" element={<AdminHelp />} />

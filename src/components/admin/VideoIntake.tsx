@@ -12,6 +12,7 @@ import SuggestInput, { normalize } from './SuggestInput';
 import VenuePicker from './VenuePicker';
 import { addMissingSongs } from './songs';
 import { errorText, makeId } from './ui';
+import { ShowDupeHint, isDoubleShow } from './DupeHint';
 
 /**
  * Add a video, step by step (admin Videos page). Any YouTube link: the
@@ -156,6 +157,7 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
   }
 
   async function save() {
+    if (kind === 'show' && newShow && isDoubleShow(newShow.date, newShow.venue, events) && !window.confirm(s.dupShowConfirm)) return;
     setSaving(true); setError('');
     try {
       const clean = url.trim();
@@ -346,15 +348,13 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
               <span>{s.date}</span>
               <input type="date" value={newShow.date} onChange={e => setNewShow(n => n && { ...n, date: e.target.value })} />
             </label>
-            {newShow.date && events.some(e => e.date === newShow.date) && (
-              <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {s.viNewShowSameDate}</p>
-            )}
             <div className="lu-field">
               <span className="lu-field-label">{s.venue}</span>
               <VenuePicker s={s} locale={locale} id="lu-vi-venue" value={newShow.venue}
                 onChange={v => setNewShow(n => n && { ...n, venue: v })}
                 venues={venues} areas={areas} onCreated={onVenuesChanged} onError={setError} />
             </div>
+            <ShowDupeHint s={s} locale={locale} prefix={`/${locale}/admin`} date={newShow.date} venue={newShow.venue} events={events} />
             <label className="lu-field">
               <span>{s.viNewShowName} <span className="lu-optional">· {s.optional}</span></span>
               <input value={newShow.title} onChange={e => setNewShow(n => n && { ...n, title: e.target.value })} placeholder={s.viNewShowNameHint} />

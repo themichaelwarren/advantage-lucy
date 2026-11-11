@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { useVenues, useAreas, useAllEvents } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
+import { venueDupes } from '../../utils/duplicates';
 
-type Filter = 'all' | 'unused';
+type Filter = 'all' | 'unused' | 'dupes';
 type Sort = 'shows' | 'az';
 
 export default function AdminVenues() {
@@ -24,17 +25,19 @@ export default function AdminVenues() {
     return m;
   }, [events]);
 
+  const doubled = useMemo(() => new Set(venueDupes(venues).flat().map(v => v.id)), [venues]);
+
   const list = useMemo(() => {
     const q = ui.query.trim().toLowerCase();
     const name = (v: typeof venues[number]) => (locale === 'ja' ? v.name_ja || v.name_en : v.name_en || v.name_ja);
     return venues
       .filter(v => !q || [v.name_en, v.name_ja, areaName(v.area)].some(t => t?.toLowerCase().includes(q)))
-      .filter(v => ui.filter === 'all' || !showCount.get(v.id))
+      .filter(v => ui.filter === 'all' || (ui.filter === 'dupes' ? doubled.has(v.id) : !showCount.get(v.id)))
       .map(v => ({ v, name: name(v) }))
       .sort((a, b) => ui.sort === 'az'
         ? a.name.localeCompare(b.name, locale)
         : (showCount.get(b.v.id) || 0) - (showCount.get(a.v.id) || 0) || a.name.localeCompare(b.name, locale));
-  }, [venues, ui.query, ui.filter, ui.sort, locale, areaName, showCount]);
+  }, [venues, ui.query, ui.filter, ui.sort, locale, areaName, showCount, doubled]);
 
   if (loading) return <p className="lu-loading">{s.loading}</p>;
 
@@ -47,7 +50,7 @@ export default function AdminVenues() {
       <ListToolbar
         s={s}
         query={ui.query} onQuery={ui.setQuery}
-        filters={[{ value: 'all', label: s.filterAll }, { value: 'unused', label: s.filterUnused }]}
+        filters={[{ value: 'all', label: s.filterAll }, { value: 'unused', label: s.filterUnused }, ...(ui.filter === 'dupes' ? [{ value: 'dupes', label: s.dhVenueDupes }] : [])]}
         filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
         sorts={[{ value: 'shows', label: s.sortMostShows }, { value: 'az', label: s.sortAZ }]}
         sort={ui.sort} onSort={v => ui.setSort(v as Sort)}

@@ -13,6 +13,7 @@ import { todayInJapan } from '../../utils/showDates';
 import { songTitle, compareSongs } from '../../utils/songTitles';
 import type { Event } from '../../types';
 import { ActivityHistory } from '../../components/admin/Activity';
+import { VenueDupeHint, useVenueMatches } from '../../components/admin/DupeHint';
 
 interface Form { id: string; name_en: string; name_ja: string; area: string; url: string }
 const empty: Form = { id: '', name_en: '', name_ja: '', area: '', url: '' };
@@ -105,8 +106,11 @@ export default function AdminVenueForm() {
   }, [showsHere, setlists, songs, today, locale]);
   const showName = (e: Event) => pick(e.title_en, e.title_ja);
 
+  const dupes = useVenueMatches(form, venues, isNew ? undefined : form.id);
+
   async function save(): Promise<boolean> {
     if (!form.name_en.trim() && !form.name_ja.trim()) { setNameError(s.venueNameMissing); return false; }
+    if (isNew && dupes.length && !window.confirm(s.dupVenueConfirm)) return false;
     setSaving(true);
     setError('');
     try {
@@ -140,6 +144,7 @@ export default function AdminVenueForm() {
             {fid => <input id={fid} lang="ja" value={form.name_ja} onChange={e => set('name_ja', e.target.value)} />}
           </Field>
         </BilingualRow>
+        <VenueDupeHint s={s} locale={locale} prefix={prefix} matches={dupes} areas={areas} />
       </FieldGroup>
       <FieldGroup title={s.venueGroupWhere}>
         <Field label={s.area} hint={s.areaHint} s={s}>

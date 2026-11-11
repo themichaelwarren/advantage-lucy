@@ -28,6 +28,7 @@ import TimestampPaste from '../../components/admin/TimestampPaste';
 import { matchSong, type PastedSong } from '../../utils/timestamps';
 import { youTubeId } from '../../utils/youtube';
 import { ActivityHistory } from '../../components/admin/Activity';
+import { ShowDupeHint, isDoubleShow } from '../../components/admin/DupeHint';
 
 type EventField = typeof EVENT_COLUMNS[number];
 type Form = Record<EventField, string>;
@@ -211,6 +212,7 @@ export default function AdminEventForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!checkRequired()) return;
+    if (isDoubleShow(form.date, form.venue, events) && !window.confirm(s.dupShowConfirm)) return;
     const eventId = newEventId();
     await run(async () => {
       // A setlist entered with the show: note the day it was added
@@ -224,6 +226,9 @@ export default function AdminEventForm() {
   // An existing show: one part at a time
   const saveDialog = async () => {
     if (!checkRequired()) return;
+    const was = baseline ? (JSON.parse(baseline) as Form) : form;
+    const moved = was.date !== form.date || was.venue !== form.venue;
+    if (moved && isDoubleShow(form.date, form.venue, events, form.id) && !window.confirm(s.dupShowConfirm)) return;
     if (await run(() => writeEvent(form.id))) setDialog(null);
   };
   const closeDialog = () => {
@@ -287,6 +292,7 @@ export default function AdminEventForm() {
           />
         )}
       </Field>
+      <ShowDupeHint s={s} locale={locale} prefix={prefix} date={form.date} venue={form.venue} events={events} exceptId={isNew ? undefined : form.id} />
       <div className="lu-grid-3">
         <Field label={s.doors} optional s={s}>
           {fid => <input id={fid} type="time" value={form.doors} onChange={e => set('doors', e.target.value)} />}

@@ -8,8 +8,9 @@ import { setlistIsPublic, todayInJapan } from '../../utils/showDates';
 import { eventToRow } from '../../utils/adminRows';
 import ListToolbar, { useListPrefs, SwitchCell, SaveStateCell } from '../../components/admin/ListToolbar';
 import { useQuickEdit } from '../../components/admin/useQuickEdit';
+import { showDupes } from '../../utils/duplicates';
 
-type Filter = 'all' | 'upcoming' | 'past' | 'nosetlist' | 'hidden' | 'nosource';
+type Filter = 'all' | 'upcoming' | 'past' | 'nosetlist' | 'hidden' | 'nosource' | 'dupes';
 type Sort = 'newest' | 'oldest' | 'added';
 type View = 'list' | 'table';
 
@@ -21,6 +22,7 @@ export default function AdminEvents() {
   const ui = useListPrefs<Filter, Sort, View>('shows', { filter: 'all', sort: 'newest', view: 'list' });
 
   const withSetlist = useMemo(() => new Set(setlists.map(x => x.event)), [setlists]);
+  const doubled = useMemo(() => new Set(showDupes(events.map(e => ({ ...e, venue_id: e.venue_id || '' }))).flat().map(e => e.id)), [events]);
   const today = todayInJapan();
   const isUpcoming = (e: Event) => (e.end_date || e.date) >= today;
 
@@ -34,6 +36,7 @@ export default function AdminEvents() {
         : ui.filter === 'past' ? !isUpcoming(e)
         : ui.filter === 'nosetlist' ? !isUpcoming(e) && !withSetlist.has(e.id)
         : ui.filter === 'nosource' ? !!e.setlist_added && !e.setlist_source
+        : ui.filter === 'dupes' ? doubled.has(e.id)
         : e.status === 'private')
       // "Setlists, newest added": only shows whose setlist has a date, most recent first
       .filter(e => ui.sort !== 'added' || !!e.setlist_added)
@@ -97,6 +100,7 @@ export default function AdminEvents() {
           { value: 'nosetlist', label: s.filterNoSetlist },
           { value: 'hidden', label: s.filterHidden },
           ...(ui.filter === 'nosource' ? [{ value: 'nosource', label: s.dhSetlistsNoSource }] : []),
+          ...(ui.filter === 'dupes' ? [{ value: 'dupes', label: s.dhShowDupes }] : []),
         ]}
         filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
         sorts={[{ value: 'newest', label: s.sortNewest }, { value: 'oldest', label: s.sortOldest }, { value: 'added', label: s.sortSetlistAdded }]}

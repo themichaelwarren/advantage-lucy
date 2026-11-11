@@ -2227,3 +2227,24 @@ a.lu-icon-btn { text-decoration: none; }
   .lu-data-teaser { grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
   .lu-data-teaser-facts { gap: 1rem; grid-template-columns: auto auto minmax(0, 1fr); }
 }
+
+/* "Already in the archive?" hints (components/admin/DupeHint.tsx) */
+.lu-dupe { border: 1.5px solid #e6b800; background: #fff8dc; color: #3d3000; border-radius: var(--radius-sm); padding: 0.7rem 0.85rem; margin-top: 0.6rem; font-size: 0.88rem; }
+.lu-dupe.is-strong { border-color: #d9480f; background: #fff1e8; color: #4a1d00; }
+.lu-dupe.is-soft { border-color: var(--border); background: var(--surface); color: var(--text); }
+.lu-dupe-head { margin: 0 0 0.45rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.4rem; line-height: 1.45; }
+.lu-dupe-head svg { align-self: center; flex: 0 0 auto; }
+.lu-dupe ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.lu-dupe li { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.35rem 0.5rem; border-radius: 6px; background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.lu-dupe li.is-same { outline: 1.5px solid currentColor; }
+.lu-dupe-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem; min-width: 0; }
+.lu-dupe-name span, .lu-dupe-name small { color: var(--text-muted); font-size: 0.8rem; }
+.lu-dupe .lu-btn { padding: 0.2rem 0.65rem; font-size: 0.8rem; min-height: 0; white-space: nowrap; }
+:root[data-theme="dark"] .lu-dupe { background: #3a300c; border-color: #8a6d12; color: #ffe08a; }
+:root[data-theme="dark"] .lu-dupe.is-strong { background: #3d1f0f; border-color: #b8501c; color: #ffc9a8; }
+:root[data-theme="dark"] .lu-dupe.is-soft { background: var(--surface); border-color: var(--border); color: var(--text); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lu-dupe { background: #3a300c; border-color: #8a6d12; color: #ffe08a; }
+  :root:not([data-theme="light"]) .lu-dupe.is-strong { background: #3d1f0f; border-color: #b8501c; color: #ffc9a8; }
+  :root:not([data-theme="light"]) .lu-dupe.is-soft { background: var(--surface); border-color: var(--border); color: var(--text); }
+}

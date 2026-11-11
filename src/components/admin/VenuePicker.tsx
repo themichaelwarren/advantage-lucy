@@ -7,6 +7,8 @@ import { createRow } from '../../services/adminService';
 import { errorText, makeId } from './ui';
 import SuggestInput, { Highlight, rankMatches } from './SuggestInput';
 import type { Suggestion } from './SuggestInput';
+import { VenueDupeHint, useVenueMatches } from './DupeHint';
+import { useAdminT } from '../../i18n/admin';
 
 /** Areas as suggestions: name in the admin's language, the other one greyed. */
 export function areaSuggestions(areas: Area[], locale: AdminLocale): Suggestion[] {
@@ -97,6 +99,7 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
 
   async function createVenue() {
     if (!draft.name_en.trim() && !draft.name_ja.trim()) return;
+    if (dupes.length && !window.confirm(s.dupVenueConfirm)) return;
     setBusy(true);
     try {
       const area = await resolveArea(draft.area, areas, draft.prefecture, prefectures);
@@ -113,6 +116,9 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
     }
   }
 
+  const { prefix } = useAdminT();
+  const dupes = useVenueMatches(draft, venues);
+
   if (creating) {
     return (
       <div className="lu-inline-card">
@@ -120,6 +126,8 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
           <input placeholder={s.venueNewName} value={draft.name_en} onChange={e => setDraft(d => ({ ...d, name_en: e.target.value }))} autoFocus />
           <input placeholder={s.venueNewNameJa} value={draft.name_ja} onChange={e => setDraft(d => ({ ...d, name_ja: e.target.value }))} lang="ja" />
         </div>
+        <VenueDupeHint s={s} locale={locale} prefix={prefix} matches={dupes} areas={areas}
+          onUse={v => { choose(v); setCreating(false); setDraft({ name_en: '', name_ja: '', area: '', prefecture: '' }); }} />
         <SuggestInput
           placeholder={s.venueNewArea}
           aria-label={s.venueNewArea}
