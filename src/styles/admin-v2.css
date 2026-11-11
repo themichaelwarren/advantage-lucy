@@ -2029,3 +2029,9 @@ a.lu-rel-svc.is-on:hover { background: var(--text); color: var(--bg); }
 a.lu-icon-btn { text-decoration: none; }
 .lu-health { margin-top: 2rem; }
 .lu-health-n { min-width: 2.4rem; text-align: right; font-family: var(--font-main); font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+.lu-news-art { aspect-ratio: 4 / 3; }
+.lu-news-art img { object-fit: contain; background: var(--surface-hover); }
+.lu-rel-notes.is-stacked { grid-template-columns: 1fr !important; }
+.lu-blog-art { display: block; }
+.lu-blog-art img { transition: transform 200ms ease; }
+.lu-blog-art:hover img { transform: scale(1.02); }
