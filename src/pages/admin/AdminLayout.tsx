@@ -140,6 +140,7 @@ export default function AdminLayout() {
       { to: `${prefix}/areas`, label: s.areas, icon: 'areas' },
     ] },
     { title: s.groupRecords, links: [
+      { to: `${prefix}/data`, label: s.dataTitle, icon: 'data' },
       { to: `${prefix}/activity`, label: s.actTitle, icon: 'history' },
     ] },
   ];

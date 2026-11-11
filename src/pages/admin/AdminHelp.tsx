@@ -127,6 +127,15 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       ],
     },
     {
+      id: 'data', icon: 'data', title: 'Data',
+      link: { to: 'data', label: 'Open Data' },
+      points: [
+        'The archive in numbers: shows per year, the most played songs, each year’s favourites, openers, closers and encores, debuts, the longest gaps, songs not played lately, the venues played most, and songs never played live.',
+        'Song counts come from the setlists in the archive, so the more setlists are filled in, the truer they get. The page says how many past shows have one.',
+        'Hover over (or tap) a year in the chart for its numbers, or open it as a table. Only the band sees this page.',
+      ],
+    },
+    {
       id: 'history', icon: 'history', title: 'History and recent changes',
       link: { to: 'activity', label: 'Open Recent changes' },
       points: [
@@ -247,6 +256,15 @@ const ja: typeof en = {
         '会場はエリア（下北沢など）に、エリアは都道府県に、都道府県は国に属しています。',
         '会場のページには、地図、その会場の次のライブ、年ごとのライブ一覧（セットリストがまだのものもわかります）、その会場でよく演奏した曲が出ます。セットリストを考えるときに便利です。',
         'ライブがある会場など、使われているものは削除できません。',
+      ],
+    },
+    {
+      id: 'data', icon: 'data', title: 'データ',
+      link: { to: 'data', label: 'データを開く' },
+      points: [
+        'アーカイブを数字で：年ごとのライブ数、よく演奏した曲、年ごとのよく演奏した曲、1曲目・本編ラスト・アンコール、初演、いちばん間が空いた曲、最近演奏していない曲、よく出演した会場、ライブで演奏していない曲。',
+        '曲の回数はアーカイブにあるセットリストから数えています。セットリストが増えるほど正確になります。過去のライブのうちセットリストがある本数もページに出ます。',
+        'グラフの年にカーソルを合わせる（タップする）と数字が出ます。表で見ることもできます。バンドだけが見られるページです。',
       ],
     },
     {

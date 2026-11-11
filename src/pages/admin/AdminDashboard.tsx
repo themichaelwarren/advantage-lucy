@@ -1,4 +1,5 @@
 import DataHealth from '../../components/admin/DataHealth';
+import { DataTeaser } from './AdminData';
 import Icon, { type IconName } from '../../components/admin/Icon';
 import { Link } from 'react-router-dom';
 import { useAllEvents, useAllSetlists } from '../../hooks/useSheetData';
@@ -95,6 +96,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {!loading && <DataTeaser />}
       {!loading && <DataHealth s={s} prefix={prefix} events={events} setlists={setlists} />}
       <NeedsLook />
     </>
