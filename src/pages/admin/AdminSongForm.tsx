@@ -308,7 +308,7 @@ export default function AdminSongForm() {
   );
 
   return (
-    <div className="lu-song-page">
+    <div className="lu-song-page lu-song-only">
       {leaveGuard}
       <div className="lu-song-layout">
         {/* Left: what the song is, its releases and videos (stays in view while it fits) */}

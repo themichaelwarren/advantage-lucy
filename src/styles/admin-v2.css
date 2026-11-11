@@ -2035,3 +2035,31 @@ a.lu-icon-btn { text-decoration: none; }
 .lu-blog-art { display: block; }
 .lu-blog-art img { transition: transform 200ms ease; }
 .lu-blog-art:hover img { transform: scale(1.02); }
+
+/* ---------- PHONES AND TABLETS: one column, in the order you'd want ----------
+   The two columns melt into one list so the cards can be reordered: what
+   you came for comes first (a show's setlist, a song's lyrics). */
+@media (max-width: 1099px) {
+  .lu-song-layout > .lu-song-side, .lu-song-layout > .lu-song-main { display: contents; }
+  .lu-song-layout .lu-song-side > *, .lu-song-layout .lu-song-main > * { order: 10; margin: 0; }
+  .lu-song-layout .lu-song-side > :first-child { order: 1; }
+  /* Show: details, setlist, videos, tickets, flyer, notes */
+  .lu-show-page #setlist { order: 2; }
+  .lu-show-page #videos { order: 3; }
+  .lu-show-page .lu-song-side > :nth-child(2) { order: 4; }
+  .lu-show-page .lu-song-side > :nth-child(3) { order: 5; }
+  /* Song: details, lyrics, live history, videos, releases */
+  .lu-song-only .lu-song-main > :nth-child(1) { order: 2; }
+  .lu-song-only .lu-song-main > :nth-child(2) { order: 3; }
+  .lu-song-only #videos { order: 4; }
+  .lu-song-only .lu-song-side > .lu-song-card:not(:first-child) { order: 5; }
+  /* Venue, area: the map last (the shows matter more on a phone) */
+  .lu-song-layout .lu-venue-map { order: 20; }
+}
+/* Phones: compact lists (dates, releases) stay side by side instead of stacking */
+@media (max-width: 520px) {
+  .lu-compact .lu-list-row { flex-wrap: nowrap; }
+  .lu-compact .lu-list-main { order: 0; flex: 1 1 auto; flex-basis: auto; min-width: 0; }
+  .lu-compact .lu-list-row time { flex-shrink: 0; }
+  .lu-compact .lu-list-tags { flex-shrink: 0; }
+}

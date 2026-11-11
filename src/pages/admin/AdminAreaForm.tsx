@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAreas, useVenues, usePrefectures, useCountries, useAllEvents } from '../../hooks/useSheetData';
+import { useAreas, useVenues, usePrefectures, useCountries, useAllEvents, useAllSetlists } from '../../hooks/useSheetData';
 import SuggestInput from '../../components/admin/SuggestInput';
 import { prefectureSuggestions, prefectureName, resolvePrefecture } from '../../components/admin/places';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
@@ -30,6 +30,8 @@ export default function AdminAreaForm() {
   const { prefectures, refresh: refreshPrefectures } = usePrefectures();
   const { countries } = useCountries();
   const { events } = useAllEvents();
+  const { setlists } = useAllSetlists();
+  const withSetlist = useMemo(() => new Set(setlists.map(r => r.event)), [setlists]);
 
   // What's typed in the prefecture box: a name in either language
   const [form, setForm] = useState<Form>(empty);
@@ -221,7 +223,13 @@ export default function AdminAreaForm() {
                               <strong>{pick(e.title_en, e.title_ja) || venueName(e.venue_id)}</strong>
                               {pick(e.title_en, e.title_ja) && <span>{venueName(e.venue_id)}</span>}
                             </span>
-                            {e.status === 'private' && <span className="lu-list-tags"><span className="lu-tag is-muted">{s.hidden}</span></span>}
+                            {/* Same tags as the venue page: does this show have a setlist yet? */}
+                            <span className="lu-list-tags">
+                              {e.status === 'private' && <span className="lu-tag is-muted">{s.hidden}</span>}
+                              {(e.end_date || e.date) < today && (withSetlist.has(e.id)
+                                ? <span className="lu-tag is-ok"><Icon name="setlist" /> {s.hasSetlist}</span>
+                                : <span className="lu-tag is-todo">{s.noSetlist}</span>)}
+                            </span>
                           </Link>
                         </li>
                       ))}

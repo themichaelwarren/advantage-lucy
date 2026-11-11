@@ -10,7 +10,7 @@ import { resolveArea, areaSuggestions, isKnownArea } from '../../components/admi
 import SuggestInput, { normalize } from '../../components/admin/SuggestInput';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
-import { songTitle } from '../../utils/songTitles';
+import { songTitle, compareSongs } from '../../utils/songTitles';
 import type { Event } from '../../types';
 
 interface Form { id: string; name_en: string; name_ja: string; area: string; url: string }
@@ -94,12 +94,14 @@ export default function AdminVenueForm() {
       c.shows.add(r.event);
       count.set(k, c);
     }
+    const byTitle = compareSongs(locale);
     const songBy = new Map(songs.map(x => [normalize(x.title), x]));
     const topSongs = [...count.entries()]
       .map(([k, c]) => ({ song: songBy.get(k), title: c.title, n: c.shows.size }))
-      .sort((a, b) => b.n - a.n || a.title.localeCompare(b.title, 'ja'));
+      // Most played first; ties in 50音順 by reading (ja) or A–Z by English title (en)
+      .sort((a, b) => b.n - a.n || byTitle(a.song || { title: a.title }, b.song || { title: b.title }));
     return { withSetlist, topSongs };
-  }, [showsHere, setlists, songs, today]);
+  }, [showsHere, setlists, songs, today, locale]);
   const showName = (e: Event) => pick(e.title_en, e.title_ja);
 
   async function save(): Promise<boolean> {
@@ -208,7 +210,7 @@ export default function AdminVenueForm() {
         <span className="lu-list-tags">
           {e.status === 'private' && <span className="lu-tag is-muted">{s.hidden}</span>}
           {(e.end_date || e.date) < today && (withSetlist.has(e.id)
-            ? <span className="lu-tag is-ok">♪ {s.hasSetlist}</span>
+            ? <span className="lu-tag is-ok"><Icon name="setlist" /> {s.hasSetlist}</span>
             : <span className="lu-tag is-todo">{s.noSetlist}</span>)}
         </span>
       </Link>

@@ -109,7 +109,7 @@ export default function AdminMessage() {
           <h1>{messageName(m, s)}</h1>
           <p className="lu-hint">
             <StatusTag status={m.status} s={s} />
-            {' '}{isSetlist && <span className="lu-tag is-ok">♪ {s.setlistInfo}</span>}
+            {' '}{isSetlist && <span className="lu-tag is-ok"><Icon name="setlist" /> {s.setlistInfo}</span>}
           </p>
         </div>
       </div>
@@ -139,7 +139,7 @@ export default function AdminMessage() {
             </button>
           ))}
         </div>
-        {isSetlist && m.event && <Link className="lu-btn lu-btn-primary" to={`${prefix}/events/${m.event}#setlist`}>♪ {s.openSetlist}</Link>}
+        {isSetlist && m.event && <Link className="lu-btn lu-btn-primary" to={`${prefix}/events/${m.event}#setlist`}><Icon name="setlist" /> {s.openSetlist}</Link>}
         {isSetlist && m.event && <a className="lu-btn" href={`/${locale}/events/${m.event}`} target="_blank" rel="noopener noreferrer">{s.viewOnSite} ↗</a>}
         {/* No reply button for a filtered sender: replying is exactly what to avoid */}
         {m.email && flag?.kind !== 'filtered' && (

@@ -33,7 +33,7 @@ export default function MessageRow({ m, s, locale, prefix, flag }: { m: Message;
         <span className="lu-list-tags">
           {flag?.kind === 'lookalike' && <span className="lu-tag is-warn" title={s.filterLookalikeTip.replace('{email}', flag.listed)}><Icon name="warn" /> {s.filterLookalike}</span>}
           {flag?.kind !== 'filtered' && <StatusTag status={m.status} s={s} />}
-          {isSetlist && <span className="lu-tag is-ok">♪ {s.setlistInfo}</span>}
+          {isSetlist && <span className="lu-tag is-ok"><Icon name="setlist" /> {s.setlistInfo}</span>}
           {m.attachments && <span className="lu-tag"><Icon name="attach" /> {m.attachments.split(',').filter(Boolean).length}</span>}
           {m.notified === 'no' && <span className="lu-tag is-muted">{s.notEmailed}</span>}
           {m.notified === 'filtered' && <span className="lu-tag is-muted">{s.filterForwarded}</span>}

@@ -32,8 +32,8 @@ export default function AdminVenues() {
       .filter(v => ui.filter === 'all' || !showCount.get(v.id))
       .map(v => ({ v, name: name(v) }))
       .sort((a, b) => ui.sort === 'az'
-        ? a.name.localeCompare(b.name)
-        : (showCount.get(b.v.id) || 0) - (showCount.get(a.v.id) || 0) || a.name.localeCompare(b.name));
+        ? a.name.localeCompare(b.name, locale)
+        : (showCount.get(b.v.id) || 0) - (showCount.get(a.v.id) || 0) || a.name.localeCompare(b.name, locale));
   }, [venues, ui.query, ui.filter, ui.sort, locale, areaName, showCount]);
 
   if (loading) return <p className="lu-loading">{s.loading}</p>;
