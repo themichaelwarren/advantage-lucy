@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAllEvents, useSongs } from '../../hooks/useSheetData';
+import { useAllEvents, useSongs, useAllSetlists, useVenues, useAreas } from '../../hooks/useSheetData';
+import VideoIntake from '../../components/admin/VideoIntake';
 import { useAdminT } from '../../i18n/admin';
 import { getMedia, type MediaRow } from '../../services/adminService';
 import { normalize } from '../../components/admin/SuggestInput';
@@ -36,14 +37,21 @@ interface Video {
 
 export default function AdminVideos() {
   const { s, locale, prefix } = useAdminT();
-  const { events } = useAllEvents();
-  const { songs } = useSongs();
+  const { events: loadedEvents } = useAllEvents();
+  // Shows made from the add-a-video form, until the list is next loaded
+  const [madeEvents, setMadeEvents] = useState<Event[]>([]);
+  const events = useMemo(() => [...loadedEvents, ...madeEvents.filter(m => !loadedEvents.some(e => e.id === m.id))], [loadedEvents, madeEvents]);
+  const { songs, refresh: refreshSongs } = useSongs();
+  const { venues, refresh: refreshVenues } = useVenues();
+  const { areas, refresh: refreshAreas } = useAreas();
   const [media, setMedia] = useState<MediaRow[] | null>(null);
   const [error, setError] = useState('');
   useEffect(() => { getMedia().then(setMedia).catch(err => setError(errorText(err))); }, []);
   const ui = useListPrefs<Filter, Sort>('videos', { filter: 'all', sort: 'newest' });
   const [year, setYear] = useState('');
   const [open, setOpen] = useState<Video | null>(null);
+  const [adding, setAdding] = useState(false);
+  const { setlists, refresh: refreshSetlists } = useAllSetlists();
 
   const pick = (en?: string, ja?: string) => (locale === 'ja' ? ja || en : en || ja) || '';
   const showName = (e?: Event) => (e ? pick(e.title_en, e.title_ja) || pick(e.venue_en, e.venue_ja) : '');
@@ -110,6 +118,7 @@ export default function AdminVideos() {
           <h1>{s.videosTitle} <span className="lu-count">{videos.length}</span></h1>
           <p className="lu-hint lu-videos-intro">🔒 <span className="is-long">{s.videosIndexHint}</span><span className="is-short">{s.videosIndexHintShort}</span></p>
         </div>
+        <button type="button" className="lu-btn lu-btn-primary lu-btn-lg" onClick={() => setAdding(true)}>+ {s.videoAdd}</button>
       </div>
       <ListToolbar
         s={s}
@@ -173,6 +182,20 @@ export default function AdminVideos() {
         </ul>
       )}
 
+      {adding && (
+        <VideoIntake s={s} locale={locale} media={media} events={events} songs={songs} setlists={setlists}
+          venues={venues} areas={areas} onVenuesChanged={() => { refreshVenues(); refreshAreas(); }}
+          onClose={() => setAdding(false)}
+          onSaved={(owner, rows, extra) => {
+            if (extra.newEvent) setMadeEvents(m => [...m, extra.newEvent!]);
+            if (extra.setlistChanged) refreshSetlists();
+            if (extra.songsAdded) refreshSongs();
+            // Show it straight away: newest first, nothing filtering it out
+            setMedia(m => [...(m || []).filter(r => r.owner !== owner), ...rows]);
+            setAdding(false);
+            ui.setQuery(''); ui.setFilter('all'); ui.setSort('newest'); setYear('');
+          }} />
+      )}
       {open && <VideoViewer v={open} onClose={() => setOpen(null)} s={s} locale={locale} prefix={prefix} showName={showName} />}
     </div>
   );

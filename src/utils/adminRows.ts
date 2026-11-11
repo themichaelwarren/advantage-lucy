@@ -20,6 +20,7 @@ export const EVENT_COLUMNS = [
   'door_price', 'ticket_url', 'poster_url', 'performers',
   'featured', 'body_en', 'body_ja', 'status', 'setlist_at',
   'reserve', 'reserve_cap', 'reserve_max', 'reserve_until',
+  'setlist_added', 'setlist_source',
 ] as const;
 export type EventRow = Record<typeof EVENT_COLUMNS[number], string>;
 
@@ -48,6 +49,8 @@ export function eventToRow(ev: Event): EventRow {
     reserve_cap: ev.reserve_cap || '',
     reserve_max: ev.reserve_max || '',
     reserve_until: ev.reserve_until || '',
+    setlist_added: ev.setlist_added || '',
+    setlist_source: ev.setlist_source || '',
   };
 }
 

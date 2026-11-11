@@ -57,6 +57,8 @@ export interface Event {
   featured?: boolean;
   status?: string;         // 'published' | 'private' — private = draft, hidden from public site
   setlist_at?: string;     // setlist goes public then (Japan time, YYYY-MM-DDTHH:mm); blank = day after the show
+  setlist_added?: string;  // when the setlist was first entered (YYYY-MM-DD; blank for older ones)
+  setlist_source?: string; // admin only: where the setlist was found (a link or a note)
   reserve?: boolean;       // takes ticket reservations through the site
   reserve_cap?: string;    // total tickets that can be reserved (blank = no limit)
   reserve_max?: string;    // most tickets per booking (blank = 4)

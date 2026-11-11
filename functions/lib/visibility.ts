@@ -70,7 +70,8 @@ export function publicView(tab: string, data: unknown, events?: Row[]): unknown 
   const rows = data as Row[];
   switch (tab) {
     case 'events':
-      return rows.filter(e => e.status !== 'private');
+      // Where a setlist was found is a band-only note
+      return rows.filter(e => e.status !== 'private').map(e => { const { setlist_source: _, ...rest } = e; return rest; });
     case 'news':
     case 'blog':
       return rows.filter(x => isLive(x, now));

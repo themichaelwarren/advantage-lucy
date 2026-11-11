@@ -253,6 +253,8 @@ export async function fetchEvents(
         body_en: row.body_en || undefined,
         body_ja: row.body_ja || undefined,
         setlist_at: normDateTime(row.setlist_at) || undefined,
+        setlist_added: row.setlist_added || undefined,
+        setlist_source: row.setlist_source || undefined,
         reserve: row.reserve === 'TRUE' || row.reserve === 'true',
         reserve_cap: row.reserve_cap || undefined,
         reserve_max: row.reserve_max || undefined,
@@ -424,7 +426,7 @@ function colLetter(n: number): string {
  */
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
   Songs: ['original_artist', 'title_en', 'title_kana'],
-  Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until'],
+  Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until', 'setlist_added', 'setlist_source'],
   News: ['publish_at'],
   Blog: ['publish_at'],
   Photos: ['link', 'share_image'],

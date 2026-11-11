@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAllEvents, useVenues, useAreas, useAllSetlists, useSongs } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, getReservations, type MediaRow } from '../../services/adminService';
-import ShowVideos, { toShowVideos, fromShowVideos, videosSnapshot, type ShowVideo } from '../../components/admin/ShowVideos';
+import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, getReservations, type MediaRow, getVideoTitle } from '../../services/adminService';
+import ShowVideos, { toShowVideos, fromShowVideos, videosSnapshot, songSlots, newVideo, type ShowVideo } from '../../components/admin/ShowVideos';
 import { useAdminT } from '../../i18n/admin';
 import {
   Section, Field, FieldGroup, BilingualRow, Switch, SaveBar, ImageField, DeleteButton, EditDialog, LockHint,
@@ -24,6 +24,9 @@ import { addMissingSongs } from '../../components/admin/songs';
 import { normalize } from '../../components/admin/SuggestInput';
 import AddedSongs from '../../components/admin/AddedSongs';
 import type { Song } from '../../types';
+import TimestampPaste from '../../components/admin/TimestampPaste';
+import { matchSong, type PastedSong } from '../../utils/timestamps';
+import { youTubeId } from '../../utils/youtube';
 
 type EventField = typeof EVENT_COLUMNS[number];
 type Form = Record<EventField, string>;
@@ -154,8 +157,8 @@ export default function AdminEventForm() {
   }
 
   /** The show's own row (Events). */
-  async function writeEvent(eventId: string) {
-    const fields = { ...form, id: eventId };
+  async function writeEvent(eventId: string, extra: Partial<Form> = {}) {
+    const fields = { ...form, ...extra, id: eventId };
     if (isNew) await createRow('Events', fields);
     else await updateRow('Events', eventId, fields);
     setForm(fields);
@@ -209,7 +212,8 @@ export default function AdminEventForm() {
     if (!checkRequired()) return;
     const eventId = newEventId();
     await run(async () => {
-      await writeEvent(eventId);
+      // A setlist entered with the show: note the day it was added
+      await writeEvent(eventId, setlist.some(r => r.song.trim()) ? { setlist_added: todayInJapan() } : {});
       const sl = await writeSetlist(eventId);
       if (videosChanged) await writeVideos(eventId, sl);
       navigate(`${prefix}/events/${eventId}`, { replace: true });
@@ -230,8 +234,10 @@ export default function AdminEventForm() {
   };
   const saveSetlist = async () => {
     const ok = await run(async () => {
-      // When the setlist goes public is part of the show's row
-      if (formDirty) await writeEvent(form.id);
+      // When the setlist goes public (and where it was found) is part of the show's row;
+      // so is the day it was first entered
+      const first = setlistBase.length === 0 && setlist.some(r => r.song.trim()) && !form.setlist_added;
+      if (formDirty || first) await writeEvent(form.id, first ? { setlist_added: todayInJapan() } : {});
       const sl = await writeSetlist(form.id);
       if (videosChanged) await writeVideos(form.id, sl);
     });
@@ -383,9 +389,45 @@ export default function AdminEventForm() {
       {setlistState}
     </div>
   );
+  /**
+   * A video description pasted into the setlist editor: becomes the setlist
+   * (asking first if there is one), and with the video's link, the video is
+   * added with every song marked. Saved with the setlist's Save.
+   */
+  function pasteSetlist(lines: PastedSong[], link: string): string {
+    if (setlist.some(r => r.song.trim()) && !window.confirm(s.pasteReplaceConfirm)) return '';
+    const items = lines.map(l => newItem('1', matchSong(l.title, songs)?.title || l.title));
+    setSetlist(items);
+    const slots = songSlots(items);
+    const timed = lines.some(l => l.start !== null);
+    if (link && youTubeId(link)) {
+      const starts: Record<string, number> = {};
+      items.forEach((it, i) => { const t = lines[i].start; if (t !== null) starts[slots[it.key]] = t; });
+      const vid = youTubeId(link);
+      setVideos(vs => {
+        const have = vs.find(x => youTubeId(x.url) === vid);
+        if (have) return vs.map(x => (x === have ? { ...x, starts: { ...x.starts, ...starts } } : x));
+        return [...vs.filter(x => x.url.trim()), { ...newVideo(link), starts }];
+      });
+      getVideoTitle(link).then(t => { if (t) setVideos(vs => vs.map(x => (youTubeId(x.url) === vid && !x.title ? { ...x, title: t } : x))); });
+      if (!form.setlist_source) set('setlist_source', link);
+    }
+    const unknown = items.filter(it => !songs.some(x => normalize(x.title) === normalize(it.song))).length;
+    return [
+      s.viPasteDone.replace('{n}', String(items.length)),
+      link && timed ? s.pasteWithVideo : timed ? s.pasteTimesNeedLink : '',
+      unknown ? s.viNewSongsNote.replace('{n}', String(unknown)) : '',
+    ].filter(Boolean).join(' ');
+  }
+
   const setlistEditor = (
     <>
       {setlistTiming}
+      <label className="lu-field lu-setlist-source">
+        <span>{s.setlistSource} <span className="lu-optional">· 🔒 {s.setlistSourcePrivate}</span></span>
+        <input value={form.setlist_source} onChange={e => set('setlist_source', e.target.value)} placeholder={s.setlistSourceHint} />
+      </label>
+      <TimestampPaste s={s} label={s.pasteSetlist} withLink onRead={pasteSetlist} />
       <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} songCover={songCover} />
       <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
     </>
@@ -524,6 +566,12 @@ export default function AdminEventForm() {
             ) : (
               <>
                 {setlistState}
+                {(form.setlist_source || form.setlist_added) && (
+                  <p className="lu-hint lu-setlist-meta">
+                    {form.setlist_source && <span>🔒 {s.setlistSource}: {linkify(form.setlist_source)}</span>}
+                    {form.setlist_added && <span>{s.setlistAddedOn.replace('{date}', form.setlist_added)}</span>}
+                  </p>
+                )}
                 <div className="lu-show-setlist">
                   {sets.map(set => (
                     <div key={set}>
@@ -557,7 +605,7 @@ export default function AdminEventForm() {
               : undefined}
           >
             {/* Watching by default; ✎ to change links and times (saved or cancelled here) */}
-            <ShowVideos s={s} videos={videos} onChange={setVideos} setlist={setlistEditing ? setlist : setlistBase} editing={videosEditing || setlistEditing} />
+            <ShowVideos s={s} knownSongs={songs} videos={videos} onChange={setVideos} setlist={setlistEditing ? setlist : setlistBase} editing={videosEditing || setlistEditing} />
             {!videosEditing && !setlistEditing && videos.length === 0 && (
               <div className="lu-vfoot">
                 <button type="button" className="lu-link-btn" onClick={() => { setVideosEditing(true); }}>+ {s.videoAdd}</button>

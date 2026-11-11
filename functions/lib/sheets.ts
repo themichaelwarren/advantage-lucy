@@ -116,6 +116,8 @@ export async function fetchEvents(sheetId: string, email: string, key: string) {
         body_en: row.body_en || undefined, body_ja: row.body_ja || undefined,
         // When the setlist goes public (Japan time); blank = the day after the show
         setlist_at: normDateTime(row.setlist_at) || undefined,
+        setlist_added: row.setlist_added || undefined,
+        setlist_source: row.setlist_source || undefined,
         // Ticket reservations through the site (functions/lib/reservations.ts)
         reserve: row.reserve === 'TRUE' || row.reserve === 'true',
         reserve_cap: row.reserve_cap || undefined,
@@ -223,7 +225,7 @@ export async function fetchHeaders(sheetId: string, tab: string, email: string, 
  */
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
   Songs: ['original_artist', 'title_en', 'title_kana'],
-  Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until'],
+  Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until', 'setlist_added', 'setlist_source'],
   News: ['publish_at'],
   Blog: ['publish_at'],
   Photos: ['link', 'share_image'],

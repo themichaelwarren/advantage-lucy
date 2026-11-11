@@ -1910,3 +1910,84 @@ a.lu-rel-svc.is-on:hover { background: var(--text); color: var(--bg); }
   .lu-video-years .lu-pill { flex-shrink: 0; }
   .lu-vgrid { gap: 1.2rem; }
 }
+
+/* ---------- ADD A VIDEO (step by step) ---------- */
+.lu-vi { width: min(40rem, 100%); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 0; gap: 0; }
+.lu-vi-top { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.9rem 1.2rem; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.lu-vi-steps { display: flex; flex-wrap: wrap; gap: 0.35rem 0.7rem; list-style: none; margin: 0; padding: 0; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+.lu-vi-steps li { display: flex; align-items: center; gap: 0.3rem; }
+.lu-vi-steps li span { display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%; border: 1.5px solid var(--border); font-size: 0.72rem; }
+.lu-vi-steps li.is-on { color: var(--text); }
+.lu-vi-steps li.is-on span { background: var(--pop); border-color: var(--text); }
+.lu-vi-steps li.is-past span { background: var(--text); border-color: var(--text); color: var(--bg); }
+.lu-vi-body { display: flex; flex-direction: column; gap: 0.8rem; padding: 1.1rem 1.2rem; }
+.lu-vi-body h2 { margin: 0; font-size: 1.25rem; }
+.lu-vi-body .lu-hint { margin: 0; }
+.lu-shell .lu-vi-input { width: 100%; padding: 0.7rem 0.9rem; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); }
+.lu-shell .lu-vi-input:focus { border-color: var(--text); outline: none; }
+.lu-vi-preview { display: flex; gap: 0.8rem; align-items: center; padding: 0.6rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+.lu-vi-preview img { width: 7.5rem; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.lu-vi-preview div { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.lu-vi-preview strong { font-size: 0.92rem; overflow-wrap: anywhere; }
+.lu-vi-preview span { font-size: 0.8rem; color: var(--text-muted); }
+.lu-vi-choices { display: grid; gap: 0.7rem; }
+@media (min-width: 560px) { .lu-vi-choices { grid-template-columns: 1fr 1fr; } }
+.lu-vi-choice {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; padding: 1rem; text-align: left; cursor: pointer;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font: inherit;
+}
+.lu-vi-choice:hover, .lu-vi-choice.is-on { border-color: var(--text); box-shadow: 3px 3px 0 var(--pop); }
+.lu-vi-choice-icon { font-size: 1.4rem; }
+.lu-vi-choice span:last-child { font-size: 0.82rem; color: var(--text-muted); }
+.lu-vi-list { list-style: none; margin: 0; padding: 0; border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.lu-vi-list.is-scroll { max-height: 22rem; overflow-y: auto; }
+.lu-vi-list li + li { border-top: 1px solid var(--rule); }
+.lu-vi-list button { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.7rem; width: 100%; padding: 0.6rem 0.8rem; border: 0; background: var(--bg); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.lu-vi-list button:hover { background: var(--surface-hover); }
+.lu-vi-list button.is-on { background: var(--text); color: var(--bg); }
+.lu-vi-list time { font-family: var(--font-main); font-size: 0.85rem; }
+.lu-vi-list span { font-weight: 700; }
+.lu-vi-list em { font-style: normal; font-size: 0.82rem; opacity: 0.7; }
+.lu-vi-list > li.lu-hint { padding: 0.6rem 0.8rem; }
+.lu-vi-quick { gap: 1rem; }
+.lu-vi-setlist { list-style: none; margin: 0; padding: 0; border: 1.5px solid var(--border); border-radius: var(--radius-sm); }
+.lu-vi-setlist li { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0.6rem 0.35rem 0.8rem; min-height: 2.9rem; }
+.lu-vi-setlist li + li { border-top: 1px solid var(--rule); }
+.lu-vi-setlist li.is-on { background: color-mix(in srgb, var(--pop) 18%, transparent); }
+.lu-vi-setlist label { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 auto; min-width: 0; cursor: pointer; font-weight: 600; }
+.lu-vi-setlist label span { min-width: 0; overflow-wrap: anywhere; }
+.lu-vi-setlist input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--text); flex-shrink: 0; }
+/* (specific enough to beat the general input rule inside dialogs, which makes inputs full width) */
+.lu-shell .lu-vi .lu-vi-setlist input.lu-video-time { width: 5.5rem; flex-shrink: 0; padding: 0.4rem 0.6rem; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg); text-align: right; font-family: var(--font-main); }
+.lu-shell .lu-vi .lu-vi-setlist input.lu-video-time.is-bad { border-color: #d23c42; }
+.lu-vi-foot { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.8rem 1.2rem calc(0.8rem + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--rule); }
+.lu-vi-foot .lu-field-error { flex-basis: 100%; margin: 0; }
+.lu-vi-spacer { flex: 1; }
+/* Phones: a full-screen page */
+@media (max-width: 640px) {
+  .lu-vi-overlay { padding: 0; place-items: stretch; }
+  .lu-vi { width: 100%; height: 100dvh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+  .lu-vi-steps li { font-size: 0; gap: 0; }
+  .lu-vi-steps li.is-on { font-size: 0.8rem; gap: 0.3rem; }
+  .lu-vi-foot .lu-btn-primary { flex: 1; justify-content: center; }
+}
+.lu-vi-new {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; padding: 0.75rem 0.9rem; text-align: left; cursor: pointer;
+  border: 1.5px dashed var(--text); border-radius: var(--radius-sm); background: none; color: var(--text); font: inherit;
+}
+.lu-vi-new:hover { background: var(--surface-hover); }
+.lu-vi-new span { font-size: 0.82rem; color: var(--text-muted); }
+.lu-vi-paste { display: flex; flex-direction: column; gap: 0.5rem; }
+.lu-shell .lu-vi .lu-vi-paste textarea { width: 100%; padding: 0.7rem 0.9rem; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); font-family: var(--font-main); line-height: 1.6; resize: vertical; }
+.lu-vi-setlist.is-build li { gap: 0.5rem; padding: 0.4rem 0.5rem; }
+.lu-vi-n { width: 1.4rem; flex-shrink: 0; text-align: right; color: var(--text-muted); font-family: var(--font-main); font-size: 0.85rem; }
+.lu-vi-song { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.lu-shell .lu-vi .lu-vi-song input { width: 100%; padding: 0.4rem 0.6rem; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg); }
+.lu-vi-song .lu-tag { align-self: flex-start; font-size: 0.7rem; }
+.lu-setlist-meta { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; margin: -0.3rem 0 0.6rem; }
+.lu-setlist-meta a { overflow-wrap: anywhere; }
+.lu-setlist-source { margin-bottom: 0.4rem; }
+.lu-paste-closed { display: flex; flex-direction: column; gap: 0.4rem; margin: 0.2rem 0 0.6rem; }
+.lu-paste-closed .lu-note { margin: 0; }
+.lu-paste-box { margin: 0.2rem 0 0.8rem; padding: 0.8rem; border: 1.5px dashed var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+.lu-shell .lu-paste-box textarea { width: 100%; padding: 0.7rem 0.9rem; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); font-family: var(--font-main); line-height: 1.6; resize: vertical; }

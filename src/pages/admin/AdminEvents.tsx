@@ -9,7 +9,7 @@ import ListToolbar, { useListPrefs, SwitchCell, SaveStateCell } from '../../comp
 import { useQuickEdit } from '../../components/admin/useQuickEdit';
 
 type Filter = 'all' | 'upcoming' | 'past' | 'nosetlist' | 'hidden';
-type Sort = 'newest' | 'oldest';
+type Sort = 'newest' | 'oldest' | 'added';
 type View = 'list' | 'table';
 
 export default function AdminEvents() {
@@ -33,7 +33,10 @@ export default function AdminEvents() {
         : ui.filter === 'past' ? !isUpcoming(e)
         : ui.filter === 'nosetlist' ? !isUpcoming(e) && !withSetlist.has(e.id)
         : e.status === 'private')
-      .sort((a, b) => ui.sort === 'oldest' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
+      // "Setlists, newest added": only shows whose setlist has a date, most recent first
+      .filter(e => ui.sort !== 'added' || !!e.setlist_added)
+      .sort((a, b) => ui.sort === 'added' ? (b.setlist_added || '').localeCompare(a.setlist_added || '') || b.date.localeCompare(a.date)
+        : ui.sort === 'oldest' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, ui.query, ui.filter, ui.sort, withSetlist, today]);
 
@@ -59,6 +62,7 @@ export default function AdminEvents() {
             <span>{n.title ? `${n.venue} · ${n.city}` : n.city}</span>
           </span>
           <span className="lu-list-tags">
+            {ui.sort === 'added' && e.setlist_added && <span className="lu-tag is-ok">{s.setlistAddedOn.replace('{date}', e.setlist_added)}</span>}
             {e.status === 'private' && <span className="lu-tag is-muted">{s.hidden}</span>}
             {setlistTag(e)}
           </span>
@@ -70,7 +74,7 @@ export default function AdminEvents() {
   // List view: grouped by year (or "Upcoming" first when newest-first)
   const groups = new Map<string, Event[]>();
   list.forEach(e => {
-    const key = ui.sort === 'newest' && isUpcoming(e) ? s.upcoming : e.date.slice(0, 4);
+    const key = ui.sort === 'added' ? s.sortSetlistAdded : ui.sort === 'newest' && isUpcoming(e) ? s.upcoming : e.date.slice(0, 4);
     groups.set(key, [...(groups.get(key) || []), e]);
   });
 
@@ -92,7 +96,7 @@ export default function AdminEvents() {
           { value: 'hidden', label: s.filterHidden },
         ]}
         filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
-        sorts={[{ value: 'newest', label: s.sortNewest }, { value: 'oldest', label: s.sortOldest }]}
+        sorts={[{ value: 'newest', label: s.sortNewest }, { value: 'oldest', label: s.sortOldest }, { value: 'added', label: s.sortSetlistAdded }]}
         sort={ui.sort} onSort={v => ui.setSort(v as Sort)}
         views={[{ value: 'list', label: `☰ ${s.viewList}` }, { value: 'table', label: `▦ ${s.viewTable}` }]}
         view={ui.view} onView={v => ui.setView(v as View)}

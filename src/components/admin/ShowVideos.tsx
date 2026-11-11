@@ -6,6 +6,9 @@ import YouTubePlayer, { type PlayerHandle } from './YouTubePlayer';
 import { youTubeId, youTubeStart, youTubeWatch, youTubeThumb, formatTime, parseTypedTime } from '../../utils/youtube';
 import { normalize } from './SuggestInput';
 import { ConfirmDialog } from './ui';
+import TimestampPaste from './TimestampPaste';
+import { looseKey, matchSong } from '../../utils/timestamps';
+import type { Song } from '../../types';
 
 /**
  * Videos of a show (admin only). Paste YouTube links; the open one plays
@@ -39,7 +42,7 @@ export function songSlots(setlist: SetlistItem[]): Record<string, string> {
 }
 
 let nextKey = 0;
-const newVideo = (url = '', title = ''): ShowVideo => ({ key: `v${nextKey++}`, url, title, starts: {} });
+export const newVideo = (url = '', title = ''): ShowVideo => ({ key: `v${nextKey++}`, url, title, starts: {} });
 
 /** Media rows of one show → videos on screen (song times matched to setlist rows by title, in order). */
 export function toShowVideos(rows: MediaRow[], eventId: string, setlist: SetlistItem[]): ShowVideo[] {
@@ -81,18 +84,25 @@ export function fromShowVideos(videos: ShowVideo[], setlist: SetlistItem[]): Par
 /** For "unsaved changes": what matters about the videos. */
 export const videosSnapshot = (videos: ShowVideo[], setlist: SetlistItem[]) => JSON.stringify(fromShowVideos(videos, setlist));
 
-export default function ShowVideos({ s, videos, onChange, setlist, editing = true }: {
+export default function ShowVideos({ s, videos, onChange, setlist, editing = true, knownSongs = [] }: {
   s: AdminStrings;
   videos: ShowVideo[];
   onChange: React.Dispatch<React.SetStateAction<ShowVideo[]>>;
   setlist: SetlistItem[];
   /** false: watch only (player and the marked songs); true: change links and times */
   editing?: boolean;
+  /** All songs, so pasted names match by any title or reading */
+  knownSongs?: Song[];
 }) {
   const [openKey, setOpenKey] = useState<string | null>(videos[0]?.key ?? null);
   const [removing, setRemoving] = useState<ShowVideo | null>(null);
   // Starting to edit with no videos: open with an empty link to paste into
   // …and leaving edit mode (saved or cancelled) drops any link box left empty
+  // Editing with videos already there: open the first, so its song times (and paste) are in view
+  useEffect(() => {
+    if (editing && !openKey && videos.length > 0 && videos[0].url.trim()) setOpenKey(videos[0].key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, videos.length]);
   useEffect(() => {
     if (editing && videos.length === 0) { const v = newVideo(); onChange([v]); setOpenKey(v.key); }
     if (!editing) onChange(vs => (vs.some(v => !v.url.trim()) ? vs.filter(v => v.url.trim()) : vs));
@@ -230,6 +240,22 @@ export default function ShowVideos({ s, videos, onChange, setlist, editing = tru
                   {songs.length === 0 ? <p className="lu-hint">{s.videoNoSetlist}</p> : (
                     <>
                       <p className="lu-hint">{s.videoSongsHint}</p>
+                      <TimestampPaste s={s} label={s.pasteTimesForVideo} onRead={lines => {
+                        // Each pasted song with a time → the first setlist row of that song not yet used
+                        const starts = { ...v.starts };
+                        const used = new Set<string>();
+                        let filled = 0, missed = 0;
+                        for (const l of lines) {
+                          if (l.start === null) continue;
+                          const key = looseKey(matchSong(l.title, knownSongs)?.title || l.title);
+                          const item = songs.find(it => !used.has(it.key) && looseKey(it.song) === key);
+                          if (!item) { missed++; continue; }
+                          used.add(item.key); starts[slot[item.key]] = l.start; filled++;
+                        }
+                        if (!filled) return s.pasteNoTimes;
+                        update(v.key, { starts });
+                        return missed ? s.pasteTimesMissed.replace('{n}', String(filled)).replace('{m}', String(missed)) : s.pasteTimesDone.replace('{n}', String(filled));
+                      }} />
                       <ol>
                         {songs.map(item => {
                           const t = v.starts[slot[item.key]];
