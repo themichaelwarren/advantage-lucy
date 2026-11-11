@@ -45,7 +45,7 @@ export default function AdminPhotoForm() {
     if (!p) return;
     const f: Form = {
       id: p.id, image_url: p.image_url || '', caption_en: p.caption_en || '', caption_ja: p.caption_ja || '',
-      status: p.status || 'published', profile_photo: p.profile_photo || '', link: p.link || '',
+      status: p.status || 'published', profile_photo: p.profile_photo || '', link: p.link || '', share_image: p.share_image || '',
     };
     setForm(f);
     setLinkKind(!f.link ? 'none' : showLinkId(f.link) ? 'show' : 'other');
@@ -73,6 +73,12 @@ export default function AdminPhotoForm() {
       if (fields.profile_photo === 'yes') {
         for (const other of photos.filter(p => p.id !== photoId && p.profile_photo === 'yes')) {
           await updateRow('Photos', other.id, photoToRow({ ...other, profile_photo: '' }));
+        }
+      }
+      // Only one share image too
+      if (fields.share_image === 'yes') {
+        for (const other of photos.filter(p => p.id !== photoId && p.share_image === 'yes')) {
+          await updateRow('Photos', other.id, photoToRow({ ...other, share_image: '' }));
         }
       }
 
@@ -180,6 +186,7 @@ export default function AdminPhotoForm() {
         </BilingualRow>
         <Switch checked={form.status !== 'private'} onChange={v => set('status', v ? 'published' : 'private')} label={s.visible} hint={s.visibleHint} />
         <Switch checked={form.profile_photo === 'yes'} onChange={v => set('profile_photo', v ? 'yes' : '')} label={s.profilePhoto} hint={s.profilePhotoHint} />
+        <Switch checked={form.share_image === 'yes'} onChange={v => set('share_image', v ? 'yes' : '')} label={s.shareImage} hint={s.shareImageHint} />
         {!isNew && (
           <div className="lu-danger-row">
             <DeleteButton s={s} onConfirm={async () => {

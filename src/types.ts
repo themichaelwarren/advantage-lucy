@@ -128,6 +128,7 @@ export interface SplashPhoto {
   caption_ja?: string;
   status?: string;        // 'published' | 'private'
   profile_photo?: string; // 'yes' to use on About page
+  share_image?: string;   // 'yes': the picture in link previews of the home page (and pages without their own)
   link?: string;          // where the caption goes: '/events/<id>' (a page on this site) or a full https:// address
 }
 

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllPhotos, useAllEvents } from '../../hooks/useSheetData';
 import { reorderRows } from '../../services/adminService';
-import { errorText } from '../../components/admin/ui';
+import { errorText, InfoHint } from '../../components/admin/ui';
 import { showLinkId } from '../../utils/photoLinks';
 import { todayInJapan } from '../../utils/showDates';
 import { useAdminT } from '../../i18n/admin';
@@ -133,9 +133,12 @@ export default function AdminPhotos() {
 
   /** Only one About-page photo: turning it on turns it off for the others. */
   function save(id: string, patch: Partial<SplashPhoto>) {
+    // …and only one share image, the same way
     const others = patch.profile_photo === 'yes'
       ? photos.filter(p => p.id !== id && p.profile_photo === 'yes').map(p => ({ ...p, profile_photo: '' }))
-      : [];
+      : patch.share_image === 'yes'
+        ? photos.filter(p => p.id !== id && p.share_image === 'yes').map(p => ({ ...p, share_image: '' }))
+        : [];
     return quickSave(id, patch, others);
   }
 
@@ -193,6 +196,7 @@ export default function AdminPhotos() {
                     {caption(p) && <span className="lu-photo-caption">{caption(p)}</span>}
                     {tag && <span className={`lu-tag ${tag.past ? 'is-muted' : 'is-link'}`} title={s.photoLinkedTo}>→ {tag.text}{tag.past ? ` · ${s.photoPastShow}` : ''}</span>}
                     {p.profile_photo === 'yes' && <span className="lu-tag is-ok">{s.onAbout}</span>}
+                    {p.share_image === 'yes' && <span className="lu-tag is-ok">{s.shareImageTag}</span>}
                     {p.status === 'private' && <span className="lu-tag is-muted">{s.hidden}</span>}
                   </span>
                 </Link>
@@ -216,7 +220,8 @@ export default function AdminPhotos() {
                 <th>{s.caption} · {s.english}</th>
                 <th>{s.caption} · {s.japanese}</th>
                 <th className="lu-td-center">{s.colOnSite}</th>
-                <th className="lu-td-center">{s.onAbout}</th>
+                <th className="lu-td-center lu-th-hint">{s.onAbout}<InfoHint text={s.onAboutTip} /></th>
+                <th className="lu-td-center lu-th-hint">{s.shareImageTag}<InfoHint text={s.shareImageTip} /></th>
                 <th aria-label={s.edit} />
               </tr>
             </thead>
@@ -259,6 +264,9 @@ export default function AdminPhotos() {
                   </td>
                   <td className="lu-td-center">
                     <SwitchCell checked={p.profile_photo === 'yes'} label={s.onAbout} onChange={() => save(p.id, { profile_photo: p.profile_photo === 'yes' ? '' : 'yes' })} />
+                  </td>
+                  <td className="lu-td-center">
+                    <SwitchCell checked={p.share_image === 'yes'} label={s.shareImageTag} onChange={() => save(p.id, { share_image: p.share_image === 'yes' ? '' : 'yes' })} />
                   </td>
                   <SaveStateCell s={s} state={rowState[p.id]} editHref={`${prefix}/photos/${p.id}`} renderLink={(href, label) => <Link to={href} className="lu-btn lu-btn-quiet">{label}</Link>} />
                 </tr>

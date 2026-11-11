@@ -197,6 +197,7 @@ export async function fetchPhotos(sheetId: string, email: string, key: string) {
     caption_en: r.caption_en || undefined, caption_ja: r.caption_ja || undefined,
     status: r.status || 'published',
     profile_photo: r.profile_photo || undefined,
+    share_image: r.share_image || undefined,
     link: (r.link || '').trim() || undefined,
   }));
 }
@@ -225,7 +226,7 @@ const OPTIONAL_COLUMNS: Record<string, string[]> = {
   Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until'],
   News: ['publish_at'],
   Blog: ['publish_at'],
-  Photos: ['link'],
+  Photos: ['link', 'share_image'],
   Albums: ['title_en', 'title_kana', ...LISTEN_COLUMNS],
 };
 

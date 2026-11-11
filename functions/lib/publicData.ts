@@ -5,14 +5,14 @@
  */
 import {
   type Env, getCredentials,
-  fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchNews, fetchVenues,
+  fetchEvents, fetchAlbums, fetchTracklists, fetchSongs, fetchNews, fetchVenues, fetchPhotos,
 } from './sheets';
 import { EDGE_TTL_SECONDS, sheetCacheKey } from './edgeCache';
 import { publicView } from './visibility';
 
 const fetchers = {
   events: fetchEvents, albums: fetchAlbums, tracklists: fetchTracklists,
-  songs: fetchSongs, news: fetchNews, venues: fetchVenues,
+  songs: fetchSongs, news: fetchNews, venues: fetchVenues, photos: fetchPhotos,
 } as const;
 export type PublicTab = keyof typeof fetchers;
 

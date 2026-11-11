@@ -12,7 +12,7 @@
  */
 
 type Row = Record<string, any>;
-export type Load = (tab: 'events' | 'albums' | 'tracklists' | 'songs' | 'news' | 'venues') => Promise<Row[]>;
+export type Load = (tab: 'events' | 'albums' | 'tracklists' | 'songs' | 'news' | 'venues' | 'photos') => Promise<Row[]>;
 
 export interface PageMeta {
   title: string;        // full title, e.g. "in Harmony | advantage Lucy"
@@ -78,11 +78,16 @@ export async function pageMeta(pathname: string, origin: string, load: Load): Pr
     locale,
     alternate: `${origin}/${other}${pathname.slice(3)}`,
   };
+  // The picture for pages without one of their own: the photo marked
+  // "share image" in admin (Photos), else the band drawing
+  const shared = await load('photos')
+    .then(ps => ps.find(p => p.share_image === 'yes' && p.image_url)?.image_url as string | undefined)
+    .catch(() => undefined);
   const make = (title: string | null, description: string, image?: string, type: PageMeta['type'] = 'website'): PageMeta => ({
     ...base,
     title: title ? `${title} | ${SITE}` : SITE,
     description: description || TAGLINE[locale],
-    image: abs(origin, image) || abs(origin, DEFAULT_IMAGE),
+    image: abs(origin, image) || abs(origin, shared) || abs(origin, DEFAULT_IMAGE),
     type,
   });
 
