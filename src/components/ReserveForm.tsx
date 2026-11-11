@@ -91,8 +91,11 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
     const el = dialog.current;
     if (!el) return;
     el.scrollTop = 0;
-    const target = step === 'form' && !form.name ? el.querySelector<HTMLElement>('input') : el.querySelector<HTMLElement>('h2');
-    target?.focus();
+    // With a mouse, straight into the first field. On phones the heading
+    // instead: focusing a field would throw the keyboard up over the form
+    const typing = step === 'form' && !form.name && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const target = typing ? el.querySelector<HTMLElement>('input') : el.querySelector<HTMLElement>('h2');
+    target?.focus({ preventScroll: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, step]);
 

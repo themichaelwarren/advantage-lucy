@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import App from './App';
+import ScrollToTop from './components/ScrollToTop';
 import './styles/global.css';
 import './styles/redesign.css';
 import './styles/admin.css';
@@ -11,6 +12,7 @@ import './styles/admin-v2.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <App />
       </AuthProvider>

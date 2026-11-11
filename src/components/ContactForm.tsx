@@ -35,7 +35,10 @@ export default function ContactForm({ locale }: { locale: Locale }) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) problems.email = form.email.trim() ? s.badEmail : s.required;
     setErrors(problems);
     if (Object.keys(problems).length) {
-      document.querySelector<HTMLElement>('.contact-field.has-error input, .contact-field.has-error textarea')?.focus();
+      // Centre the first problem, so it isn't hidden under the sticky header on phones
+      const bad = document.querySelector<HTMLElement>('.contact-field.has-error input, .contact-field.has-error textarea');
+      bad?.focus({ preventScroll: true });
+      bad?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 

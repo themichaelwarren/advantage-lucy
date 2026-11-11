@@ -120,7 +120,8 @@ export default function SetlistTip({ locale, eventId, eventTitle, variant }: {
       <textarea
         id={`tip-${eventId}`}
         rows={8}
-        autoFocus
+        // Phones: no keyboard until they tap the box
+        autoFocus={typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches}
         value={form.message}
         onChange={e => { setForm(f => ({ ...f, message: e.target.value })); setError(''); }}
       />
