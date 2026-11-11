@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
@@ -10,6 +11,51 @@ import PageTitle from '../components/PageTitle';
 
 interface Props {
   locale: Locale;
+}
+
+/** The post's code in an Instagram link (/p/CODE/ or /reel/CODE/). */
+const igCode = (url: string) => url.match(/instagram\.com\/(?:[^/]+\/)?(?:p|reel|tv)\/([A-Za-z0-9_-]+)/)?.[1];
+
+/** Latest Instagram posts as square thumbnails, each opening the post. */
+function InstaStrip({ title, viewAll, to, items }: {
+  title: string;
+  viewAll: string;
+  to: string;
+  items: { id: string; date: string; title: string; href: string }[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <section className="home-section">
+      <div className="section-header-row">
+        <h2 className="section-label">{title}</h2>
+        <Link to={to} className="section-view-all">{viewAll} →</Link>
+      </div>
+      <ul className="insta-strip">
+        {items.map(item => <InstaTile key={item.id} {...item} />)}
+      </ul>
+    </section>
+  );
+}
+
+function InstaTile({ date, title, href }: { date: string; title: string; href: string }) {
+  const code = igCode(href);
+  const [broken, setBroken] = useState(!code);
+  return (
+    <li>
+      <a href={href} target="_blank" rel="noopener noreferrer" className="insta-tile">
+        <span className={`insta-tile-img${broken ? ' is-empty' : ''}`}>
+          {!broken && <img src={`/api/ig/${code}`} alt="" loading="lazy" onError={() => setBroken(true)} />}
+          <span className="insta-tile-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>
+          </span>
+        </span>
+        <span className="insta-tile-text">
+          <time dateTime={date}>{date}</time>
+          {title && <strong>{title}</strong>}
+        </span>
+      </a>
+    </li>
+  );
 }
 
 function PostList({ title, viewAll, to, items }: {
@@ -72,8 +118,8 @@ export default function Home({ locale }: Props) {
     .map(p => ({ id: p.id, date: p.date, title: locale === 'ja' ? p.title_ja : p.title_en, href: `${prefix}/news/${p.id}` }));
   const blogItems = [...blog]
     .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 3)
-    .map(p => ({ id: p.id, date: p.date, title: (locale === 'ja' ? p.title_ja || p.title_en : p.title_en || p.title_ja) || p.instagram_url, href: p.instagram_url, external: true }));
+    .slice(0, 4)
+    .map(p => ({ id: p.id, date: p.date, title: (locale === 'ja' ? p.title_ja || p.title_en : p.title_en || p.title_ja) || '', href: p.instagram_url }));
 
   return (
     <>
@@ -92,10 +138,8 @@ export default function Home({ locale }: Props) {
         </section>
       )}
 
-      <div className="home-columns">
-        <PostList title={s.home.latestNews} viewAll={s.home.viewAllNews} to={`${prefix}/news`} items={newsItems} />
-        <PostList title={s.home.latestBlog} viewAll={s.home.viewAllBlog} to={`${prefix}/blog`} items={blogItems} />
-      </div>
+      <PostList title={s.home.latestNews} viewAll={s.home.viewAllNews} to={`${prefix}/news`} items={newsItems} />
+      <InstaStrip title={s.home.latestBlog} viewAll={s.home.viewAllBlog} to={`${prefix}/blog`} items={blogItems} />
     </>
   );
 }

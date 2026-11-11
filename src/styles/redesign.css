@@ -2180,3 +2180,24 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 }
 .album-listen-btn:hover { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--pop); text-decoration: none; color: var(--text); }
 .album-listen-btn.is-more { border-style: dashed; font-weight: 600; }
+
+/* Home: latest Instagram posts as square thumbnails */
+.insta-strip { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+@media (min-width: 760px) { .insta-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.1rem; } }
+.insta-tile { display: flex; flex-direction: column; gap: 0.5rem; color: var(--text); text-decoration: none; }
+.insta-tile:hover { text-decoration: none; color: var(--text); }
+.insta-tile-img {
+  position: relative; display: block; aspect-ratio: 1; overflow: hidden;
+  border-radius: var(--radius); border: 1.5px solid var(--border); background: var(--surface-hover);
+  transition: transform 220ms var(--ease-bounce), box-shadow 120ms ease;
+}
+.insta-tile-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.insta-tile-img.is-empty { background: linear-gradient(135deg, #feda75, #fa7e1e 35%, #d62976 65%, #962fbf); }
+.insta-tile:hover .insta-tile-img { transform: rotate(-1.5deg) translate(-2px, -2px); box-shadow: 5px 5px 0 var(--pop); }
+.insta-tile-badge {
+  position: absolute; right: 0.5rem; bottom: 0.5rem; display: grid; place-items: center;
+  width: 1.9rem; height: 1.9rem; border-radius: 50%; background: rgb(255 255 255 / 0.9); color: #1b1a17;
+}
+.insta-tile-text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.insta-tile-text time { font-family: var(--font-main); font-size: 0.78rem; color: var(--text-muted); }
+.insta-tile-text strong { font-size: 0.92rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

@@ -15,6 +15,7 @@ import { checkFiles, attachmentNames, isAttachmentName } from '../functions/lib/
 import type { IncomingMessage, ServerResponse } from 'http';
 import { publicView } from '../functions/lib/visibility';
 import { pageMeta, injectMeta, type Load } from '../functions/lib/meta';
+import { fetchInstagramThumb } from '../functions/lib/igThumb';
 
 /** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
 async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -53,6 +54,16 @@ export default function sheetsPlugin(): Plugin {
     },
     configureServer(server) {
       // Media and arrangements (admin only; same code as production: functions/lib/media.ts, arrangements.ts)
+      // Instagram post pictures (same code as production: functions/lib/igThumb.ts)
+      server.middlewares.use(async (req, res, next) => {
+        const code = req.method === 'GET' ? req.url?.match(/^\/api\/ig\/([^/?]+)/)?.[1] : undefined;
+        if (!code) return next();
+        const out = await fetchInstagramThumb(code);
+        res.statusCode = out.status;
+        out.headers.forEach((v, k) => res.setHeader(k, v));
+        res.end(Buffer.from(await out.arrayBuffer()));
+      });
+
       server.middlewares.use(async (req, res, next) => {
         const isMedia = req.url?.startsWith('/api/admin/media');
         if (!isMedia && !req.url?.startsWith('/api/admin/arrangements')) return next();
