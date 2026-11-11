@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAllEvents, useAllSongs, useAllSetlists, useVenues, useAreas } from '../../hooks/useSheetData';
 import VideoIntake from '../../components/admin/VideoIntake';
 import { useAdminT } from '../../i18n/admin';
-import { getMedia, type MediaRow } from '../../services/adminService';
+import { getMedia, getLinkCheck, isDeadLink, type MediaRow, type LinkState } from '../../services/adminService';
 import { normalize } from '../../components/admin/SuggestInput';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
 import YouTubePlayer, { type PlayerHandle } from '../../components/admin/YouTubePlayer';
@@ -19,7 +19,7 @@ import type { Event, Song } from '../../types';
  * anything about it: its title, the show (either language, venue, city,
  * date) and the songs in it (any title or the reading).
  */
-type Filter = 'all' | 'shows' | 'songs' | 'unmarked';
+type Filter = 'all' | 'shows' | 'songs' | 'unmarked' | 'dead';
 type Sort = 'newest' | 'oldest' | 'title' | 'marks';
 
 interface Mark { song: string; songRow?: Song; start: number }
@@ -48,6 +48,10 @@ export default function AdminVideos() {
   const [media, setMedia] = useState<MediaRow[] | null>(null);
   const [error, setError] = useState('');
   useEffect(() => { getMedia().then(setMedia).catch(err => setError(errorText(err))); }, []);
+  // Which videos no longer play (deleted or made private)
+  const [state, setState] = useState<Record<string, LinkState>>({});
+  useEffect(() => { getLinkCheck().then(r => setState(r.videos)).catch(() => {}); }, []);
+  const dead = (v: { url: string }) => isDeadLink(state[v.url.trim()]);
   const ui = useListPrefs<Filter, Sort>('videos', { filter: 'all', sort: 'newest' });
   const [year, setYear] = useState('');
   const [open, setOpen] = useState<Video | null>(null);
@@ -96,7 +100,7 @@ export default function AdminVideos() {
     const collator = new Intl.Collator(locale, { sensitivity: 'base', numeric: true });
     const label = (v: Video) => v.title || showName(v.event) || (v.song ? songTitle(v.song, locale) : v.url);
     return videos
-      .filter(v => ui.filter === 'all' || (ui.filter === 'shows' ? v.kind === 'show' : ui.filter === 'songs' ? v.kind === 'song' : v.kind === 'show' && v.marks.length === 0))
+      .filter(v => ui.filter === 'all' || (ui.filter === 'dead' ? dead(v) : ui.filter === 'shows' ? v.kind === 'show' : ui.filter === 'songs' ? v.kind === 'song' : v.kind === 'show' && v.marks.length === 0))
       .filter(v => !year || v.date.startsWith(year))
       .filter(v => words.every(w => v.search.includes(w)))
       .sort((a, b) => ui.sort === 'title' ? collator.compare(label(a), label(b))
@@ -104,7 +108,7 @@ export default function AdminVideos() {
         : ui.sort === 'oldest' ? (a.date || '9').localeCompare(b.date || '9')
         : (b.date || '').localeCompare(a.date || ''));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videos, ui.query, ui.filter, ui.sort, year, locale]);
+  }, [videos, ui.query, ui.filter, ui.sort, year, locale, state]);
 
   if (error) return <div className="lu-alert">{error}</div>;
   if (!media) return <p className="lu-loading">{s.loading}</p>;
@@ -130,6 +134,7 @@ export default function AdminVideos() {
           ...(count('shows') ? [{ value: 'shows', label: `${s.vfShows} · ${count('shows')}` }] : []),
           ...(count('songs') ? [{ value: 'songs', label: `${s.vfSongs} · ${count('songs')}` }] : []),
           ...(unmarked ? [{ value: 'unmarked', label: `${s.vfUnmarked} · ${unmarked}` }] : []),
+          ...(videos.some(dead) ? [{ value: 'dead', label: <><Icon name="warn" /> {s.vfDead} · {videos.filter(dead).length}</> }] : []),
         ]}
         filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
         sorts={[
@@ -156,6 +161,7 @@ export default function AdminVideos() {
               <li key={v.key} className="lu-vgrid-item">
                 <button type="button" className="lu-vgrid-thumb" onClick={() => (v.ytId ? setOpen(v) : window.open(v.url, '_blank', 'noopener'))} aria-label={`${s.videoPlay}: ${name}`}>
                   {v.ytId ? <img src={youTubeThumb(v.ytId)} alt="" loading="lazy" /> : <span className="lu-vcard-link">↗</span>}
+                  {dead(v) && <span className="lu-vgrid-dead"><Icon name="warn" /> {state[v.url.trim()] === 'private' ? s.videoPrivateNow : s.videoGone}</span>}
                   <span className="lu-vgrid-badge">{v.kind === 'song' ? `♫ ${s.vfSongs}` : v.marks.length ? `▶ ${s.videoSongsN.replace('{n}', String(v.marks.length))}` : `▶ ${s.vNoMarks}`}</span>
                 </button>
                 <div className="lu-vgrid-text">

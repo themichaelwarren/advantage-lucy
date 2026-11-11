@@ -19,6 +19,7 @@ import { fetchInstagramThumb } from '../functions/lib/igThumb';
 import { handleAdminFilters } from '../functions/lib/filters';
 import { mayReadDoc } from '../functions/lib/lyricsAccess';
 import { handleLyricsStatus } from '../functions/lib/lyricsStatus';
+import { handleLinkCheck } from '../functions/lib/linkCheck';
 
 /** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
 async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -59,9 +60,10 @@ export default function sheetsPlugin(): Plugin {
       // Media and arrangements (admin only; same code as production: functions/lib/media.ts, arrangements.ts)
       // Which lyrics docs have text (same code as production: functions/lib/lyricsStatus.ts)
       server.middlewares.use(async (req, res, next) => {
-        if (req.method !== 'GET' || !req.url?.startsWith('/api/admin/lyrics-status')) return next();
+        const isLinks = req.url?.startsWith('/api/admin/link-check');
+        if (req.method !== 'GET' || (!isLinks && !req.url?.startsWith('/api/admin/lyrics-status'))) return next();
         if (!(await requireAdmin(req, res))) return;
-        const out = await handleLyricsStatus(new Request(new URL(req.url, `http://${req.headers.host}`)), {
+        const out = await (isLinks ? handleLinkCheck : handleLyricsStatus)(new Request(new URL(req.url!, `http://${req.headers.host}`)), {
           sheetId: process.env.VITE_GOOGLE_SHEET_ID!,
           email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!,
           key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',

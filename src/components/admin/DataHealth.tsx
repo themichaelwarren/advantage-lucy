@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import type { AdminStrings } from '../../i18n/admin';
 import type { Event, SetlistEntry } from '../../types';
 import { useAllSongs, useAllAlbums, useAllTracklists } from '../../hooks/useSheetData';
-import { getLyricsStatus } from '../../services/adminService';
+import { getLyricsStatus, getLinkCheck, isDeadLink, type LinkCheck } from '../../services/adminService';
+import { LISTEN_SERVICES } from '../../../functions/lib/listen';
 import { todayInJapan } from '../../utils/showDates';
 
 /**
@@ -21,6 +22,8 @@ export default function DataHealth({ s, prefix, events, setlists }: {
   const { tracklists } = useAllTracklists();
   const [lyrics, setLyrics] = useState<Record<string, string> | null>(null);
   useEffect(() => { getLyricsStatus().then(r => setLyrics(r.status)).catch(() => setLyrics({})); }, []);
+  const [links, setLinks] = useState<LinkCheck | null>(null);
+  useEffect(() => { getLinkCheck().then(setLinks).catch(() => {}); }, []);
 
   const lines = useMemo(() => {
     const today = todayInJapan();
@@ -35,10 +38,12 @@ export default function DataHealth({ s, prefix, events, setlists }: {
       { n: jaReleases.filter(a => !a.title_en).length, label: s.dhReleasesNoEn, to: `${prefix}/releases?filter=noen` },
       { n: albums.filter(a => !a.coverUrl).length, label: s.dhReleasesNoCover, to: `${prefix}/releases?filter=nocover` },
       { n: albums.filter(a => !withTracks.has(a.title)).length, label: s.dhReleasesNoTracks, to: `${prefix}/releases?filter=notracks` },
+      { n: links ? Object.values(links.videos).filter(isDeadLink).length : 0, label: s.dhDeadVideos, to: `${prefix}/videos?filter=dead` },
+      { n: links ? albums.filter(a => [a.listenUrl, ...LISTEN_SERVICES.map(x => a.listen?.[x.key])].some(u => u && isDeadLink(links.listen[u]))).length : 0, label: s.dhDeadListen, to: `${prefix}/releases?filter=deadlink` },
       { n: events.filter(e => (e.end_date || e.date) < today && !withSetlist.has(e.id)).length, label: s.dhShowsNoSetlist, to: `${prefix}/events?filter=nosetlist` },
       { n: events.filter(e => e.setlist_added && !e.setlist_source).length, label: s.dhSetlistsNoSource, to: `${prefix}/events?filter=nosource` },
     ].filter(l => l.n > 0);
-  }, [songs, albums, tracklists, events, setlists, lyrics, prefix, s]);
+  }, [songs, albums, tracklists, events, setlists, lyrics, links, prefix, s]);
 
   if (!songs.length || !events.length) return null;
   return (

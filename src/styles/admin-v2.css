@@ -2063,3 +2063,5 @@ a.lu-icon-btn { text-decoration: none; }
   .lu-compact .lu-list-row time { flex-shrink: 0; }
   .lu-compact .lu-list-tags { flex-shrink: 0; }
 }
+.lu-vgrid-dead { position: absolute; left: 0.45rem; top: 0.45rem; display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2em 0.6em; border-radius: var(--pill); background: #d23c42; color: #fff; font-size: 0.75rem; font-weight: 700; }
+.lu-rel-svc.is-dead { border-color: #d23c42; color: #d23c42; text-decoration: line-through; }

@@ -1,5 +1,6 @@
+import { getLinkCheck, isDeadLink, type LinkState } from '../../services/adminService';
 import Icon from '../../components/admin/Icon';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAllAlbums, useAllTracklists, useAllSetlists } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
@@ -39,6 +40,8 @@ export default function AdminMusic() {
   const { albums, loading } = useAllAlbums();
   const { tracklists } = useAllTracklists();
   const { setlists } = useAllSetlists();
+  const [linkState, setLinkState] = useState<Record<string, LinkState>>({});
+  useEffect(() => { getLinkCheck().then(r => setLinkState(r.listen)).catch(() => {}); }, []);
   const ui = useListPrefs<string, Sort, View>('releases-v2', { filter: 'all', sort: 'date-desc', view: 'list' });
   const sort: Sort = COLS.some(c => ui.sort === c || ui.sort === `${c}-desc`) ? ui.sort : 'date-desc';
   const col = sort.replace(/-desc$/, '') as Col;
@@ -92,6 +95,7 @@ export default function AdminMusic() {
       .filter(r => ui.filter === 'all' || (ui.filter === 'todo' ? r.missing.length > 0 : ui.filter === 'draft' ? r.a.status === 'private'
         : ui.filter === 'noen' ? /[\u3040-\u30ff\u3400-\u9fff]/.test(r.a.title) && !r.a.title_en
         : ui.filter === 'nocover' ? r.missing.includes('cover') : ui.filter === 'notracks' ? r.missing.includes('tracks')
+        : ui.filter === 'deadlink' ? [r.a.listenUrl, ...Object.values(r.a.listen || {})].some(u => u && isDeadLink(linkState[u]))
         : r.type === ui.filter))
       .sort((x, y) => {
         switch (col) {
@@ -105,7 +109,7 @@ export default function AdminMusic() {
         }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, ui.query, ui.filter, col, desc, locale]);
+  }, [rows, ui.query, ui.filter, col, desc, locale, linkState]);
 
   if (loading) return <p className="lu-loading">{s.loading}</p>;
 
@@ -151,7 +155,7 @@ export default function AdminMusic() {
           ...(todoCount ? [{ value: 'todo', label: `${s.relFilterTodo} ${todoCount}` }] : []),
           ...(rows.some(r => r.a.status === 'private') ? [{ value: 'draft', label: <><Icon name="lock" /> {s.songDraft}</> }] : []),
           // From the home page's "what's missing" list (only while on)
-          ...(['noen', 'nocover', 'notracks'].includes(ui.filter) ? [{ value: ui.filter, label: ({ noen: s.dhReleasesNoEn, nocover: s.dhReleasesNoCover, notracks: s.dhReleasesNoTracks } as Record<string, string>)[ui.filter] }] : []),
+          ...(['noen', 'nocover', 'notracks', 'deadlink'].includes(ui.filter) ? [{ value: ui.filter, label: ({ noen: s.dhReleasesNoEn, nocover: s.dhReleasesNoCover, notracks: s.dhReleasesNoTracks, deadlink: s.dhDeadListen } as Record<string, string>)[ui.filter] }] : []),
         ]}
         filter={ui.filter} onFilter={ui.setFilter}
         sorts={sorts}

@@ -2,7 +2,7 @@ import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAllAlbums, useAllTracklists, useAllSongs, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, replaceRows, getArrangements, type ArrangementRow } from '../../services/adminService';
+import { createRow, updateRow, deleteRow, replaceRows, getArrangements, type ArrangementRow, getLinkCheck, isDeadLink, type LinkState } from '../../services/adminService';
 import SuggestInput, { normalize } from '../../components/admin/SuggestInput';
 import { addMissingSongs } from '../../components/admin/songs';
 import AddedSongs from '../../components/admin/AddedSongs';
@@ -53,6 +53,9 @@ export default function AdminAlbumForm() {
   const { events } = useAllEvents();
   const [arr, setArr] = useState<ArrangementRow[]>([]);
   useEffect(() => { if (!isNew) getArrangements().then(setArr).catch(() => {}); }, [isNew]);
+  // Listen links that no longer work show in red
+  const [linkState, setLinkState] = useState<Record<string, LinkState>>({});
+  useEffect(() => { if (!isNew) getLinkCheck().then(r => setLinkState(r.listen)).catch(() => {}); }, [isNew]);
   const [addedSongs, setAddedSongs] = useState<Song[]>([]);
 
   const [form, setForm] = useState<Form>(emptyForm);
@@ -393,11 +396,12 @@ export default function AdminAlbumForm() {
                   {LISTEN_SERVICES.map(x => (
                     <li key={x.key}>
                       {sf[x.column]
-                        ? <a className="lu-rel-svc is-on" href={sf[x.column]} target="_blank" rel="noopener noreferrer">{x.name} ↗</a>
+                        ? <a className={`lu-rel-svc is-on${isDeadLink(linkState[sf[x.column]]) ? ' is-dead' : ''}`} href={sf[x.column]} target="_blank" rel="noopener noreferrer"
+                            title={isDeadLink(linkState[sf[x.column]]) ? s.listenDead : undefined}>{x.name} ↗</a>
                         : <button type="button" className="lu-rel-svc" onClick={() => setDialog('details')} title={s.relListenMissing}>{x.name}</button>}
                     </li>
                   ))}
-                  {sf.listen_url && <li><a className="lu-rel-svc is-on" href={sf.listen_url} target="_blank" rel="noopener noreferrer">{s.relListenAll} ↗</a></li>}
+                  {sf.listen_url && <li><a className={`lu-rel-svc is-on${isDeadLink(linkState[sf.listen_url]) ? ' is-dead' : ''}`} title={isDeadLink(linkState[sf.listen_url]) ? s.listenDead : undefined} href={sf.listen_url} target="_blank" rel="noopener noreferrer">{s.relListenAll} ↗</a></li>}
                 </ul>
               </div>
             )}

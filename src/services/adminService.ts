@@ -273,3 +273,15 @@ export async function saveFilterForward(value: string): Promise<Filters> {
 export async function getLyricsStatus(fresh = false): Promise<{ status: Record<string, 'text' | 'empty' | 'error'>; checkedAt: string }> {
   return await adminFetch(`/api/admin/lyrics-status${fresh ? '?fresh=1' : ''}`) as { status: Record<string, 'text' | 'empty' | 'error'>; checkedAt: string };
 }
+
+// ── Are video and listen links still alive? (admin only, see functions/lib/linkCheck.ts) ──
+export type LinkState = 'ok' | 'gone' | 'private' | 'broken' | 'unknown';
+export interface LinkCheck { videos: Record<string, LinkState>; listen: Record<string, LinkState>; checkedAt: string }
+let linkCheck: Promise<LinkCheck> | null = null;
+/** Shared by every page that asks (the server keeps the result for 6 hours). */
+export function getLinkCheck(fresh = false): Promise<LinkCheck> {
+  if (fresh || !linkCheck) linkCheck = adminFetch(`/api/admin/link-check${fresh ? '?fresh=1' : ''}`).then(r => r as LinkCheck).catch(err => { linkCheck = null; throw err; });
+  return linkCheck;
+}
+/** Dead: deleted, private, or a page that's gone (not "couldn't check"). */
+export const isDeadLink = (state?: LinkState) => state === 'gone' || state === 'private' || state === 'broken';

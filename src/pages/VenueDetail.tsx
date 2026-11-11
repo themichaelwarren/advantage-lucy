@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
-import { useEvents, useSetlists, useVenues } from '../hooks/useSheetData';
+import { useEvents, useSetlists, useVenues, useSongs } from '../hooks/useSheetData';
+import { normalize } from '../utils/text';
+import { songTitle, compareSongs } from '../utils/songTitles';
 import { formatDateWithDay } from '../utils/format';
 import { todayInJapan } from '../utils/showDates';
 import PageLoader from '../components/PageLoader';
@@ -31,6 +33,28 @@ export default function VenueDetail({ locale }: Props) {
     [events, id],
   );
   const withSetlist = useMemo(() => new Set(setlists.map(x => x.event)), [setlists]);
+  const { songs } = useSongs();
+  // The songs played here most (from public setlists): once at least two shows here have one
+  const topSongs = useMemo(() => {
+    const here = new Set(shows.map(e => e.id));
+    const count = new Map<string, { title: string; shows: Set<string> }>();
+    for (const r of setlists) {
+      if (!here.has(r.event) || !r.song?.trim()) continue;
+      const k = normalize(r.song);
+      const c = count.get(k) || { title: r.song, shows: new Set<string>() };
+      c.shows.add(r.event);
+      count.set(k, c);
+    }
+    const shownWithSetlist = new Set([...count.values()].flatMap(c => [...c.shows]));
+    if (shownWithSetlist.size < 2) return [];
+    const songBy = new Map(songs.map(x => [normalize(x.title), x]));
+    const byTitle = compareSongs(locale);
+    return [...count.entries()]
+      .map(([k, c]) => ({ song: songBy.get(k), title: c.title, n: c.shows.size }))
+      .filter(x => x.n > 1)
+      .sort((a, b) => b.n - a.n || byTitle(a.song || { title: a.title }, b.song || { title: b.title }))
+      .slice(0, 8);
+  }, [shows, setlists, songs, locale]);
 
   if (loading || eventsLoading) return <PageLoader locale={locale} />;
 
@@ -98,6 +122,22 @@ export default function VenueDetail({ locale }: Props) {
           <ul className="tl-list">{upcoming.map(row)}</ul>
         </section>
       )}
+      {topSongs.length > 0 && (
+        <section className="venue-section">
+          <h2 className="section-label">{s.venues.playedMost}</h2>
+          <ol className="venue-top-songs">
+            {topSongs.map(t => (
+              <li key={t.title}>
+                {t.song?.id
+                  ? <Link className="venue-top-title" to={`${prefix}/songs/${t.song.id}`}>{songTitle(t.song, locale)}</Link>
+                  : <span className="venue-top-title">{t.title}</span>}
+                <span className="venue-top-count">{s.venues.timesPlayed.replace('{n}', String(t.n))}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       <section className="venue-section">
         <h2 className="section-label">{s.venues.showsHere} <span className="music-count">{past.length}</span></h2>
         {past.length === 0 ? <p className="events-empty-note">{s.venues.noShows}</p> : (
