@@ -11,6 +11,7 @@ import PageLoader from '../components/PageLoader';
 import NotFound from '../components/NotFound';
 import PageTitle from '../components/PageTitle';
 import BackLink from '../components/BackLink';
+import { parseFormerNames, formerPeriods } from '../../functions/lib/venueNames';
 
 interface Props {
   locale: Locale;
@@ -27,6 +28,7 @@ export default function VenueDetail({ locale }: Props) {
   const pick = (en?: string, ja?: string) => (locale === 'ja' ? ja || en : en || ja) || '';
 
   const venue = venues.find(v => v.id === id);
+  const former = parseFormerNames(venue?.former_names);
   const today = todayInJapan();
   const shows = useMemo(
     () => events.filter(e => e.venue_id === id).sort((a, b) => b.date.localeCompare(a.date)),
@@ -108,6 +110,14 @@ export default function VenueDetail({ locale }: Props) {
         <p className="venue-kicker">{s.events.venue}</p>
         <h1 className="news-detail-title">{name}</h1>
         {other && other !== name && <p className="venue-other-name" lang={locale === 'ja' ? 'en' : 'ja'}>{other}</p>}
+        {former.length > 0 && (
+          <p className="venue-former">
+            <span>{s.venues.formerly}</span>
+            {formerPeriods(former, locale === 'ja' ? '〜' : '–').map((n, i) => (
+              <span key={i}>{(locale === 'ja' ? n.name_ja || n.name_en : n.name_en || n.name_ja)} <small>{n.period}</small></span>
+            ))}
+          </p>
+        )}
         <p className="venue-place">
           {city && <Link to={`${prefix}/events?q=${encodeURIComponent(city)}`}>{place}</Link>}
           {venue.url && (

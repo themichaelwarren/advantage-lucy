@@ -14,9 +14,12 @@ import { songTitle, compareSongs } from '../../utils/songTitles';
 import type { Event } from '../../types';
 import { ActivityHistory } from '../../components/admin/Activity';
 import { VenueDupeHint, useVenueMatches } from '../../components/admin/DupeHint';
+import FormerNames from '../../components/admin/FormerNames';
+import { parseFormerNames, formatFormerNames, formerPeriods } from '../../../functions/lib/venueNames';
+import { eventToRow } from '../../utils/adminRows';
 
-interface Form { id: string; name_en: string; name_ja: string; area: string; url: string }
-const empty: Form = { id: '', name_en: '', name_ja: '', area: '', url: '' };
+interface Form { id: string; name_en: string; name_ja: string; area: string; url: string; former_names: string }
+const empty: Form = { id: '', name_en: '', name_ja: '', area: '', url: '', former_names: '' };
 const SONGS_SHOWN = 8;
 
 /**
@@ -29,7 +32,7 @@ export default function AdminVenueForm() {
   const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
-  const { venues, loading } = useVenues();
+  const { venues, loading, refresh: refreshVenues } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
   const areaList = useMemo(() => areaSuggestions(areas, locale), [areas, locale]);
   const { prefectures } = usePrefectures();
@@ -67,7 +70,7 @@ export default function AdminVenueForm() {
     if (loading) return;
     const v = venues.find(x => x.id === id);
     if (!v) return;
-    const f = { id: v.id, name_en: v.name_en || '', name_ja: v.name_ja || '', area: v.area || '', url: v.url || '' };
+    const f = { id: v.id, name_en: v.name_en || '', name_ja: v.name_ja || '', area: v.area || '', url: v.url || '', former_names: v.former_names || '' };
     setForm(f);
     setAreaText(areaLabel(f.area));
     setBaseline(JSON.stringify([f, areaLabel(f.area)]));
@@ -107,6 +110,48 @@ export default function AdminVenueForm() {
   const showName = (e: Event) => pick(e.title_en, e.title_ja);
 
   const dupes = useVenueMatches(form, venues, isNew ? undefined : form.id);
+
+  // ---- Merge this venue into another (a double, or an old name of it) ----
+  const [merge, setMerge] = useState<{ target: string; until: string } | null>(null);
+  const mergeTargets = useMemo(() => venues
+    .filter(v => v.id !== form.id)
+    .sort((a, b) => Number(b.area === form.area) - Number(a.area === form.area) || (pick(a.name_en, a.name_ja)).localeCompare(pick(b.name_en, b.name_ja), locale)),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [venues, form.id, form.area, locale]);
+  function openMerge() {
+    // Renamed the month after its last show, as a first guess
+    const last = [...showsHere].sort((a, b) => a.date.localeCompare(b.date)).pop()?.date;
+    let until = '';
+    if (last) { const d = new Date(`${last.slice(0, 7)}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() + 1); until = d.toISOString().slice(0, 7); }
+    setError('');
+    setMerge({ target: dupes[0]?.venue.id || '', until });
+  }
+  async function doMerge() {
+    if (!merge?.target) return;
+    const target = venues.find(v => v.id === merge.target);
+    if (!target) return;
+    const me = baseline ? (JSON.parse(baseline)[0] as Form) : form;
+    setSaving(true); setError('');
+    try {
+      // 1. Its shows go to the other venue (whole rows: the server rewrites them)
+      for (const e of showsHere) await updateRow('Events', e.id, { ...eventToRow(e), venue: target.id });
+      // 2. Its names (now and before) become the other venue's former names
+      const names = [...parseFormerNames(target.former_names), ...parseFormerNames(me.former_names)];
+      if (merge.until) names.push({ until: merge.until, name_en: me.name_en, name_ja: me.name_ja });
+      await updateRow('Venues', target.id, {
+        id: target.id, name_en: target.name_en || '', name_ja: target.name_ja || '', area: target.area || '', url: target.url || '',
+        former_names: formatFormerNames(names),
+      });
+      // 3. Then it goes
+      await deleteRow('Venues', me.id);
+      refreshVenues?.();
+      navigate(`${prefix}/venues/${target.id}`);
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function save(): Promise<boolean> {
     if (!form.name_en.trim() && !form.name_ja.trim()) { setNameError(s.venueNameMissing); return false; }
@@ -159,6 +204,10 @@ export default function AdminVenueForm() {
           {fid => <input id={fid} type="url" inputMode="url" placeholder="https://" value={form.url} onChange={e => set('url', e.target.value)} />}
         </Field>
       </FieldGroup>
+      <FieldGroup title={s.formerTitle}>
+        <p className="lu-hint">{s.formerHint}</p>
+        <FormerNames s={s} value={form.former_names} onChange={v => set('former_names', v)} />
+      </FieldGroup>
     </>
   );
 
@@ -186,6 +235,7 @@ export default function AdminVenueForm() {
   // ---------- The venue at a glance ----------
   const saved = baseline ? (JSON.parse(baseline)[0] as Form) : form;
   const name = pick(saved.name_en, saved.name_ja);
+  const formerNames = parseFormerNames(saved.former_names);
   const other = locale === 'ja' ? saved.name_en : saved.name_ja;
   const area = areas.find(a => a.id === saved.area);
   const pref = area ? prefectures.find(p => p.id === area.prefecture) : undefined;
@@ -237,6 +287,14 @@ export default function AdminVenueForm() {
               <h1>{name}</h1>
               {other && normalize(other) !== normalize(name) && <p className="lu-song-alt lu-rel-alt" lang={locale === 'ja' ? 'en' : 'ja'}>{other}</p>}
             </div>
+            {formerNames.length > 0 && (
+              <p className="lu-venue-former">
+                <span className="lu-publish-label">{s.formerly}</span>
+                {formerPeriods(formerNames, locale === 'ja' ? '〜' : '–').map((n, i) => (
+                  <span key={i}>{pick(n.name_en, n.name_ja)} <small>{n.period}</small></span>
+                ))}
+              </p>
+            )}
             <dl className="lu-song-credits">
               <dt>{s.area}</dt>
               <dd>{area
@@ -330,14 +388,44 @@ export default function AdminVenueForm() {
           if (baseline) { const [f, t] = JSON.parse(baseline) as [Form, string]; setForm(f); setAreaText(t); }
           setNameError(''); setError(''); setEditing(false);
         }}
-        footer={showsHere.length > 0
-          ? <span className="lu-hint">{s.inUseCantDelete}</span>
-          : <DeleteButton s={s} onConfirm={async () => {
-              try { await deleteRow('Venues', form.id); navigate(`${prefix}/venues`); }
-              catch (err) { setError(errorText(err)); }
-            }} />}
+        footer={<span className="lu-row">
+          <button type="button" className="lu-btn" onClick={() => { if (dirty && !window.confirm(s.songDiscard)) return; setEditing(false); openMerge(); }}>{s.mergeButton}</button>
+          {showsHere.length > 0
+            ? <span className="lu-hint">{s.inUseCantDelete}</span>
+            : <DeleteButton s={s} onConfirm={async () => {
+                try { await deleteRow('Venues', form.id); navigate(`${prefix}/venues`); }
+                catch (err) { setError(errorText(err)); }
+              }} />}
+        </span>}
       >
         {fields}
+      </EditDialog>
+
+      <EditDialog s={s} title={s.mergeTitle} open={merge !== null} saving={saving} error={error} dirty={!!merge?.target}
+        onClose={() => { setMerge(null); setError(''); }}
+        onSave={doMerge} saveLabel={s.mergeGo}>
+        {merge && (
+          <>
+            <p className="lu-hint">{s.mergeIntro}</p>
+            <Field label={s.mergeInto}>
+              {fid => (
+                <select id={fid} value={merge.target} onChange={e => setMerge(m => m && { ...m, target: e.target.value })}>
+                  <option value="">{s.mergePick}</option>
+                  {mergeTargets.map(v => <option key={v.id} value={v.id}>{pick(v.name_en, v.name_ja)}{v.area ? ` · ${areaLabel(v.area)}` : ''}</option>)}
+                </select>
+              )}
+            </Field>
+            <Field label={s.mergeUntil} hint={s.mergeUntilHint.replace('{name}', name)}>
+              {fid => <input id={fid} type="month" value={merge.until} onChange={e => setMerge(m => m && { ...m, until: e.target.value })} />}
+            </Field>
+            {merge.target && (
+              <p className="lu-dupe is-soft">{s.mergeWhat
+                .replace('{n}', String(showsHere.length))
+                .replace('{target}', pick(venues.find(v => v.id === merge.target)?.name_en, venues.find(v => v.id === merge.target)?.name_ja))
+                .replace('{name}', name)}</p>
+            )}
+          </>
+        )}
       </EditDialog>
     </div>
   );

@@ -5,6 +5,7 @@
 import { normDateTime } from './visibility';
 import { getAccessToken } from './auth';
 import { LISTEN_COLUMNS, listenFromRow } from './listen';
+import { venueNameAt } from './venueNames';
 
 const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 
@@ -71,11 +72,21 @@ export async function fetchAreas(sheetId: string, email: string, key: string) {
 }
 
 export async function fetchVenues(sheetId: string, email: string, key: string) {
-  const rows = await fetchSheet(sheetId, 'Venues!A:E', email, key);
-  return rowsToObjects(rows).map(r => ({ id: r.id, name_en: r.name_en, name_ja: r.name_ja, area: r.area, url: r.url || undefined }));
+  const rows = await fetchSheet(sheetId, 'Venues', email, key);
+  return rowsToObjects(rows).map(r => ({ id: r.id, name_en: r.name_en, name_ja: r.name_ja, area: r.area, url: r.url || undefined, former_names: r.former_names || undefined }));
 }
 
 // ---------- Events (with venue join) ----------
+
+/** venue_en/venue_ja as the venue was called on `date`, plus its name now when that differs. */
+function shownVenueName(venue: { name_en?: string; name_ja?: string; former_names?: string } | undefined, raw: string, date: string) {
+  if (!venue) return { venue_en: raw || '', venue_ja: raw || '' };
+  const at = venueNameAt(venue, date);
+  return {
+    venue_en: at.name_en || raw || '', venue_ja: at.name_ja || raw || '',
+    ...(at.former ? { venue_now_en: venue.name_en || venue.name_ja, venue_now_ja: venue.name_ja || venue.name_en } : {}),
+  };
+}
 
 export async function fetchEvents(sheetId: string, email: string, key: string) {
   const [eventRows, venues, areas, prefectures, countries] = await Promise.all([
@@ -104,7 +115,8 @@ export async function fetchEvents(sheetId: string, email: string, key: string) {
         doors: row.doors || undefined, start: row.start || undefined, end_time: row.end || undefined,
         adv_price: row.adv_price || undefined, door_price: row.door_price || undefined,
         venue_id: row.venue || undefined,
-        venue_en: venue?.name_en || row.venue || '', venue_ja: venue?.name_ja || row.venue || '',
+        // The venue's name on the day (ON AIR WEST in 2002, Spotify O-WEST now); see lib/venueNames.ts
+        ...shownVenueName(venue, row.venue, row.date),
         venue_url: venue?.url || undefined,
         city_en: area?.name_en || '', city_ja: area?.name_ja || '',
         prefecture_en: pref?.name_en || undefined, prefecture_ja: pref?.name_ja || undefined,
@@ -236,6 +248,7 @@ const OPTIONAL_COLUMNS: Record<string, string[]> = {
   Blog: ['publish_at'],
   Photos: ['link', 'share_image'],
   Albums: ['title_en', 'title_kana', ...LISTEN_COLUMNS, 'status'],
+  Venues: ['former_names'],
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */

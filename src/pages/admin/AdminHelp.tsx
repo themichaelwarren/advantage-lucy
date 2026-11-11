@@ -123,6 +123,8 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       points: [
         'Venues sit in areas (like Shimokitazawa), areas in prefectures, and prefectures in countries.',
         'A venue’s page shows its map, the next show there, every show by year (and which still need a setlist), and the songs played there most: handy for planning a set.',
+        'A venue that changed its name (ON AIR WEST → Shibuya O-WEST → Spotify O-WEST) stays one venue: keep its current name, and add the old ones under Former names (✎) with the month each changed. Shows before then read with the old name (“now Spotify O-WEST” beside it), and searching an old name finds the venue.',
+        'A venue that’s in twice, or an old name that got its own venue (NEST and O-nest): open it, ✎, “Merge into…”. Its shows move over and its name becomes a former name.',
         'Anything still in use, like a venue with shows, can’t be deleted.',
       ],
     },
@@ -255,6 +257,8 @@ const ja: typeof en = {
       points: [
         '会場はエリア（下北沢など）に、エリアは都道府県に、都道府県は国に属しています。',
         '会場のページには、地図、その会場の次のライブ、年ごとのライブ一覧（セットリストがまだのものもわかります）、その会場でよく演奏した曲が出ます。セットリストを考えるときに便利です。',
+        '名前が変わった会場（ON AIR WEST → 渋谷 O-WEST → Spotify O-WEST など）は、ひとつの会場のままにします。今の名前にして、✎ の「以前の名前」に昔の名前と改称した月を入れてください。それより前のライブは昔の名前で表示され（横に「現・Spotify O-WEST」）、昔の名前で検索しても見つかります。',
+        '二重に登録された会場や、昔の名前で別に登録された会場（NEST と O-nest など）は、その会場を開いて ✎ →「まとめる…」。ライブが移り、その名前は「以前の名前」になります。',
         'ライブがある会場など、使われているものは削除できません。',
       ],
     },

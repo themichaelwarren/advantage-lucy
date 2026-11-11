@@ -8,6 +8,7 @@ import type { AdminLocale } from '../../i18n/admin';
 import { personName } from './PeoplePicker';
 import { Highlight, rankMatches } from './SuggestInput';
 import { songTitle, songAltTitle } from '../../utils/songTitles';
+import { allVenueNames } from '../../../functions/lib/venueNames';
 
 interface Item {
   kind: string;        // group label
@@ -65,7 +66,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
         href: `${prefix}/songs/${x.id}`, keywords: `${x.title} ${x.title_en || ''} ${x.title_kana || ''} ${x.id} ${x.original_artist || ''}`,
       })),
       ...albums.map(a => ({ kind: s.releases, title: songTitle(a, locale), sub: [songAltTitle(a, locale), a.date || a.year, a.label].filter(Boolean).join(' · '), href: `${prefix}/releases/${a.id}`, keywords: `${a.title} ${a.title_en || ''} ${a.title_kana || ''} ${a.year} ${a.label || ''} ${a.number || ''}` })),
-      ...venues.map(v => ({ kind: s.venues, title: pick(locale, v.name_en, v.name_ja) || v.id, href: `${prefix}/venues/${v.id}`, keywords: `${v.name_en} ${v.name_ja} ${v.id}` })),
+      ...venues.map(v => ({ kind: s.venues, title: pick(locale, v.name_en, v.name_ja) || v.id, href: `${prefix}/venues/${v.id}`, keywords: `${allVenueNames(v).join(' ')} ${v.id}` })),
       ...people.map(p => ({ kind: s.people, title: personName(p, locale), href: `${prefix}/people/${p.id}`, keywords: `${personName(p, locale === 'ja' ? 'en' : 'ja')} ${p.id}` })),
       ...areas.map(a => ({ kind: s.areas, title: pick(locale, a.name_en, a.name_ja) || a.id, href: `${prefix}/areas/${a.id}`, keywords: `${a.name_en} ${a.name_ja} ${a.id}` })),
       ...[...news].sort((a, b) => b.date.localeCompare(a.date)).map(n => ({ kind: s.news, title: pick(locale, n.title_en, n.title_ja) || n.id, sub: n.date, href: `${prefix}/news/${n.id}`, keywords: `${n.title_en} ${n.title_ja} ${n.date}` })),

@@ -9,6 +9,7 @@ import SuggestInput, { Highlight, rankMatches } from './SuggestInput';
 import type { Suggestion } from './SuggestInput';
 import { VenueDupeHint, useVenueMatches } from './DupeHint';
 import { useAdminT } from '../../i18n/admin';
+import { allVenueNames } from '../../../functions/lib/venueNames';
 
 /** Areas as suggestions: name in the admin's language, the other one greyed. */
 export function areaSuggestions(areas: Area[], locale: AdminLocale): Suggestion[] {
@@ -85,7 +86,7 @@ export default function VenuePicker({ s, locale, id, value, onChange, venues, ar
   const inputRef = useRef<HTMLInputElement>(null);
 
   const matches = useMemo(
-    () => rankMatches(venues, query, v => [v.name_en, v.name_ja, areaOf(v), v.id]).slice(0, 60),
+    () => rankMatches(venues, query, v => [...allVenueNames(v), areaOf(v), v.id]).slice(0, 60),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [query, venues, areaById, locale],
   );

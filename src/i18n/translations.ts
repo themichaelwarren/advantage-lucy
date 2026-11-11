@@ -91,6 +91,8 @@ export const translations = {
       types: { album: 'Album', lp: 'LP', ep: 'EP', single: 'Single', compilation: 'Compilation' } as Record<string, string>,
     },
     venues: {
+      formerly: 'Formerly',
+      now: 'now {name}',
       playedMost: 'Played here most',
       timesPlayed: '{n} times',
       website: 'Venue website',
@@ -327,6 +329,8 @@ export const translations = {
       types: { album: 'アルバム', lp: 'LP', ep: 'EP', single: 'シングル', compilation: 'コンピレーション' } as Record<string, string>,
     },
     venues: {
+      formerly: '旧名',
+      now: '現・{name}',
       playedMost: 'この会場でよく演奏した曲',
       timesPlayed: '{n}回',
       website: '会場のウェブサイト',

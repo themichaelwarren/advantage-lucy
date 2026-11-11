@@ -334,7 +334,7 @@ export function ConfirmDialog({ s, open, title, body, confirmLabel, onConfirm, o
  * A small window for editing one section of a read-mode page. Esc or a
  * click outside cancels; the form inside submits with Save (or Enter).
  */
-export function EditDialog({ s, title, open, onClose, onSave, saving, error, children, footer, dirty = true }: {
+export function EditDialog({ s, title, open, onClose, onSave, saving, error, children, footer, dirty = true, saveLabel }: {
   s: AdminStrings;
   title: string;
   open: boolean;
@@ -347,6 +347,8 @@ export function EditDialog({ s, title, open, onClose, onSave, saving, error, chi
   footer?: ReactNode;
   /** Save only lights up once something has changed */
   dirty?: boolean;
+  /** Instead of "Save" (e.g. "Merge") */
+  saveLabel?: string;
 }) {
   const box = useRef<HTMLFormElement>(null);
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -392,7 +394,7 @@ export function EditDialog({ s, title, open, onClose, onSave, saving, error, chi
             {footer && <span className="lu-edit-dialog-footer">{footer}</span>}
             <button type="button" className="lu-btn" onClick={onClose} disabled={saving}>{s.cancel}</button>
             <button type="submit" className="lu-btn lu-btn-primary" disabled={saving || !dirty} title={isMac ? '⌘↵' : 'Ctrl+Enter'}>
-              {saving ? s.saving : s.save}
+              {saving ? s.saving : saveLabel || s.save}
             </button>
           </div>
         </footer>

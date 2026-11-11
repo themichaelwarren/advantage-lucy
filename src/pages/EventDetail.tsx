@@ -154,6 +154,8 @@ export default function EventDetail({ locale }: Props) {
                 {event.venue_id
                   ? <Link className="evd-venue-link" to={`${prefix}/venues/${event.venue_id}`}>{venue}</Link>
                   : venue}
+                {/* Shown under the name it had then: say what it's called now */}
+                {(event.venue_now_en || event.venue_now_ja) && <span className="evd-venue-now">（{s.venues.now.replace('{name}', pick(event.venue_now_en, event.venue_now_ja))}）</span>}
                 {event.venue_url && (
                   <a className="evd-venue-site" href={event.venue_url} target="_blank" rel="noopener noreferrer" aria-label={s.venues.website}>↗</a>
                 )}

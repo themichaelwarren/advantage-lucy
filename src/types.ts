@@ -26,6 +26,8 @@ export interface Venue {
   name_ja: string;
   area: string;          // area ID
   url?: string;
+  /** Old names, one per line: "2003-12 | ON AIR WEST | ON AIR WEST" (functions/lib/venueNames.ts) */
+  former_names?: string;
 }
 
 // ---------- Core entities ----------
@@ -44,6 +46,8 @@ export interface Event {
   venue_id?: string;       // raw venue ID from sheet
   venue_en: string;        // resolved from Venues join
   venue_ja: string;
+  venue_now_en?: string;   // the venue's name today, when the show was under an older one
+  venue_now_ja?: string;
   venue_url?: string;      // venue website/map
   city_en: string;         // resolved from Areas join (area name)
   city_ja: string;

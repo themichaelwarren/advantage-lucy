@@ -29,6 +29,7 @@ import { matchSong, type PastedSong } from '../../utils/timestamps';
 import { youTubeId } from '../../utils/youtube';
 import { ActivityHistory } from '../../components/admin/Activity';
 import { ShowDupeHint, isDoubleShow } from '../../components/admin/DupeHint';
+import { venueNameAt } from '../../../functions/lib/venueNames';
 
 type EventField = typeof EVENT_COLUMNS[number];
 type Form = Record<EventField, string>;
@@ -467,7 +468,10 @@ export default function AdminEventForm() {
   const pick = (en?: string, ja?: string) => (locale === 'ja' ? ja || en : en || ja) || '';
   const venue = venues.find(v => v.id === saved.venue);
   const area = venue ? areas.find(a => a.id === venue.area) : undefined;
-  const venueName = venue ? pick(venue.name_en, venue.name_ja) : saved.venue;
+  // The venue's name on the day of the show (渋谷nest in 2003), and what it's called now if that differs
+  const venueThen = venue ? venueNameAt(venue, saved.date) : undefined;
+  const venueName = venueThen ? pick(venueThen.name_en, venueThen.name_ja) : saved.venue;
+  const venueNow = venue && venueThen?.former ? pick(venue.name_en, venue.name_ja) : '';
   const areaName = area ? pick(area.name_en, area.name_ja) : '';
   const title = pick(saved.title_en, saved.title_ja);
   const weekday = saved.date
@@ -513,7 +517,7 @@ export default function AdminEventForm() {
             <h1>{title || venueName}</h1>
             <dl className="lu-song-credits">
               <dt>{s.venue}</dt>
-              <dd>{venue ? <Link to={`${prefix}/venues/${venue.id}`}>{venueName}</Link> : venueName}{areaName && <span className="lu-hint"> · {areaName}</span>}</dd>
+              <dd>{venue ? <Link to={`${prefix}/venues/${venue.id}`}>{venueName}</Link> : venueName}{venueNow && <span className="lu-hint">（{s.venueNowShort.replace('{name}', venueNow)}）</span>}{areaName && <span className="lu-hint"> · {areaName}</span>}</dd>
               {times && (<><dt>{s.showTimes}</dt><dd>{times}</dd></>)}
               {saved.performers && (<><dt>{s.performers}</dt><dd>{saved.performers}</dd></>)}
             </dl>

@@ -11,6 +11,8 @@
  * the same date somewhere else is just worth a look (in-stores happen).
  */
 
+import { allVenueNames } from '../../functions/lib/venueNames';
+
 const GENERIC = [
   'live house', 'livehouse', 'club', 'live', 'house', 'hall', 'studio', 'cafe', 'café', 'bar', 'the', 'theater', 'theatre', 'space', 'shop', 'store', 'records', 'record', 'tower', 'temple', 'park', 'shrine', 'church',
   'ライブハウス', 'ライヴハウス', 'クラブ', 'ライブ', 'ライヴ', 'ホール', 'スタジオ', 'カフェ', 'バー', 'シアター', '劇場', 'レコード', 'ハウス', 'タワー', '寺', '公園', '神社', '教会',
@@ -81,12 +83,13 @@ function similarity(a: string, b: string): number {
   return 1 - row[n] / Math.max(m, n);
 }
 
-export interface VenueLike { id: string; name_en?: string; name_ja?: string; area?: string }
+export interface VenueLike { id: string; name_en?: string; name_ja?: string; area?: string; former_names?: string }
 export interface VenueMatch<V> { venue: V; strong: boolean }
 
 /** Pairs of names that look like the same place. */
-function venueScore(a: { name_en?: string; name_ja?: string }, b: { name_en?: string; name_ja?: string }): 0 | 1 | 2 {
-  const names = (v: typeof a) => [v.name_ja || '', v.name_en || ''].filter(Boolean);
+function venueScore(a: { name_en?: string; name_ja?: string; former_names?: string }, b: { name_en?: string; name_ja?: string; former_names?: string }): 0 | 1 | 2 {
+  // Old names count too: typing "ON AIR WEST" finds Spotify O-WEST
+  const names = (v: typeof a) => allVenueNames(v);
   for (const x of names(a)) for (const y of names(b)) {
     const fx = flat(x), fy = flat(y);
     if (fx && fx === fy) return 2;
