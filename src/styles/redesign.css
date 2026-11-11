@@ -2201,3 +2201,5 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 .insta-tile-text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
 .insta-tile-text time { font-family: var(--font-main); font-size: 0.78rem; color: var(--text-muted); }
 .insta-tile-text strong { font-size: 0.92rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Location is its own row now: same size as the other details */
+.evd-facts dd.evd-area { font-size: inherit; color: var(--text); }

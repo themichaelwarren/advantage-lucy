@@ -27,8 +27,8 @@ export interface PageMeta {
 const SITE = 'advantage Lucy';
 const DEFAULT_IMAGE = '/img/lucy-band-404.png';
 const TAGLINE = {
-  en: 'advantage Lucy — indie pop from Tokyo since 1995',
-  ja: 'advantage Lucy — 1995年から東京で活動するインディーポップバンド',
+  en: 'advantage Lucy, indie pop from Tokyo since 1995. Upcoming shows and tickets, setlists from every show, releases, lyrics and news.',
+  ja: '1995年から東京で活動するインディーポップバンド、advantage Lucy の公式サイト。ライブ情報とチケット予約、歴代のセットリスト、リリース、歌詞、ニュース。',
 };
 const LIST_TITLES: Record<string, { en: string; ja: string }> = {
   events: { en: 'Events', ja: 'イベント' },

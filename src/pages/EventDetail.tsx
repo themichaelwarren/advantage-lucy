@@ -58,6 +58,13 @@ export default function EventDetail({ locale }: Props) {
       ? `${e.getUTCMonth() + 1}.${e.getUTCDate()}（${wd}）`
       : new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(e);
   };
+  /** 2026年11月29日（日） / Sun, 29 Nov 2026 */
+  const fullDate = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    return locale === 'ja'
+      ? `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日（${new Intl.DateTimeFormat('ja-JP', { weekday: 'short', timeZone: 'UTC' }).format(d)}）`
+      : new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(d);
+  };
   const area = [
     city,
     event.prefecture_en && (locale === 'ja' ? event.prefecture_ja : event.prefecture_en),
@@ -134,6 +141,12 @@ export default function EventDetail({ locale }: Props) {
 
         <div className="evd-section evd-details">
           <dl className="event-meta evd-facts">
+              {/* Everything about the show in one place: the date first */}
+              <dt>{s.events.date}</dt>
+              <dd className="is-number">
+                <time dateTime={event.date}>{fullDate(event.date)}</time>
+                {event.end_date && event.end_date !== event.date && <> 〜 <time dateTime={event.end_date}>{fullDate(event.end_date)}</time></>}
+              </dd>
                 <dt>{s.events.venue}</dt>
               <dd>
                 {event.venue_id
@@ -142,13 +155,15 @@ export default function EventDetail({ locale }: Props) {
                 {event.venue_url && (
                   <a className="evd-venue-site" href={event.venue_url} target="_blank" rel="noopener noreferrer" aria-label={s.venues.website}>↗</a>
                 )}
-                {area && (
-                  <span className="evd-area">
-                    {city ? <Link to={`${prefix}/events?q=${encodeURIComponent(city)}`}>{city}</Link> : null}
-                    {area.slice(city.length)}
-                  </span>
-                )}
               </dd>
+              {/* Where it is, on its own line: the city finds other shows there */}
+              {area && (<>
+                <dt>{s.events.location}</dt>
+                <dd className="evd-area">
+                  {city ? <Link to={`${prefix}/events?q=${encodeURIComponent(city)}`}>{city}</Link> : null}
+                  {area.slice(city.length)}
+                </dd>
+              </>)}
               {event.doors && (<><dt>{s.events.doors}</dt><dd className="is-number">{event.doors}</dd></>)}
               {event.start && (<><dt>{s.events.start}</dt><dd className="is-number">{event.start}</dd></>)}
               {event.end_time && (<><dt>{s.events.endTime}</dt><dd className="is-number">{event.end_time}</dd></>)}
