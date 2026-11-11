@@ -1,3 +1,4 @@
+import Icon, { type IconName } from '../../components/admin/Icon';
 import { Link } from 'react-router-dom';
 import { useAllEvents, useAllSetlists } from '../../hooks/useSheetData';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,10 +26,10 @@ export default function AdminDashboard() {
     (locale === 'ja' ? e.title_ja || e.title_en || e.venue_ja || e.venue_en : e.title_en || e.title_ja || e.venue_en || e.venue_ja);
 
   const tasks = [
-    { to: `${prefix}/events/new`, title: s.taskAddShow, short: s.taskAddShowShort, hint: s.taskAddShowHint, icon: '♪', tone: 'sun' },
-    { to: `${prefix}/events?filter=nosetlist`, title: s.taskSetlist, short: s.taskSetlistShort, hint: s.taskSetlistHint, icon: '☰', tone: 'mint' },
-    { to: `${prefix}/news/new`, title: s.taskNews, short: s.taskNewsShort, hint: s.taskNewsHint, icon: '✎', tone: 'tomato' },
-    { to: `${prefix}/blog/new`, title: s.taskBlog, short: s.taskBlogShort, hint: s.taskBlogHint, icon: '◎', tone: 'lilac' },
+    { to: `${prefix}/events/new`, title: s.taskAddShow, short: s.taskAddShowShort, hint: s.taskAddShowHint, icon: 'shows' as IconName, tone: 'sun' },
+    { to: `${prefix}/events?filter=nosetlist`, title: s.taskSetlist, short: s.taskSetlistShort, hint: s.taskSetlistHint, icon: 'setlist' as IconName, tone: 'mint' },
+    { to: `${prefix}/news/new`, title: s.taskNews, short: s.taskNewsShort, hint: s.taskNewsHint, icon: 'news' as IconName, tone: 'tomato' },
+    { to: `${prefix}/blog/new`, title: s.taskBlog, short: s.taskBlogShort, hint: s.taskBlogHint, icon: 'blog' as IconName, tone: 'lilac' },
   ];
 
   const firstName = user?.name?.split(' ')[0];
@@ -45,7 +46,7 @@ export default function AdminDashboard() {
       <div className="lu-tasks">
         {tasks.map(t => (
           <Link key={t.title} to={t.to} className={`lu-task is-${t.tone}`}>
-            <span className="lu-task-icon" aria-hidden="true">{t.icon}</span>
+            <span className="lu-task-icon" aria-hidden="true"><Icon name={t.icon} /></span>
             <strong className="lu-task-title">{t.title}</strong>
             <strong className="lu-task-short" aria-hidden="true">{t.short}</strong>
             <span>{t.hint}</span>

@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SuggestInput from './SuggestInput';
@@ -144,9 +145,9 @@ export default function SetlistEditor({ s, items, onChange, songTitles, songHref
                           ? <Link to={href} className="lu-icon-btn" title={s.openSong} aria-label={s.openSong}>↗</Link>
                           : <span className="lu-icon-btn is-placeholder" aria-hidden="true" />;
                       })()}
-                      <button type="button" className="lu-icon-btn" onClick={() => move(row.key, -1)} disabled={idx === 0} aria-label={s.moveUp}>↑</button>
-                      <button type="button" className="lu-icon-btn" onClick={() => move(row.key, 1)} disabled={idx === items.length - 1} aria-label={s.moveDown}>↓</button>
-                      <button type="button" className="lu-icon-btn is-danger" onClick={() => onChange(items.filter(i => i.key !== row.key))} aria-label={s.remove}>✕</button>
+                      <button type="button" className="lu-icon-btn" onClick={() => move(row.key, -1)} disabled={idx === 0} aria-label={s.moveUp}><Icon name="up" /></button>
+                      <button type="button" className="lu-icon-btn" onClick={() => move(row.key, 1)} disabled={idx === items.length - 1} aria-label={s.moveDown}><Icon name="down" /></button>
+                      <button type="button" className="lu-icon-btn is-danger" onClick={() => onChange(items.filter(i => i.key !== row.key))} aria-label={s.remove}><Icon name="close" /></button>
                     </span>
                   </li>
                 );

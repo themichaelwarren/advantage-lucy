@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAllSongs, usePeople, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
@@ -148,9 +149,9 @@ export default function AdminSongs() {
 
   if (loading) return <p className="lu-loading">{s.loading}</p>;
 
-  const flagLabel: Record<Flag, string> = {
+  const flagLabel: Record<Flag, React.ReactNode> = {
     nolyrics: s.filterNoLyrics, nokey: s.filterNoKey, nocredits: s.filterNoCredits, cover: s.coverTag,
-    neverplayed: s.filterNeverPlayed, played: s.filterPlayed, videos: s.filterHasVideos, draft: `🔒 ${s.songDraft}`,
+    neverplayed: s.filterNeverPlayed, played: s.filterPlayed, videos: s.filterHasVideos, draft: <><Icon name="lock" /> {s.songDraft}</>,
   };
   const head = (k: SortKey, label: string, className = '') => (
     <th className={className} aria-sort={prefs.sort === k ? (prefs.desc ? 'descending' : 'ascending') : undefined}>
@@ -213,7 +214,7 @@ export default function AdminSongs() {
                     <Link to={`${prefix}/songs/${r.id}`}>{r.title}</Link>
                     {r.alt && <span className="lu-sg-alt" lang="en">{r.alt}</span>}
                     {r.cover && <span className="lu-sg-cover">{s.coverOf.replace('{artist}', r.cover)}</span>}
-                    {r.draft && <span className="lu-tag is-muted lu-sg-draft">🔒 {s.songDraft}</span>}
+                    {r.draft && <span className="lu-tag is-muted lu-sg-draft"><Icon name="lock" /> {s.songDraft}</span>}
                   </td>
                   <td className="lu-sg-key">{r.keyText || <span className="lu-sg-none">—</span>}</td>
                   <td className="lu-td-center">{r.lyrics ? <span className="lu-sg-yes" aria-label={r.lyricsHidden ? s.visLyricsOff : s.lyricsLinked} title={r.lyricsHidden ? s.visLyricsOff : undefined}>{r.lyricsHidden ? '🔒' : '✓'}</span> : <span className="lu-sg-none">—</span>}</td>

@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAllPhotos, useAllEvents } from '../../hooks/useSheetData';
@@ -165,7 +166,7 @@ export default function AdminPhotoForm() {
         )}
         {linkKind === 'show' && linkedShow?.posterUrl && linkedShow.posterUrl !== form.image_url && (
           <button type="button" className="lu-btn" onClick={() => set('image_url', linkedShow.posterUrl!)}>
-            ▣ {s.photoUseFlyer}
+            <Icon name="image" /> {s.photoUseFlyer}
           </button>
         )}
         {linkKind === 'other' && (

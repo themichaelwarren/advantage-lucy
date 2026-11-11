@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useEffect, useState } from 'react';
 import type { AdminStrings } from '../../i18n/admin';
 import { getVideoTitle, type MediaRow } from '../../services/adminService';
@@ -223,7 +224,7 @@ export default function ShowVideos({ s, videos, onChange, setlist, editing = tru
                 </button>
               )}
               <button type="button" className="lu-icon-btn is-danger" aria-label={s.videoRemove} title={s.videoRemove}
-                onClick={() => (v.url.trim() ? setRemoving(v) : onChange(vs => vs.filter(x => x.key !== v.key)))}>✕</button>
+                onClick={() => (v.url.trim() ? setRemoving(v) : onChange(vs => vs.filter(x => x.key !== v.key)))}><Icon name="close" /></button>
             </div>
 
             {v.url.trim() && !id && (

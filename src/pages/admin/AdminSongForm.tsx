@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAllSongs, usePeople, useAllSetlists, useAllEvents, useTracklists, useAlbums } from '../../hooks/useSheetData';
@@ -304,7 +305,7 @@ export default function AdminSongForm() {
     </button>
   );
   const editBtn = (which: 'details' | 'lyrics') => (
-    <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={s.songEdit} title={s.songEdit}>✎</button>
+    <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
   );
 
   return (
@@ -328,7 +329,7 @@ export default function AdminSongForm() {
                 {saved.title_kana && <span lang="ja">{saved.title_kana}</span>}
               </p>
             )}
-            {!pagePublic && <p className="lu-song-draft"><span className="lu-tag is-muted">🔒 {s.songDraft}</span><span className="lu-hint">{s.visPageOff}</span></p>}
+            {!pagePublic && <p className="lu-song-draft"><span className="lu-tag is-muted"><Icon name="lock" /> {s.songDraft}</span><span className="lu-hint">{s.visPageOff}</span></p>}
             <dl className="lu-song-credits">
               {saved.original_artist && (<><dt>{s.coverTag}</dt><dd>{saved.original_artist}</dd></>)}
               {saved.music_by && (<><dt>{s.musicBy}</dt><dd>{names(saved.music_by)}</dd></>)}
@@ -407,7 +408,7 @@ export default function AdminSongForm() {
               <p className="lu-hint">{s.loading}</p>
             ) : (
               <>
-                {!lyricsPublic && <p className="lu-hint lu-lyrics-hidden">🔒 {s.visLyricsOff}</p>}
+                {!lyricsPublic && <p className="lu-hint lu-lyrics-hidden"><Icon name="lock" /> {s.visLyricsOff}</p>}
                 <div className={`lu-lyrics${lyricsOpen ? ' is-open' : ''}`}>{lyrics || '—'}</div>
                 {lyrics.split('\n').length > 10 && (
                   <button type="button" className="lu-link-btn" onClick={() => setLyricsOpen(o => !o)}>

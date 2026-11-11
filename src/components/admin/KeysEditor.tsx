@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import type { AdminStrings } from '../../i18n/admin';
 import { NOTES, MINOR_NOTES, keyName, parseKey } from '../../../functions/lib/keys';
 
@@ -33,15 +34,15 @@ export default function KeysEditor({ s, keys, onChange }: {
   };
   return (
     <div className="lu-keys">
-      <p className="lu-hint lu-hint-top">🔒 {s.videosPrivate} {s.keysHint}</p>
+      <p className="lu-hint lu-hint-top"><Icon name="lock" /> {s.videosPrivate} {s.keysHint}</p>
       {keys.map((k, i) => (
         <div key={i} className="lu-key-row">
           <div className="lu-key-head">
             <strong className="lu-key-name">{keyName(k.pos, k.minor)}</strong>
             <input className="lu-key-label" placeholder={s.keyLabel} value={k.label} aria-label={s.keyLabel} onChange={e => set(i, { label: e.target.value })} />
-            <button type="button" className="lu-icon-btn" onClick={() => move(i, -1)} disabled={i === 0} aria-label={s.moveUp}>↑</button>
-            <button type="button" className="lu-icon-btn" onClick={() => move(i, 1)} disabled={i === keys.length - 1} aria-label={s.moveDown}>↓</button>
-            <button type="button" className="lu-icon-btn is-danger" onClick={() => onChange(keys.filter((_, j) => j !== i))} aria-label={s.remove}>✕</button>
+            <button type="button" className="lu-icon-btn" onClick={() => move(i, -1)} disabled={i === 0} aria-label={s.moveUp}><Icon name="up" /></button>
+            <button type="button" className="lu-icon-btn" onClick={() => move(i, 1)} disabled={i === keys.length - 1} aria-label={s.moveDown}><Icon name="down" /></button>
+            <button type="button" className="lu-icon-btn is-danger" onClick={() => onChange(keys.filter((_, j) => j !== i))} aria-label={s.remove}><Icon name="close" /></button>
           </div>
           <div className="lu-key-notes" role="radiogroup" aria-label={s.keyNote}>
             {(k.minor ? MINOR_NOTES : NOTES).map((n, pos) => (

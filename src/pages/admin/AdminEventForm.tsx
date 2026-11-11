@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAllEvents, useVenues, useAreas, useAllSetlists, useAllSongs } from '../../hooks/useSheetData';
@@ -368,8 +369,8 @@ export default function AdminEventForm() {
       {setlistPublic
         ? s.setlistPublicNow
         : form.setlist_at
-          ? `🔒 ${s.setlistAtHint.replace('{at}', showDateTime(form.setlist_at))}`
-          : `🔒 ${s.setlistDefaultHint.replace('{at}', `${dayAfter(form.end_date || form.date)} 00:00`)}`}
+          ? <><Icon name="lock" /> {s.setlistAtHint.replace('{at}', showDateTime(form.setlist_at))}</>
+          : <><Icon name="lock" /> {s.setlistDefaultHint.replace('{at}', `${dayAfter(form.end_date || form.date)} 00:00`)}</>}
     </p>
   );
   const setlistTiming = (
@@ -424,7 +425,7 @@ export default function AdminEventForm() {
     <>
       {setlistTiming}
       <label className="lu-field lu-setlist-source">
-        <span>{s.setlistSource} <span className="lu-optional">· 🔒 {s.setlistSourcePrivate}</span></span>
+        <span>{s.setlistSource} <span className="lu-optional">· <Icon name="lock" /> {s.setlistSourcePrivate}</span></span>
         <input value={form.setlist_source} onChange={e => set('setlist_source', e.target.value)} placeholder={s.setlistSourceHint} />
       </label>
       <TimestampPaste s={s} label={s.pasteSetlist} withLink onRead={pasteSetlist} />
@@ -478,7 +479,7 @@ export default function AdminEventForm() {
   ].filter(Boolean);
   const notes = pick(saved.body_en, saved.body_ja);
   const editBtn = (which: 'details' | 'tickets' | 'notes' | 'poster') => (
-    <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={s.songEdit} title={s.songEdit}>✎</button>
+    <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
   );
   const setLabel = (set: string) => set === 'e' ? s.encore : set.startsWith('e') ? `${s.encore} ${set.slice(1)}` : `${s.set} ${set}`;
   const sets = [...new Set(setlistBase.map(r => r.set))];
@@ -525,7 +526,7 @@ export default function AdminEventForm() {
             {saved.ticket_url && <a className="lu-show-line" href={saved.ticket_url} target="_blank" rel="noopener noreferrer">{s.ticketUrl} ↗</a>}
             {saved.reserve === 'TRUE' && (
               <Link to={`${prefix}/reservations/${saved.id}`} className="lu-show-resv">
-                🎫 <strong>{booked ?? '…'}{saved.reserve_cap ? ` / ${saved.reserve_cap}` : ''}</strong> {s.resvTicketsShort}
+                <Icon name="ticket" /> <strong>{booked ?? '…'}{saved.reserve_cap ? ` / ${saved.reserve_cap}` : ''}</strong> {s.resvTicketsShort}
                 <span className="lu-hint"> · {s.openReservations} →</span>
               </Link>
             )}
@@ -547,7 +548,7 @@ export default function AdminEventForm() {
           <Section
             title={`${s.secSetlist}${setlistBase.length ? ` · ${setlistBase.length}` : ''}`}
             id="setlist"
-            aside={!setlistEditing && setlistBase.length > 0 ? <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setSetlistEditing(true)} aria-label={s.songEdit} title={s.songEdit}>✎</button> : undefined}
+            aside={!setlistEditing && setlistBase.length > 0 ? <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setSetlistEditing(true)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button> : undefined}
           >
             {setlistEditing ? (
               <>
@@ -568,7 +569,7 @@ export default function AdminEventForm() {
                 {setlistState}
                 {(form.setlist_source || form.setlist_added) && (
                   <p className="lu-hint lu-setlist-meta">
-                    {form.setlist_source && <span>🔒 {s.setlistSource}: {linkify(form.setlist_source)}</span>}
+                    {form.setlist_source && <span><Icon name="lock" /> {s.setlistSource}: {linkify(form.setlist_source)}</span>}
                     {form.setlist_added && <span>{s.setlistAddedOn.replace('{date}', form.setlist_added)}</span>}
                   </p>
                 )}
@@ -601,7 +602,7 @@ export default function AdminEventForm() {
             id="videos"
             badge={<LockHint text={s.videosPrivate} />}
             aside={!videosEditing && !setlistEditing && videos.length > 0
-              ? <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setVideosEditing(true)} aria-label={s.songEdit} title={s.songEdit}>✎</button>
+              ? <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setVideosEditing(true)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
               : undefined}
           >
             {/* Watching by default; ✎ to change links and times (saved or cancelled here) */}

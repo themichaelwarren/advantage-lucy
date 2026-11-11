@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { AdminStrings } from '../../i18n/admin';
 
-export interface Option { value: string; label: string }
+export interface Option { value: string; label: React.ReactNode }
 
 /**
  * Per-page list settings (search, filter, sort, view), remembered in the

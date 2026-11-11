@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAllEvents } from '../../hooks/useSheetData';
@@ -177,7 +178,7 @@ export function AdminShowReservations() {
     <div className={door ? 'lu-door' : ''}>
       <div className="lu-page-head">
         <div>
-          <p className="lu-eyebrow">🎫 {s.reservations} · {event.date}</p>
+          <p className="lu-eyebrow"><Icon name="ticket" /> {s.reservations} · {event.date}</p>
           <h1>{showName(event, locale)}</h1>
           <p className="lu-resv-totals">
             <strong>{cap > 0 ? s.resvTicketsOf.replace('{n}', String(taken)).replace('{cap}', String(cap)) : s.resvTickets.replace('{n}', String(taken))}</strong>
@@ -197,8 +198,8 @@ export function AdminShowReservations() {
         </div>
       ) : (
         <div className="lu-resv-actions">
-          <button type="button" className="lu-btn lu-btn-primary" onClick={copy} disabled={!booked.length}>{copied ? s.resvCopied : `📋 ${s.resvCopy}`}</button>
-          <button type="button" className="lu-btn" onClick={() => setDoor(true)} disabled={!booked.length}>🚪 {s.resvDoor}</button>
+          <button type="button" className="lu-btn lu-btn-primary" onClick={copy} disabled={!booked.length}>{copied ? s.resvCopied : <><Icon name="paste" /> {s.resvCopy}</>}</button>
+          <button type="button" className="lu-btn" onClick={() => setDoor(true)} disabled={!booked.length}><Icon name="door" /> {s.resvDoor}</button>
           <button type="button" className="lu-btn" onClick={() => setAdding(a => !a)}>+ {s.resvAdd}</button>
           <button type="button" className="lu-btn lu-btn-quiet" onClick={csv} disabled={!mine.length}>⤓ {s.resvCsv}</button>
           <Link to={`${prefix}/events/${event.id}`} className="lu-btn lu-btn-quiet">{s.resvEditShow}</Link>
@@ -227,7 +228,7 @@ export function AdminShowReservations() {
             <button type="button" className={`lu-door-row${r.arrived === 'TRUE' ? ' is-in' : ''}`} aria-pressed={r.arrived === 'TRUE'}
               onClick={() => change(r, { arrived: r.arrived === 'TRUE' ? '' : 'TRUE' })}>
               <span className="lu-door-check" aria-hidden="true">{r.arrived === 'TRUE' ? '✓' : ''}</span>
-              <span className="lu-door-name">{match(r.email) && <span className="lu-door-flag" title={s.resvFlagTip}>⚠ </span>}{r.name}</span>
+              <span className="lu-door-name">{match(r.email) && <span className="lu-door-flag" title={s.resvFlagTip}><Icon name="warn" /> </span>}{r.name}</span>
               <span className="lu-door-count">{ticketsOf(r)}</span>
               {r.note && <span className="lu-door-note">{r.note}</span>}
             </button>
@@ -266,7 +267,7 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
           <span className="lu-snippet">{[r.email, r.note].filter(Boolean).join(' · ')}</span>
         </span>
         <span className="lu-list-tags">
-          {flag && <span className="lu-tag is-warn" title={s.resvFlagTip}>⚠ {flag.kind === 'filtered' ? s.resvFlagFiltered : s.filterLookalike}</span>}
+          {flag && <span className="lu-tag is-warn" title={s.resvFlagTip}><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFiltered : s.filterLookalike}</span>}
           {cancelled && <span className="lu-tag is-muted">{s.resvCancelled}</span>}
           {r.arrived === 'TRUE' && <span className="lu-tag is-ok">✓ {s.resvArrived}</span>}
           {r.emailed === 'no' && <span className="lu-tag is-new">{s.resvNotEmailed}</span>}
@@ -282,13 +283,13 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
             <label className="lu-field"><span>{s.resvEmail}</span><input type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} /></label>
             <label className="lu-field"><span>{s.resvNote}</span><input value={draft.note} onChange={e => setDraft(d => ({ ...d, note: e.target.value }))} /></label>
           </div>
-          {flag && <p className="lu-alert lu-filter-banner is-warn">⚠ {flag.kind === 'filtered' ? s.resvFlagFilteredBody : s.resvFlagLookalikeBody.replace('{email}', flag.listed)}</p>}
+          {flag && <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFilteredBody : s.resvFlagLookalikeBody.replace('{email}', flag.listed)}</p>}
           <p className="lu-hint">
             {r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
           </p>
           <div className="lu-resv-edit-actions">
             <button type="button" className="lu-btn lu-btn-primary" disabled={!dirty || busy} onClick={() => run(() => onChange(draft))}>{s.save}</button>
-            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={() => run(onResend)}>✉ {s.resvResend}</button>}
+            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={() => run(onResend)}><Icon name="mail" /> {s.resvResend}</button>}
             <button type="button" className={`lu-btn ${cancelled ? '' : 'lu-btn-danger-quiet'}`} disabled={busy}
               onClick={() => run(() => onChange({ status: cancelled ? '' : 'cancelled' }))}>
               {cancelled ? s.resvRestore : s.resvCancel}

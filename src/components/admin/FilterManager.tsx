@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useState } from 'react';
 import type { AdminLocale, AdminStrings } from '../../i18n/admin';
 import { saveFilterEmails, saveFilterForward, type Filters } from '../../services/adminService';
@@ -38,7 +39,7 @@ export default function FilterManager({ s, locale, filters }: { s: AdminStrings;
         onCancel={() => setRemoving(null)}
         onConfirm={() => { const v = removing; setRemoving(null); run('remove', () => saveFilterEmails(emails.filter(r => r.value !== v))); }}
       />
-      <p className="lu-hint">🔒 {s.filterIntro}</p>
+      <p className="lu-hint"><Icon name="lock" /> {s.filterIntro}</p>
 
       {emails.length > 0 && (
         <ul className="lu-filter-list">
@@ -48,7 +49,7 @@ export default function FilterManager({ s, locale, filters }: { s: AdminStrings;
               {r.note && <span className="lu-filter-note">{r.note}</span>}
               {r.added && <time className="lu-filter-added">{when(r.added)}</time>}
               <button type="button" className="lu-icon-btn is-danger" aria-label={`${s.remove}: ${r.value}`} title={s.remove}
-                disabled={!!busy} onClick={() => setRemoving(r.value)}>✕</button>
+                disabled={!!busy} onClick={() => setRemoving(r.value)}><Icon name="close" /></button>
             </li>
           ))}
         </ul>

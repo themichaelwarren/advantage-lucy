@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllEvents, useAllSetlists } from '../../hooks/useSheetData';
@@ -48,7 +49,7 @@ export default function AdminEvents() {
     city: locale === 'ja' ? e.city_ja || e.city_en : e.city_en || e.city_ja,
   });
   const setlistTag = (e: Event) => withSetlist.has(e.id)
-    ? <span className={`lu-tag ${setlistIsPublic(e) ? 'is-ok' : 'is-muted'}`}>{setlistIsPublic(e) ? '♪' : '🔒'} {s.hasSetlist}</span>
+    ? <span className={`lu-tag ${setlistIsPublic(e) ? 'is-ok' : 'is-muted'}`}><Icon name={setlistIsPublic(e) ? 'setlist' : 'lock'} /> {s.hasSetlist}</span>
     : <span className="lu-tag is-todo">{s.noSetlist}</span>;
 
   const row = (e: Event) => {
@@ -98,7 +99,7 @@ export default function AdminEvents() {
         filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
         sorts={[{ value: 'newest', label: s.sortNewest }, { value: 'oldest', label: s.sortOldest }, { value: 'added', label: s.sortSetlistAdded }]}
         sort={ui.sort} onSort={v => ui.setSort(v as Sort)}
-        views={[{ value: 'list', label: `☰ ${s.viewList}` }, { value: 'table', label: `▦ ${s.viewTable}` }]}
+        views={[{ value: 'list', label: <><Icon name="list" /> {s.viewList}</> }, { value: 'table', label: <><Icon name="table" /> {s.viewTable}</> }]}
         view={ui.view} onView={v => ui.setView(v as View)}
         shown={list.length} total={events.length}
       />

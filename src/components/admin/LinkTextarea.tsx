@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useRef, useState } from 'react';
 import type { TextareaHTMLAttributes } from 'react';
 import type { AdminStrings } from '../../i18n/admin';
@@ -109,7 +110,7 @@ export default function LinkTextarea({ s, value, onChange, ...rest }: {
       ) : (
         <div className="lu-linkbar">
           <button type="button" className="lu-btn lu-btn-quiet lu-btn-bold" onMouseDown={e => e.preventDefault()} onClick={toggleBold} title={`${s.boldAdd} (⌘B)`} aria-label={s.boldAdd}>B</button>
-          <button type="button" className="lu-btn lu-btn-quiet" onMouseDown={e => e.preventDefault()} onClick={openForm} title={`${s.linkAdd} (⌘K)`}>🔗 {s.linkAdd}</button>
+          <button type="button" className="lu-btn lu-btn-quiet" onMouseDown={e => e.preventDefault()} onClick={openForm} title={`${s.linkAdd} (⌘K)`}><Icon name="link" /> {s.linkAdd}</button>
           <span className="lu-hint">{s.linkHint}</span>
         </div>
       )}

@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllPhotos, useAllEvents } from '../../hooks/useSheetData';
@@ -166,7 +167,7 @@ export default function AdminPhotos() {
         query={ui.query} onQuery={ui.setQuery}
         filters={[{ value: 'all', label: s.filterAll }, { value: 'onsite', label: s.filterOnSite }, { value: 'hidden', label: s.filterHidden }]}
         filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
-        views={[{ value: 'grid', label: `▦ ${s.viewGrid}` }, { value: 'table', label: `☰ ${s.viewTable}` }]}
+        views={[{ value: 'grid', label: <><Icon name="grid" /> {s.viewGrid}</> }, { value: 'table', label: <><Icon name="table" /> {s.viewTable}</> }]}
         view={view} onView={v => ui.setView(v as View)}
         shown={list.length} total={photos.length}
       />

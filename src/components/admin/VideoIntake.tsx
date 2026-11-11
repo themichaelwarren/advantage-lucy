@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AdminLocale, AdminStrings } from '../../i18n/admin';
 import type { Area, Event, SetlistEntry, Song, Venue } from '../../types';
@@ -244,7 +245,7 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
       <div>
         <strong>{title || url.replace(/^https?:\/\/(www\.)?/, '')}</strong>
         {event && !newShow && <span>{event.date} · {showName(event)}</span>}
-        {newShow && <span>✦ {s.viNewShowTag} · {newShow.date}{newVenue ? ` · ${pick(newVenue.name_en, newVenue.name_ja)}` : ''}</span>}
+        {newShow && <span><Icon name="new" /> {s.viNewShowTag} · {newShow.date}{newVenue ? ` · ${pick(newVenue.name_en, newVenue.name_ja)}` : ''}</span>}
         {song && <span>♫ {songTitle(song, locale)}</span>}
       </div>
     </div>
@@ -267,7 +268,7 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
           <ol className="lu-vi-steps">
             {steps.map((x, i) => <li key={x.key} className={i === at ? 'is-on' : i < at ? 'is-past' : ''}><span>{i + 1}</span>{x.label}</li>)}
           </ol>
-          <button type="button" className="lu-icon-btn" onClick={onClose} aria-label={s.close}>✕</button>
+          <button type="button" className="lu-icon-btn" onClick={onClose} aria-label={s.close}><Icon name="close" /></button>
         </header>
 
         {step === 'link' && (
@@ -284,7 +285,7 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
                 <input value={title} onChange={e => setTitle(e.target.value)} placeholder={s.videoTitle} />
               </label>
             )}
-            {already.length > 0 && <p className="lu-alert lu-filter-banner is-warn">⚠ {s.viAlready}</p>}
+            {already.length > 0 && <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {s.viAlready}</p>}
           </div>
         )}
 
@@ -293,10 +294,10 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
             <h2 id="lu-vi-title">{s.viKindTitle}</h2>
             {thumb}
             <div className="lu-vi-choices">
-              {([['show', '▶', s.viKindShow, s.viKindShowHint], ['song', '♫', s.viKindSong, s.viKindSongHint]] as const).map(([k, icon, label, hint]) => (
+              {([['show', 'play', s.viKindShow, s.viKindShowHint], ['song', 'songs', s.viKindSong, s.viKindSongHint]] as const).map(([k, icon, label, hint]) => (
                 <button key={k} type="button" className={`lu-vi-choice${kind === k ? ' is-on' : ''}`} aria-pressed={kind === k}
                   onClick={() => { setKind(k); setStep('pick'); }}>
-                  <span className="lu-vi-choice-icon" aria-hidden="true">{icon}</span>
+                  <span className="lu-vi-choice-icon" aria-hidden="true"><Icon name={icon} /></span>
                   <strong>{label}</strong>
                   <span>{hint}</span>
                 </button>
@@ -346,7 +347,7 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
               <input type="date" value={newShow.date} onChange={e => setNewShow(n => n && { ...n, date: e.target.value })} />
             </label>
             {newShow.date && events.some(e => e.date === newShow.date) && (
-              <p className="lu-alert lu-filter-banner is-warn">⚠ {s.viNewShowSameDate}</p>
+              <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {s.viNewShowSameDate}</p>
             )}
             <div className="lu-field">
               <span className="lu-field-label">{s.venue}</span>
@@ -386,7 +387,7 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
                 <div className="lu-row lu-vi-quick">
                   <button type="button" className="lu-link-btn" onClick={() => setPicked(Object.fromEntries(setlist.map((_, i) => [i, true])))}>{s.viAll}</button>
                   <button type="button" className="lu-link-btn" onClick={() => setPicked({})}>{s.viNone}</button>
-                  {!pasteOpen && <button type="button" className="lu-link-btn" onClick={() => setPasteOpen(true)}>📋 {s.viPasteOpen}</button>}
+                  {!pasteOpen && <button type="button" className="lu-link-btn" onClick={() => setPasteOpen(true)}><Icon name="paste" /> {s.viPasteOpen}</button>}
                 </div>
                 {pasteOpen && pasteBox}
                 {pasteNote && <p className="lu-note" role="status">{pasteNote}</p>}
@@ -418,7 +419,7 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
                 <p className="lu-hint">{newShow ? s.viBuildNew : s.viBuildEmpty}</p>
                 {(rows.length === 0 || pasteOpen) ? pasteBox : (
                   <div className="lu-row lu-vi-quick">
-                    <button type="button" className="lu-link-btn" onClick={() => setPasteOpen(true)}>📋 {s.viPasteAgain}</button>
+                    <button type="button" className="lu-link-btn" onClick={() => setPasteOpen(true)}><Icon name="paste" /> {s.viPasteAgain}</button>
                   </div>
                 )}
                 {pasteNote && <p className="lu-note" role="status">{pasteNote}</p>}
@@ -438,7 +439,7 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
                           <input className={`lu-video-time${r.time.trim() && sec === null ? ' is-bad' : ''}`} inputMode="decimal" placeholder={s.viLater}
                             aria-label={`${r.song}: ${s.videoStart}`} value={r.time} onChange={e => set({ time: e.target.value })}
                             onBlur={() => { if (sec !== null) set({ time: formatTime(sec) }); }} />
-                          <button type="button" className="lu-icon-btn is-danger" aria-label={s.remove} onClick={() => setRows(rs => rs.filter(x => x.key !== r.key))}>✕</button>
+                          <button type="button" className="lu-icon-btn is-danger" aria-label={s.remove} onClick={() => setRows(rs => rs.filter(x => x.key !== r.key))}><Icon name="close" /></button>
                         </li>
                       );
                     })}

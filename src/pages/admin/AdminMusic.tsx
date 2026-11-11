@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAlbums, useTracklists, useAllSetlists } from '../../hooks/useSheetData';
@@ -149,7 +150,7 @@ export default function AdminMusic() {
         filter={ui.filter} onFilter={ui.setFilter}
         sorts={sorts}
         sort={sort} onSort={v => ui.setSort(v as Sort)}
-        views={[{ value: 'list', label: `☰ ${s.viewList}` }, { value: 'table', label: `▦ ${s.viewTable}` }]}
+        views={[{ value: 'list', label: <><Icon name="list" /> {s.viewList}</> }, { value: 'table', label: <><Icon name="table" /> {s.viewTable}</> }]}
         view={ui.view} onView={v => ui.setView(v as View)}
         shown={list.length} total={albums.length}
       />

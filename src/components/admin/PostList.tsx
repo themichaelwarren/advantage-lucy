@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { AdminStrings } from '../../i18n/admin';
@@ -56,7 +57,7 @@ export default function PostList<T extends { id: string; date: string; status?: 
         filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
         sorts={[{ value: 'newest', label: s.sortNewest }, { value: 'oldest', label: s.sortOldest }, { value: 'title', label: s.sortTitle }]}
         sort={ui.sort} onSort={v => ui.setSort(v as Sort)}
-        views={[{ value: 'list', label: `☰ ${s.viewList}` }, { value: 'table', label: `▦ ${s.viewTable}` }]}
+        views={[{ value: 'list', label: <><Icon name="list" /> {s.viewList}</> }, { value: 'table', label: <><Icon name="table" /> {s.viewTable}</> }]}
         view={ui.view} onView={v => ui.setView(v as View)}
         shown={list.length} total={items.length}
       />
@@ -77,7 +78,7 @@ export default function PostList<T extends { id: string; date: string; status?: 
                   <td className="lu-td-date">{r.date}</td>
                   <td className="lu-td-title">
                     <Link to={`${base}/${r.id}`}>{titleOf(r)}</Link>
-                    {liveState(r) === 'scheduled' && <> <span className="lu-tag is-scheduled">🕒 {showDateTime(r.publish_at || '')}</span></>}
+                    {liveState(r) === 'scheduled' && <> <span className="lu-tag is-scheduled"><Icon name="clock" /> {showDateTime(r.publish_at || '')}</span></>}
                   </td>
                   <td className="lu-td-center">
                     <SwitchCell
@@ -101,7 +102,7 @@ export default function PostList<T extends { id: string; date: string; status?: 
                 <span className="lu-list-main"><strong>{titleOf(r)}</strong></span>
                 {liveState(r) === 'hidden' && <span className="lu-list-tags"><span className="lu-tag is-muted">{s.hidden}</span></span>}
                 {liveState(r) === 'scheduled' && (
-                  <span className="lu-list-tags"><span className="lu-tag is-scheduled">🕒 {s.scheduledTag.replace('{at}', showDateTime(r.publish_at || ''))}</span></span>
+                  <span className="lu-list-tags"><span className="lu-tag is-scheduled"><Icon name="clock" /> {s.scheduledTag.replace('{at}', showDateTime(r.publish_at || ''))}</span></span>
                 )}
               </Link>
             </li>

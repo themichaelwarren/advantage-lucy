@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getMessages, getAttachmentUrl, setMessageStatus, type MessageStatus } from '../../services/adminService';
@@ -21,7 +22,7 @@ function Attachments({ names }: { names: string[] }) {
     <div className="lu-attachments">
       {names.map((n, i) => urls[i]
         ? <a key={n} href={urls[i]!} target="_blank" rel="noopener noreferrer"><img src={urls[i]!} alt="" /></a>
-        : <span key={n} className="lu-attachment-loading">📎</span>)}
+        : <span key={n} className="lu-attachment-loading"><Icon name="attach" /></span>)}
     </div>
   );
 }
@@ -92,15 +93,15 @@ export default function AdminMessage() {
       <p className="lu-eyebrow"><Link to={`${prefix}/messages`}>← {s.messagesTitle}</Link></p>
       {flag?.kind === 'filtered' && (
         <div className="lu-alert lu-filter-banner">
-          <strong>🔒 {s.filterBanner}</strong>
+          <strong><Icon name="lock" /> {s.filterBanner}</strong>
           <span>{s.filterBannerBody}</span>
         </div>
       )}
       {flag?.kind === 'lookalike' && (
         <div className="lu-alert lu-filter-banner is-warn">
-          <strong>⚠ {s.filterLookalike}</strong>
+          <strong><Icon name="warn" /> {s.filterLookalike}</strong>
           <span>{s.filterLookalikeTip.replace('{email}', flag.listed)}</span>
-          <button type="button" className="lu-btn" disabled={busy || !filters} onClick={() => setConfirm('add')}>🔒 {s.filterSender}</button>
+          <button type="button" className="lu-btn" disabled={busy || !filters} onClick={() => setConfirm('add')}><Icon name="lock" /> {s.filterSender}</button>
         </div>
       )}
       <div className="lu-page-head">
@@ -119,8 +120,8 @@ export default function AdminMessage() {
         {!isSetlist && m.greeting && (<><dt>{s.greetingLabel}</dt><dd>{m.greeting}</dd></>)}
         {m.locale && (<><dt>{s.languageLabel}</dt><dd>{m.locale === 'ja' ? '日本語' : 'English'}</dd></>)}
         {isSetlist && m.event && (<><dt>{s.showLabel}</dt><dd><Link to={`${prefix}/events/${m.event}`}>{m.event}</Link></dd></>)}
-        {m.notified === 'no' && (<><dt>✉</dt><dd>{s.notEmailed}</dd></>)}
-        {m.notified?.startsWith('filtered') && (<><dt>✉</dt><dd>{m.notified === 'filtered' ? s.filterForwarded : s.filterNotForwarded}</dd></>)}
+        {m.notified === 'no' && (<><dt><Icon name="mail" /></dt><dd>{s.notEmailed}</dd></>)}
+        {m.notified?.startsWith('filtered') && (<><dt><Icon name="mail" /></dt><dd>{m.notified === 'filtered' ? s.filterForwarded : s.filterNotForwarded}</dd></>)}
       </dl>
 
       <p className="lu-message-text">{m.message}</p>
@@ -142,9 +143,9 @@ export default function AdminMessage() {
         {isSetlist && m.event && <a className="lu-btn" href={`/${locale}/events/${m.event}`} target="_blank" rel="noopener noreferrer">{s.viewOnSite} ↗</a>}
         {/* No reply button for a filtered sender: replying is exactly what to avoid */}
         {m.email && flag?.kind !== 'filtered' && (
-          <a className="lu-btn" href={`mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent('Re: advantage Lucy')}`}>✉ {s.reply}</a>
+          <a className="lu-btn" href={`mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent('Re: advantage Lucy')}`}><Icon name="mail" /> {s.reply}</a>
         )}
-        {m.email && !flag && <button type="button" className="lu-btn lu-btn-quiet" disabled={busy || !filters} onClick={() => setConfirm('add')}>🔒 {s.filterSender}</button>}
+        {m.email && !flag && <button type="button" className="lu-btn lu-btn-quiet" disabled={busy || !filters} onClick={() => setConfirm('add')}><Icon name="lock" /> {s.filterSender}</button>}
         {flag?.kind === 'filtered' && <button type="button" className="lu-btn lu-btn-quiet" disabled={busy || !filters} onClick={() => setConfirm('remove')}>{s.filterUnfilter}</button>}
       </div>
 

@@ -1,3 +1,4 @@
+import Icon, { type IconName } from '../../components/admin/Icon';
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -116,27 +117,27 @@ export default function AdminLayout() {
   // Sidebar: everything, grouped
   // Ordered by how often the band uses them: home and the inbox first, then
   // what gets published, the music archive, and where shows happen
-  const groups: { title?: string; links: { to: string; label: string; icon: string; end?: boolean; badge?: number }[] }[] = [
+  const groups: { title?: string; links: { to: string; label: string; icon: IconName; end?: boolean; badge?: number }[] }[] = [
     { links: [
-      { to: prefix, label: s.home, icon: '⌂', end: true },
-      { to: `${prefix}/messages`, label: s.messages, icon: '✉', badge: newMessages },
-      { to: `${prefix}/reservations`, label: s.reservations, icon: '🎫' },
+      { to: prefix, label: s.home, icon: 'home', end: true },
+      { to: `${prefix}/messages`, label: s.messages, icon: 'messages', badge: newMessages },
+      { to: `${prefix}/reservations`, label: s.reservations, icon: 'reservations' },
     ] },
     { title: s.groupContent, links: [
-      { to: `${prefix}/events`, label: s.shows, icon: '♪' },
-      { to: `${prefix}/news`, label: s.news, icon: '✎' },
-      { to: `${prefix}/blog`, label: s.blog, icon: '◎' },
-      { to: `${prefix}/photos`, label: s.photos, icon: '▣' },
+      { to: `${prefix}/events`, label: s.shows, icon: 'shows' },
+      { to: `${prefix}/news`, label: s.news, icon: 'news' },
+      { to: `${prefix}/blog`, label: s.blog, icon: 'blog' },
+      { to: `${prefix}/photos`, label: s.photos, icon: 'photos' },
     ] },
     { title: s.groupMusic, links: [
-      { to: `${prefix}/releases`, label: s.releases, icon: '◉' },
-      { to: `${prefix}/songs`, label: s.songs, icon: '♫' },
-      { to: `${prefix}/videos`, label: s.videosTitle, icon: '▶' },
-      { to: `${prefix}/people`, label: s.people, icon: '☺' },
+      { to: `${prefix}/releases`, label: s.releases, icon: 'releases' },
+      { to: `${prefix}/songs`, label: s.songs, icon: 'songs' },
+      { to: `${prefix}/videos`, label: s.videosTitle, icon: 'videos' },
+      { to: `${prefix}/people`, label: s.people, icon: 'people' },
     ] },
     { title: s.groupPlaces, links: [
-      { to: `${prefix}/venues`, label: s.venues, icon: '⌖' },
-      { to: `${prefix}/areas`, label: s.areas, icon: '◫' },
+      { to: `${prefix}/venues`, label: s.venues, icon: 'venues' },
+      { to: `${prefix}/areas`, label: s.areas, icon: 'areas' },
     ] },
   ];
 
@@ -188,7 +189,7 @@ export default function AdminLayout() {
                   data-tip={l.badge ? `${l.label} · ${l.badge} ${s.msgNew}` : l.label}
                   className={({ isActive }) => `lu-side-link${isActive || (l.to.endsWith('/areas') && /\/(prefectures|countries)(\/|$)/.test(location.pathname)) ? ' active' : ''}`}
                 >
-                  <span className="lu-side-icon" aria-hidden="true">{l.icon}</span>
+                  <span className="lu-side-icon" aria-hidden="true"><Icon name={l.icon} /></span>
                   <span className="lu-side-label">{l.label}</span>
                   {!!l.badge && <span className="lu-side-badge" aria-label={`${l.badge} ${s.msgNew}`}>{l.badge}</span>}
                 </NavLink>
@@ -202,7 +203,7 @@ export default function AdminLayout() {
               {otherLocale === 'ja' ? <><span className="lu-side-label">日本語</span><span className="lu-side-short" aria-hidden="true">日</span></> : <><span className="lu-side-label">English</span><span className="lu-side-short" aria-hidden="true">EN</span></>}
             </Link>
             <span data-tip={locale === 'ja' ? 'ライト／ダーク' : 'Light / dark'} data-tip-keys={keys.theme} data-tip-always><ThemeToggle locale={locale} noTitle /></span>
-            <NavLink to={`${prefix}/help`} className="lu-side-tool" aria-label={s.help} data-tip={s.help} data-tip-always>?</NavLink>
+            <NavLink to={`${prefix}/help`} className="lu-side-tool" aria-label={s.help} data-tip={s.help} data-tip-always><Icon name="help" /></NavLink>
             <Link to={`/${locale}`} className="lu-side-tool" aria-label={s.viewSite} data-tip={s.viewSite} data-tip-always>
               <Svg d="M7 17 17 7M8 7h9v9" size={17} />
             </Link>

@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useState } from 'react';
 import type { AdminStrings } from '../../i18n/admin';
 import { parseTimestamps, type PastedSong } from '../../utils/timestamps';
@@ -33,7 +34,7 @@ export default function TimestampPaste({ s, label, withLink, onRead }: {
   if (!open) {
     return (
       <div className="lu-paste-closed">
-        <button type="button" className="lu-link-btn" onClick={() => { setOpen(true); setNote(''); }}>📋 {label}</button>
+        <button type="button" className="lu-link-btn" onClick={() => { setOpen(true); setNote(''); }}><Icon name="paste" /> {label}</button>
         {note && <p className="lu-note" role="status">{note}</p>}
       </div>
     );

@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { AdminStrings } from '../../i18n/admin';
@@ -177,7 +178,7 @@ export default function SongVideos({ s, locale, prefix, songId, title, media, pl
                 </select>
               )}
               <button type="button" className="lu-icon-btn is-danger" aria-label={s.videoRemove} title={s.videoRemove}
-                onClick={() => (r.url.trim() ? setRemoving(i) : setRows(rs => rs.filter((_, j) => j !== i)))}>✕</button>
+                onClick={() => (r.url.trim() ? setRemoving(i) : setRows(rs => rs.filter((_, j) => j !== i)))}><Icon name="close" /></button>
             </div>
           ))}
           <div className="lu-row lu-section-actions">
@@ -194,7 +195,7 @@ export default function SongVideos({ s, locale, prefix, songId, title, media, pl
       {!editingRows && (
         <div className="lu-vfoot">
           <button type="button" className="lu-link-btn" onClick={() => setRows([{ url: '', title: '', show: '' }])}>+ {s.videoAdd}</button>
-          {ownItems.length > 0 && <button type="button" className="lu-link-btn" onClick={startEditOwn}>✎ {s.songVideosEditOwn}</button>}
+          {ownItems.length > 0 && <button type="button" className="lu-link-btn" onClick={startEditOwn}><Icon name="edit" /> {s.songVideosEditOwn}</button>}
           {state === 'saved' && <span className="lu-hint">✓ {s.songVideosSaved}</span>}
         </div>
       )}

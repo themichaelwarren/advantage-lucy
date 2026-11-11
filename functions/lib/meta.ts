@@ -31,7 +31,7 @@ const TAGLINE = {
   ja: '1995年から東京で活動するインディーポップバンド、advantage Lucy の公式サイト。ライブ情報とチケット予約、歴代のセットリスト、リリース、歌詞、ニュース。',
 };
 const LIST_TITLES: Record<string, { en: string; ja: string }> = {
-  events: { en: 'Events', ja: 'イベント' },
+  events: { en: 'Shows', ja: 'ライブ' },
   news: { en: 'News', ja: 'ニュース' },
   blog: { en: 'Blog', ja: 'ブログ' },
   releases: { en: 'Music', ja: '音楽' },

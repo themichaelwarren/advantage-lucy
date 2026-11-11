@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAlbums, useTracklists, useAllSongs, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
@@ -266,9 +267,9 @@ export default function AdminAlbumForm() {
                 />
                 {t.title.trim() && !song && <span className="lu-tag is-muted">{s.songNotListed}</span>}
                 <span className="lu-song-actions">
-                  <button type="button" className="lu-icon-btn" onClick={() => moveTrack(i, -1)} disabled={i === 0} aria-label={s.moveUp}>↑</button>
-                  <button type="button" className="lu-icon-btn" onClick={() => moveTrack(i, 1)} disabled={i === tracks.length - 1} aria-label={s.moveDown}>↓</button>
-                  <button type="button" className="lu-icon-btn is-danger" onClick={() => setTracks(tracks.filter(x => x.key !== t.key))} aria-label={s.remove}>✕</button>
+                  <button type="button" className="lu-icon-btn" onClick={() => moveTrack(i, -1)} disabled={i === 0} aria-label={s.moveUp}><Icon name="up" /></button>
+                  <button type="button" className="lu-icon-btn" onClick={() => moveTrack(i, 1)} disabled={i === tracks.length - 1} aria-label={s.moveDown}><Icon name="down" /></button>
+                  <button type="button" className="lu-icon-btn is-danger" onClick={() => setTracks(tracks.filter(x => x.key !== t.key))} aria-label={s.remove}><Icon name="close" /></button>
                 </span>
               </li>
             );
@@ -335,7 +336,7 @@ export default function AdminAlbumForm() {
   const totalPlays = rows.reduce((n, r) => n + r.shows, 0);
   const maxShows = Math.max(1, ...rows.map(r => r.shows));
   const editBtn = (which: 'details' | 'notes' | 'cover', label = s.songEdit) => (
-    <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={label} title={label}>✎</button>
+    <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={label} title={label}><Icon name="edit" /></button>
   );
   const hasNotes = !!(sf.description_en || sf.description_ja);
   const hasListen = !!sf.listen_url || LISTEN_SERVICES.some(x => sf[x.column]);
@@ -406,7 +407,7 @@ export default function AdminAlbumForm() {
             title={`${s.secTracklist}${rows.length ? ` · ${rows.length}` : ''}`}
             id="tracklist"
             aside={!tracksEditing && rows.length > 0
-              ? <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setTracksEditing(true)} aria-label={s.songEdit} title={s.songEdit}>✎</button>
+              ? <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setTracksEditing(true)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
               : undefined}
           >
             {tracksEditing ? (

@@ -1221,7 +1221,7 @@ body:has(tr.is-dragging) { cursor: grabbing; user-select: none; }
 .lu-messages li.is-done .lu-message-head { opacity: 0.6; }
 .lu-btn-done { background: #3fcf8e; border-color: var(--text); color: var(--on-pop, #1a1a1a); }
 .lu-new-messages { margin-bottom: 2rem; }
-.lu-new-messages h2 { display: flex; align-items: center; gap: 0.5rem; }
+.lu-new-messages h2, .lu-home-reservations h2 { display: flex; align-items: center; gap: 0.5rem; }
 .lu-badge { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: var(--pop); color: var(--text); font-size: 0.8rem; }
 .lu-section-link { margin-left: auto; font-size: 0.85rem; font-weight: 600; text-transform: none; letter-spacing: 0; text-decoration: underline; }
 .lu-snippet { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
@@ -2009,3 +2009,17 @@ a.lu-rel-svc.is-on:hover { background: var(--text); color: var(--bg); }
 .lu-vis-toggle.is-on .lu-vis-knob::after { transform: translateX(0.8rem); background: #1a1a1a; }
 .lu-vis-toggle:disabled { opacity: 0.6; cursor: wait; }
 .lu-lyrics-hidden { margin: 0 0 0.6rem; }
+
+/* ---------- ICONS (Lucide, via components/admin/Icon) ---------- */
+.lu-ic { display: inline-block; width: 1.05em; height: 1.05em; flex-shrink: 0; vertical-align: -0.17em; stroke-linecap: round; stroke-linejoin: round; }
+.lu-icon-btn .lu-ic { width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.lu-icon-btn:hover:not(:disabled) { color: var(--text); }
+.lu-edit-btn .lu-ic { width: 1rem; height: 1rem; }
+.lu-side-icon .lu-ic { width: 1.15rem; height: 1.15rem; vertical-align: middle; }
+.lu-task-icon .lu-ic { width: 1.6rem; height: 1.6rem; stroke-width: 1.8; }
+.lu-vi-choice-icon .lu-ic { width: 1.5rem; height: 1.5rem; }
+.lu-tag .lu-ic, .lu-pill .lu-ic { width: 0.95em; height: 0.95em; vertical-align: -0.12em; }
+.lu-alert .lu-ic { width: 1.1em; height: 1.1em; }
+.lu-message-facts dt .lu-ic { width: 1rem; height: 1rem; }
+.lu-side-tool .lu-ic { width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.lu-help-icon .lu-ic { width: 1.15em; height: 1.15em; vertical-align: -0.15em; }

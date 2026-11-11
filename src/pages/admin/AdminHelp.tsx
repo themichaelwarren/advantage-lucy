@@ -1,3 +1,4 @@
+import Icon, { type IconName } from '../../components/admin/Icon';
 import { Link } from 'react-router-dom';
 import { useAdminT } from '../../i18n/admin';
 
@@ -12,7 +13,7 @@ import { useAdminT } from '../../i18n/admin';
 
 type Section = {
   id: string;
-  icon: string;
+  icon: IconName;
   title: string;
   /** Admin page this section is about (path after /:locale/admin) */
   link?: { to: string; label: string };
@@ -30,7 +31,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
   ask: 'Ask Michael. If something here is wrong or missing, say so and this page gets updated.',
   sections: [
     {
-      id: 'basics', icon: '★', title: 'The basics',
+      id: 'basics', icon: 'star', title: 'The basics',
       points: [
         'Sign in with the Google account the band added to the admin list. A sign-in lasts about an hour. When it runs out, a banner asks you to sign in again, and nothing you typed is lost.',
         `Search (${searchKey}, or the Search button) finds shows, songs, releases, venues and people, and has shortcuts like “Add show”. Songs and releases are found by any of their titles or the reading: “Onboru”, “おんぼろ” and “オンボロ” all work.`,
@@ -43,7 +44,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       ],
     },
     {
-      id: 'shows', icon: '♪', title: 'Shows',
+      id: 'shows', icon: 'shows', title: 'Shows',
       link: { to: 'events', label: 'Open Shows' },
       points: [
         'Add a show with the date, venue, times, prices, ticket link and flyer. Type to find a venue, or add a new one right there.',
@@ -58,7 +59,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       ],
     },
     {
-      id: 'reservations', icon: '🎫', title: 'Reservations',
+      id: 'reservations', icon: 'reservations', title: 'Reservations',
       link: { to: 'reservations', label: 'Open Reservations' },
       points: [
         'Turn it on in a show’s Tickets section with “Take reservations on the site”. Then set how many tickets there are (the form closes by itself when they’re gone), the most per person (blank = 4), and when the form closes (blank = 23:59 the day before, Japan time).',
@@ -72,7 +73,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       ],
     },
     {
-      id: 'messages', icon: '✉', title: 'Messages',
+      id: 'messages', icon: 'messages', title: 'Messages',
       link: { to: 'messages', label: 'Open Messages' },
       points: [
         'Messages from the contact form on the site land here, and each one is also emailed to the band.',
@@ -83,7 +84,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       ],
     },
     {
-      id: 'posts', icon: '✎', title: 'News, blog and photos',
+      id: 'posts', icon: 'news', title: 'News, blog and photos',
       points: [
         'News: a title and text in each language, an optional image, and when it goes live. Line breaks are kept as you type; a blank line starts a new paragraph. Select words and use Link or Bold.',
         'Blog posts are Instagram posts: open the post on Instagram, tap ⋯ → Copy link, and paste it in.',
@@ -95,7 +96,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       ],
     },
     {
-      id: 'music', icon: '♫', title: 'Music',
+      id: 'music', icon: 'songs', title: 'Music',
       link: { to: 'songs', label: 'Open Songs' },
       points: [
         'Songs is a table: click a heading to sort (again to reverse), and combine the filters (no lyrics, no key, never played…) or pick a key.',
@@ -116,7 +117,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       ],
     },
     {
-      id: 'places', icon: '⌖', title: 'Venues and places',
+      id: 'places', icon: 'venues', title: 'Venues and places',
       link: { to: 'venues', label: 'Open Venues' },
       points: [
         'Venues sit in areas (like Shimokitazawa), areas in prefectures, and prefectures in countries.',
@@ -125,7 +126,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       ],
     },
     {
-      id: 'sheet', icon: '▦', title: 'Behind the scenes',
+      id: 'sheet', icon: 'table', title: 'Behind the scenes',
       points: [
         'All the data lives in the band’s Google Sheet. You can edit it there directly, but the admin is safer: never rename tabs or column headings, or the site can’t find them.',
         'Google limits how often the sheet can be read. If a page says it couldn’t load, wait a minute and try again.',
@@ -142,7 +143,7 @@ const ja: typeof en = {
   ask: 'Michaelに聞いてください。このページの間違いや足りないところも、教えてもらえれば更新します。',
   sections: [
     {
-      id: 'basics', icon: '★', title: '基本',
+      id: 'basics', icon: 'star', title: '基本',
       points: [
         'バンドが管理者リストに登録したGoogleアカウントでログインします。ログインは約1時間有効です。切れたときは上にお知らせが出るので、もう一度ログインしてください。入力中の内容は消えません。',
         `検索（${searchKey}、または「検索」ボタン）で、ライブ・楽曲・リリース・会場・人物をまとめて探せます。「ライブを追加」などのショートカットもあります。曲とリリースは、どのタイトルでも読みでも見つかります（「Onboru」「おんぼろ」「オンボロ」どれでもOK）。`,
@@ -155,7 +156,7 @@ const ja: typeof en = {
       ],
     },
     {
-      id: 'shows', icon: '♪', title: 'ライブ',
+      id: 'shows', icon: 'shows', title: 'ライブ',
       link: { to: 'events', label: 'ライブを開く' },
       points: [
         '日付・会場・時間・料金・チケットのリンク・フライヤーを入れてライブを追加します。会場は名前を打つと候補が出ます。新しい会場はその場で追加できます。',
@@ -170,7 +171,7 @@ const ja: typeof en = {
       ],
     },
     {
-      id: 'reservations', icon: '🎫', title: '予約',
+      id: 'reservations', icon: 'reservations', title: '予約',
       link: { to: 'reservations', label: '予約を開く' },
       points: [
         'ライブの「チケット」欄で「サイトで予約を受け付ける」をオンにします。予約枠（埋まったら自動で締め切り）、1人あたりの上限（空欄＝4枚）、締め切り（空欄＝前日23:59、日本時間）を設定できます。',
@@ -184,7 +185,7 @@ const ja: typeof en = {
       ],
     },
     {
-      id: 'messages', icon: '✉', title: 'メッセージ',
+      id: 'messages', icon: 'messages', title: 'メッセージ',
       link: { to: 'messages', label: 'メッセージを開く' },
       points: [
         'サイトのお問い合わせフォームからのメッセージはここに届きます。同じ内容がバンドにもメールで届きます。',
@@ -195,7 +196,7 @@ const ja: typeof en = {
       ],
     },
     {
-      id: 'posts', icon: '✎', title: 'ニュース・ブログ・写真',
+      id: 'posts', icon: 'news', title: 'ニュース・ブログ・写真',
       points: [
         'ニュース：各言語のタイトルと本文、画像（任意）、公開のタイミングを入れます。改行は入力したとおりに反映され、空行で段落が分かれます。文字を選んでリンクや太字にできます。',
         'ブログはInstagramの投稿です。Instagramで投稿を開き、⋯ →「リンクをコピー」して貼り付けます。',
@@ -207,7 +208,7 @@ const ja: typeof en = {
       ],
     },
     {
-      id: 'music', icon: '♫', title: '音楽',
+      id: 'music', icon: 'songs', title: '音楽',
       link: { to: 'songs', label: '楽曲を開く' },
       points: [
         '「楽曲」は表になっています。見出しを押すと並べ替え（もう一度で逆順）、絞り込み（歌詞なし・キーなし・未演奏など）は組み合わせられ、キーでも絞り込めます。',
@@ -228,7 +229,7 @@ const ja: typeof en = {
       ],
     },
     {
-      id: 'places', icon: '⌖', title: '会場・エリア',
+      id: 'places', icon: 'venues', title: '会場・エリア',
       link: { to: 'venues', label: '会場を開く' },
       points: [
         '会場はエリア（下北沢など）に、エリアは都道府県に、都道府県は国に属しています。',
@@ -237,7 +238,7 @@ const ja: typeof en = {
       ],
     },
     {
-      id: 'sheet', icon: '▦', title: 'しくみ',
+      id: 'sheet', icon: 'table', title: 'しくみ',
       points: [
         'データはすべてバンドのGoogleスプレッドシートにあります。シートを直接編集することもできますが、管理画面からの方が安全です。タブ名や列の見出しは変えないでください（サイトが読めなくなります）。',
         'Googleにはシートを読める回数の上限があります。「読み込めませんでした」と出たら、1分ほど待ってからもう一度開いてください。',
@@ -266,7 +267,7 @@ export default function AdminHelp() {
       <nav className="lu-help-toc" aria-label={t.contents}>
         {t.sections.map(sec => (
           <button key={sec.id} type="button" className="lu-pill" onClick={() => jump(sec.id)}>
-            <span aria-hidden="true">{sec.icon}</span>&nbsp;{sec.title}
+            <span aria-hidden="true"><Icon name={sec.icon} /></span>&nbsp;{sec.title}
           </button>
         ))}
       </nav>
@@ -274,7 +275,7 @@ export default function AdminHelp() {
       {t.sections.map(sec => (
         <section key={sec.id} id={`help-${sec.id}`} className="lu-help-section">
           <div className="lu-help-head">
-            <h2><span className="lu-help-icon" aria-hidden="true">{sec.icon}</span>{sec.title}</h2>
+            <h2><span className="lu-help-icon" aria-hidden="true"><Icon name={sec.icon} /></span>{sec.title}</h2>
             {sec.link && <Link to={`${prefix}/${sec.link.to}`} className="lu-help-link">{sec.link.label} →</Link>}
           </div>
           <ul>

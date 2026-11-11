@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useVenues, useAreas, useAllEvents, usePrefectures, useCountries, useAllSetlists, useAllSongs } from '../../hooks/useSheetData';
@@ -222,7 +223,7 @@ export default function AdminVenueForm() {
           <div className="lu-song-card">
             <div className="lu-song-card-head">
               <p className="lu-eyebrow"><Link to={`${prefix}/venues`}>← {s.venuesTitle}</Link></p>
-              <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setEditing(true)} aria-label={s.songEdit} title={s.songEdit}>✎</button>
+              <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setEditing(true)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
             </div>
             <div>
               <h1>{name}</h1>

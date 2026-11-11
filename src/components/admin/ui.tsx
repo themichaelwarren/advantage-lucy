@@ -1,3 +1,4 @@
+import Icon from './Icon';
 /**
  * Small building blocks shared by the admin forms, so every screen looks and
  * behaves the same: labelled fields with hints, sections, a sticky save bar,
@@ -382,7 +383,7 @@ export function EditDialog({ s, title, open, onClose, onSave, saving, error, chi
       >
         <header className="lu-edit-dialog-head">
           <h3>{title}</h3>
-          <button type="button" className="lu-icon-btn" onClick={onClose} disabled={saving} aria-label={s.close}>✕</button>
+          <button type="button" className="lu-icon-btn" onClick={onClose} disabled={saving} aria-label={s.close}><Icon name="close" /></button>
         </header>
         <div className="lu-edit-dialog-body">{children}</div>
         <footer className="lu-edit-dialog-foot">

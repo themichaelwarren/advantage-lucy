@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getMessages } from '../../services/adminService';
@@ -19,7 +20,7 @@ export default function NewMessages() {
   return (
     <section className="lu-list-group lu-new-messages">
       <h2>
-        ✉ {s.newMessages}{fresh.length > 0 && <span className="lu-badge">{fresh.length}</span>}
+        <Icon name="mail" /> {s.newMessages}{fresh.length > 0 && <span className="lu-badge">{fresh.length}</span>}
         <Link to={`${prefix}/messages`} className="lu-section-link">{s.allMessagesLink} →</Link>
       </h2>
       {fresh.length === 0 ? <p className="lu-empty">{s.noNewMessages}</p> : (

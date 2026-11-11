@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { getMessages } from '../../services/adminService';
@@ -61,7 +62,7 @@ export default function AdminMessages() {
             { value: 'done', label: s.msgDone },
             { value: 'all', label: s.filterAll },
             { value: 'setlist', label: `♪ ${s.setlistInfo}` },
-            { value: 'filtered', label: `🔒 ${s.filterTab}${filteredOut.length ? ` · ${filteredOut.length}` : ''}` },
+            { value: 'filtered', label: <><Icon name="lock" /> {s.filterTab}{filteredOut.length ? ` · ${filteredOut.length}` : ''}</> },
           ]}
           filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
           sorts={[{ value: 'newest', label: s.sortNewest }, { value: 'oldest', label: s.sortOldest }]}

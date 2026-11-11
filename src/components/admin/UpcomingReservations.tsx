@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getReservations, type Reservation } from '../../services/adminService';
@@ -18,10 +19,10 @@ export default function UpcomingReservations({ events }: { events: Event[] }) {
 
   if (!shows.length) return null;
   return (
-    <section className="lu-list-group">
+    <section className="lu-list-group lu-home-reservations">
       <h2>
-        🎫 {s.reservations}
-        <Link to={`${prefix}/reservations`} className="lu-section-link">{s.reservations} →</Link>
+        <Icon name="ticket" /> {s.reservations}
+        <Link to={`${prefix}/reservations`} className="lu-section-link">{s.allReservationsLink} →</Link>
       </h2>
       <ul className="lu-list">
         {shows.map(e => {

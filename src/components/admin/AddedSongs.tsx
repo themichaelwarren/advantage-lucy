@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { Link } from 'react-router-dom';
 import type { Song } from '../../types';
 import type { AdminStrings } from '../../i18n/admin';
@@ -20,7 +21,7 @@ export default function AddedSongs({ s, songs, prefix, onClose }: {
         <br />
         <span className="lu-hint">{s.songsAddedHint}</span>
       </span>
-      <button type="button" className="lu-icon-btn" onClick={onClose} aria-label={s.close}>✕</button>
+      <button type="button" className="lu-icon-btn" onClick={onClose} aria-label={s.close}><Icon name="close" /></button>
     </p>
   );
 }

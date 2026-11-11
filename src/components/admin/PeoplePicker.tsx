@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import SuggestInput from './SuggestInput';
@@ -46,7 +47,7 @@ export default function PeoplePicker({ s, locale, id, value, onChange, people, p
           {byId.get(pid) && personHref
             ? <Link to={personHref(pid)} onClick={e => e.stopPropagation()}>{personName(byId.get(pid)!, locale)}</Link>
             : byId.get(pid) ? personName(byId.get(pid)!, locale) : pid}
-          <button type="button" aria-label={`${s.remove}: ${byId.get(pid) ? personName(byId.get(pid)!, locale) : pid}`} onClick={e => { e.stopPropagation(); onChange(chosen.filter(x => x !== pid).join(',')); }}>✕</button>
+          <button type="button" aria-label={`${s.remove}: ${byId.get(pid) ? personName(byId.get(pid)!, locale) : pid}`} onClick={e => { e.stopPropagation(); onChange(chosen.filter(x => x !== pid).join(',')); }}><Icon name="close" /></button>
         </span>
       ))}
       {available.length > 0 && (

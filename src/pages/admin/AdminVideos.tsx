@@ -1,3 +1,4 @@
+import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAllEvents, useAllSongs, useAllSetlists, useVenues, useAreas } from '../../hooks/useSheetData';
@@ -116,7 +117,7 @@ export default function AdminVideos() {
       <div className="lu-page-head">
         <div>
           <h1>{s.videosTitle} <span className="lu-count">{videos.length}</span></h1>
-          <p className="lu-hint lu-videos-intro">🔒 <span className="is-long">{s.videosIndexHint}</span><span className="is-short">{s.videosIndexHintShort}</span></p>
+          <p className="lu-hint lu-videos-intro"><Icon name="lock" /> <span className="is-long">{s.videosIndexHint}</span><span className="is-short">{s.videosIndexHintShort}</span></p>
         </div>
         <button type="button" className="lu-btn lu-btn-primary lu-btn-lg" onClick={() => setAdding(true)}>+ {s.videoAdd}</button>
       </div>
@@ -223,7 +224,7 @@ function VideoViewer({ v, onClose, s, locale, prefix, showName }: {
             {v.event && <Link to={`${prefix}/events/${v.event.id}`} onClick={onClose}>{v.event.date} · {showName(v.event)} →</Link>}
             {v.song && <Link to={`${prefix}/songs/${v.song.id}`} onClick={onClose}>♫ {songTitle(v.song, locale)} →</Link>}
           </div>
-          <button type="button" className="lu-icon-btn" onClick={onClose} aria-label={s.close}>✕</button>
+          <button type="button" className="lu-icon-btn" onClick={onClose} aria-label={s.close}><Icon name="close" /></button>
         </header>
         <div className="lu-vviewer-body">
           <YouTubePlayer videoId={v.ytId!} autoplay onReady={setPlayer} title={name} />
