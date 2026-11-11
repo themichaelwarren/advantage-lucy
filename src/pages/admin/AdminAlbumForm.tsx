@@ -1,7 +1,7 @@
 import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAlbums, useTracklists, useAllSongs, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
+import { useAllAlbums, useAllTracklists, useAllSongs, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, replaceRows, getArrangements, type ArrangementRow } from '../../services/adminService';
 import SuggestInput, { normalize } from '../../components/admin/SuggestInput';
 import { addMissingSongs } from '../../components/admin/songs';
@@ -16,7 +16,7 @@ import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { useAdminT } from '../../i18n/admin';
 import {
   Section, Field, FieldGroup, BilingualRow, SaveBar, ImageField, DeleteButton, EditDialog,
-  useUnsavedWarning, makeId, errorText,
+  useUnsavedWarning, makeId, errorText, VisToggle,
 } from '../../components/admin/ui';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
@@ -25,6 +25,7 @@ const ALBUM_COLUMNS = [
   'format', 'label', 'artwork_url', 'listen_url',
   'description_en', 'description_ja',
   ...LISTEN_COLUMNS,
+  'status',
 ] as const;
 type AlbumField = typeof ALBUM_COLUMNS[number];
 type Form = Record<AlbumField, string>;
@@ -45,8 +46,8 @@ export default function AdminAlbumForm() {
   const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
-  const { albums, loading } = useAlbums();
-  const { tracklists } = useTracklists();
+  const { albums, loading } = useAllAlbums();
+  const { tracklists } = useAllTracklists();
   const { songs, refresh: refreshSongs } = useAllSongs();
   const { setlists } = useAllSetlists();
   const { events } = useAllEvents();
@@ -82,7 +83,7 @@ export default function AdminAlbumForm() {
     const f: Form = {
       id: a.id, title: a.title || '', title_en: a.title_en || '', title_kana: a.title_kana || '', date: a.date || '', year: a.year || '', type: a.type || '',
       number: a.number || '', format: a.format || '', label: a.label || '', artwork_url: a.coverUrl || '',
-      listen_url: a.listenUrl || '', description_en: a.description_en || '', description_ja: a.description_ja || '',
+      listen_url: a.listenUrl || '', description_en: a.description_en || '', description_ja: a.description_ja || '', status: a.status || '',
       ...Object.fromEntries(LISTEN_SERVICES.map(x => [x.column, a.listen?.[x.key] || ''])) as Record<typeof LISTEN_COLUMNS[number], string>,
     };
     const t = tracklists.filter(x => x.release === a.title).sort((x, y) => x.track - y.track).map(x => track(x.title));
@@ -110,7 +111,7 @@ export default function AdminAlbumForm() {
     : [form, tracks.map(t => t.title)];
 
   /** Saves the release and its tracklist; true if it worked. */
-  async function save(): Promise<boolean> {
+  async function save(extra: Partial<Form> = {}): Promise<boolean> {
     if (!form.title.trim()) { setTitleError(s.releaseTitleMissing); return false; }
     setSaving(true);
     setError('');
@@ -119,7 +120,7 @@ export default function AdminAlbumForm() {
       const albumId = isNew
         ? makeId([/^[\x20-\x7e]+$/.test(form.title) ? form.title : `${year || 'release'}-${Date.now().toString(36)}`], new Set(albums.map(a => a.id)))
         : form.id;
-      const fields = { ...form, id: albumId, year, title: form.title.trim() };
+      const fields = { ...form, ...extra, id: albumId, year, title: form.title.trim() };
       if (isNew) await createRow('Albums', fields);
       else await updateRow('Albums', albumId, fields);
 
@@ -349,7 +350,11 @@ export default function AdminAlbumForm() {
           <div className="lu-song-card">
             <div className="lu-song-card-head">
               <p className="lu-eyebrow"><Link to={`${prefix}/releases`}>← {s.releasesTitle}</Link></p>
-              {editBtn('details')}
+              <span className="lu-row lu-card-tools">
+                <VisToggle on={sf.status !== 'private'} onLabel={s.visPageShort} offLabel={s.songDraft} tip={s.visReleaseTip} busy={saving}
+                  onFlip={() => save({ status: sf.status === 'private' ? '' : 'private' })} />
+                {editBtn('details')}
+              </span>
             </div>
             <div className="lu-rel-art">
               {sf.artwork_url
@@ -359,6 +364,7 @@ export default function AdminAlbumForm() {
             </div>
             <div>
               <h1>{sf.title}</h1>
+              {sf.status === 'private' && <p className="lu-song-draft"><span className="lu-tag is-muted"><Icon name="lock" /> {s.songDraft}</span><span className="lu-hint">{s.visReleaseOff}</span></p>}
               {(sf.title_en && sf.title_en !== sf.title || sf.title_kana) && (
                 <p className="lu-song-alt lu-rel-alt">
                   {sf.title_en && sf.title_en !== sf.title && <span lang="en">{sf.title_en}</span>}

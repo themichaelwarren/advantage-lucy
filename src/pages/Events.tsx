@@ -61,7 +61,15 @@ export default function Events({ locale }: Props) {
 
   const setlistLabel = locale === 'ja' ? 'セットリストあり' : 'Has setlist';
 
-  const row = (event: Event) => {
+  // Setlists added lately (the archive keeps growing): newest first, public ones only
+  const since = new Date(Date.parse(`${today}T00:00:00Z`) - 90 * 86400000).toISOString().slice(0, 10);
+  const recentlyAdded = events
+    .filter(e => e.setlist_added && e.setlist_added >= since && withSetlist.has(e.id))
+    .sort((a, b) => (b.setlist_added || '').localeCompare(a.setlist_added || '') || b.date.localeCompare(a.date))
+    .slice(0, 5);
+  const addedOn = (d: string) => (locale === 'ja' ? `${Number(d.slice(5, 7))}月${Number(d.slice(8, 10))}日に追加` : `Added ${new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${d}T00:00:00Z`))}`);
+
+  const row = (event: Event, added?: string) => {
     const title = locale === 'ja' ? event.title_ja || event.title_en : event.title_en || event.title_ja;
     const venue = locale === 'ja' ? event.venue_ja || event.venue_en : event.venue_en || event.venue_ja;
     const area = locale === 'ja' ? event.city_ja || event.city_en : event.city_en || event.city_ja;
@@ -75,8 +83,10 @@ export default function Events({ locale }: Props) {
           </time>
           <span className="tl-main">
             <strong>{title || venue}</strong>
-            <span>{[title ? venue : '', area].filter(Boolean).join(' · ')}</span>
+            {/* Dug-up setlists are of old shows: say which year */}
+            <span>{[added ? event.date.slice(0, 4) : '', title ? venue : '', area].filter(Boolean).join(' · ')}</span>
           </span>
+          {added && <span className="tl-added">{addedOn(added)}</span>}
           {withSetlist.has(event.id) && (
             <span className="tl-setlist" title={setlistLabel} aria-label={setlistLabel}>♪</span>
           )}
@@ -128,6 +138,14 @@ export default function Events({ locale }: Props) {
         <p className="events-empty-note">{s.events.noUpcoming}</p>
       )}
 
+      {!search && recentlyAdded.length > 0 && (
+        <section className="tl-recent">
+          <h2 className="section-label">{s.events.recentSetlists}</h2>
+          <p className="tl-recent-hint">{s.events.recentSetlistsHint}</p>
+          <ul className="tl-list">{recentlyAdded.map(e => row(e, e.setlist_added))}</ul>
+        </section>
+      )}
+
       <div className="timeline">
         {pastByYear.map(([year, list]) => (
           <section key={year} id={`y${year}`} className="tl-year">
@@ -135,7 +153,7 @@ export default function Events({ locale }: Props) {
               {year}
               <span>{list.length}{locale === 'ja' ? '公演' : list.length === 1 ? ' show' : ' shows'}</span>
             </h2>
-            <ul className="tl-list">{list.map(row)}</ul>
+            <ul className="tl-list">{list.map(e => row(e))}</ul>
           </section>
         ))}
       </div>

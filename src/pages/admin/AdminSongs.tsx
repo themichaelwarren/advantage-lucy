@@ -17,7 +17,9 @@ import { songAltTitle, songSortKey, songSearchText, songQuery } from '../../util
  * filters combine ("no lyrics" + "played live"), and there's a key picker.
  */
 type SortKey = 'title' | 'key' | 'plays' | 'last' | 'videos';
-type Flag = 'nolyrics' | 'nokey' | 'nocredits' | 'cover' | 'neverplayed' | 'played' | 'videos' | 'draft';
+type Flag = 'nolyrics' | 'nokey' | 'nocredits' | 'cover' | 'neverplayed' | 'played' | 'videos' | 'draft' | 'noen' | 'nokana' | 'emptylyrics';
+// Reached from the home page's "what's missing" list; their chips only show while on
+const LINK_FLAGS: Flag[] = ['noen', 'nokana', 'emptylyrics'];
 const FLAGS: Flag[] = ['nolyrics', 'nokey', 'nocredits', 'cover', 'neverplayed', 'played', 'videos', 'draft'];
 const PREFS = 'admin-songs-table';
 
@@ -34,6 +36,9 @@ interface Row {
   lyrics: boolean;
   lyricsHidden: boolean;
   lyricsEmpty: boolean;
+  hasEn: boolean;
+  hasKana: boolean;
+  ja: boolean;
   plays: number;
   last: string;             // date of the last show that's over
   videos: number;
@@ -44,7 +49,12 @@ interface Row {
 
 function loadPrefs(): { sort: SortKey; desc: boolean; flags: Flag[]; key: string } {
   const d = { sort: 'title' as SortKey, desc: false, flags: [] as Flag[], key: '' };
-  try { return { ...d, ...JSON.parse(localStorage.getItem(PREFS) || '{}') }; } catch { return d; }
+  let saved = d;
+  try { saved = { ...d, ...JSON.parse(localStorage.getItem(PREFS) || '{}') }; } catch { /* private mode */ }
+  // A link can pick one filter: /admin/songs?flag=noen
+  const flag = new URLSearchParams(location.search).get('flag') as Flag | null;
+  if (flag && (FLAGS.includes(flag) || LINK_FLAGS.includes(flag))) return { ...saved, flags: [flag], key: '' };
+  return { ...saved, flags: saved.flags.filter(f => !LINK_FLAGS.includes(f)) };
 }
 
 export default function AdminSongs() {
@@ -113,6 +123,7 @@ export default function AdminSongs() {
         videos: (partsBy.get(k) || 0) + media.filter(m => m.owner === `song:${x.id}`).length,
         music: names(x.music_by), words: names(x.lyrics_by),
         draft: x.status === 'private',
+        ja: /[\u3040-\u30ff\u3400-\u9fff]/.test(x.title), hasEn: !!x.title_en, hasKana: !!x.title_kana,
       };
     });
   }, [songs, setlists, events, arr, media, names, locale, lyricsState]);
@@ -130,6 +141,9 @@ export default function AdminSongs() {
       (!has('played') || r.plays > 0) &&
       (!has('videos') || r.videos > 0) &&
       (!has('draft') || r.draft) &&
+      (!has('noen') || (r.ja && !r.hasEn)) &&
+      (!has('nokana') || (r.ja && !r.hasKana)) &&
+      (!has('emptylyrics') || r.lyricsEmpty) &&
       (!prefs.key
         || (prefs.key === 'major' ? r.keys.some(k => !k.value.endsWith('m'))
           : prefs.key === 'minor' ? r.keys.some(k => k.value.endsWith('m'))
@@ -157,6 +171,7 @@ export default function AdminSongs() {
   const flagLabel: Record<Flag, React.ReactNode> = {
     nolyrics: s.filterNoLyrics, nokey: s.filterNoKey, nocredits: s.filterNoCredits, cover: s.coverTag,
     neverplayed: s.filterNeverPlayed, played: s.filterPlayed, videos: s.filterHasVideos, draft: <><Icon name="lock" /> {s.songDraft}</>,
+    noen: s.dhSongsNoEn, nokana: s.dhSongsNoKana, emptylyrics: s.dhLyricsEmpty,
   };
   const head = (k: SortKey, label: string, className = '') => (
     <th className={className} aria-sort={prefs.sort === k ? (prefs.desc ? 'descending' : 'ascending') : undefined}>
@@ -178,7 +193,7 @@ export default function AdminSongs() {
         <input className="lu-search" type="search" placeholder={s.songsSearch} value={query} onChange={e => setQuery(e.target.value)} aria-label={s.search} />
         <div className="lu-songs-filters">
           <div className="lu-chips" role="group" aria-label={s.filterLabel}>
-            {FLAGS.map(f => (
+            {[...FLAGS, ...LINK_FLAGS.filter(f => prefs.flags.includes(f))].map(f => (
               <button key={f} type="button" aria-pressed={prefs.flags.includes(f)} className={`lu-pill${prefs.flags.includes(f) ? ' is-on' : ''}`} onClick={() => toggleFlag(f)}>
                 {flagLabel[f]}
               </button>

@@ -1,7 +1,7 @@
 import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAllSongs, usePeople, useAllSetlists, useAllEvents, useTracklists, useAlbums } from '../../hooks/useSheetData';
+import { useAllSongs, usePeople, useAllSetlists, useAllEvents, useAllTracklists, useAllAlbums } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, getMedia, getArrangements, saveArrangements, type MediaRow, type ArrangementRow } from '../../services/adminService';
 import KeysEditor, { toDrafts, fromDrafts, keysText, type KeyDraft } from '../../components/admin/KeysEditor';
 import SongVideos from '../../components/admin/SongVideos';
@@ -10,7 +10,7 @@ import { retitleEverywhere } from '../../components/admin/songs';
 import { createDriveDoc } from '../../services/driveService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
-import { Section, Field, FieldGroup, SaveBar, DeleteButton, EditDialog, LockHint, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
+import { Section, Field, FieldGroup, SaveBar, DeleteButton, EditDialog, LockHint, VisToggle, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
 import { getAdminToken } from '../../services/adminToken';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
@@ -38,8 +38,8 @@ export default function AdminSongForm() {
   const { accessToken } = useAuth();
   const { setlists, refresh: refreshSetlists } = useAllSetlists();
   const { events } = useAllEvents();
-  const { tracklists, refresh: refreshTracklists } = useTracklists();
-  const { albums } = useAlbums();
+  const { tracklists, refresh: refreshTracklists } = useAllTracklists();
+  const { albums } = useAllAlbums();
 
   const [form, setForm] = useState<Form>(emptyForm);
   const [baseline, setBaseline] = useState('');
@@ -298,12 +298,7 @@ export default function AdminSongForm() {
   const pagePublic = saved.status !== 'private';
   const lyricsPublic = saved.lyrics_status !== 'private';
   const visToggle = (on: boolean, onLabel: string, offLabel: string, tip: string, flip: () => void, off?: string) => (
-    // `off`: nothing to switch yet (e.g. no lyrics): shown off and greyed, with why
-    <button type="button" role="switch" aria-checked={on && !off} className={`lu-vis-toggle${on && !off ? ' is-on' : ''}${off ? ' is-none' : ''}`}
-      title={off ? s.visLyricsNoneTip : tip} aria-label={`${tip}: ${off || (on ? onLabel : offLabel)}`} disabled={saving || !!off} onClick={flip}>
-      <span className="lu-vis-knob" aria-hidden="true" />
-      <span>{off || (on ? onLabel : offLabel)}</span>
-    </button>
+    <VisToggle on={on} onLabel={onLabel} offLabel={offLabel} tip={tip} onFlip={flip} busy={saving} none={off} noneTip={s.visLyricsNoneTip} />
   );
   // No lyrics doc, or a doc with nothing in it: nothing to show or hide yet
   const lyricsEmpty = !!saved.lyrics_doc_id && lyrics !== null && !lyrics.replace(/\s/g, '');

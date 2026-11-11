@@ -42,8 +42,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, params, env, w
     const { sheetId, email, privateKey } = getCredentials(env);
     const data = await fetcher(sheetId, email, privateKey);
     // Public: hidden, scheduled-for-later and not-yet-public setlists never leave the server
-    const events = tab === 'setlists' ? await fetchEvents(sheetId, email, privateKey) : undefined;
-    const res = Response.json(publicView(tab, data, events as never), {
+    // (and draft releases' tracklists)
+    const related = tab === 'setlists' ? await fetchEvents(sheetId, email, privateKey)
+      : tab === 'tracklists' ? await fetchAlbums(sheetId, email, privateKey) : undefined;
+    const res = Response.json(publicView(tab, data, related as never), {
       headers: { 'Cache-Control': `public, max-age=0, s-maxage=${EDGE_TTL_SECONDS}` },
     });
     waitUntil(cache.put(key, res.clone()));

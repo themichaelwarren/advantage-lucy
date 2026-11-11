@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  useAllEvents, useAllSongs, useAlbums, useVenues, usePeople, useAreas, useAllNews, useAllBlog,
+  useAllEvents, useAllSongs, useAllAlbums, useVenues, usePeople, useAreas, useAllNews, useAllBlog,
 } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import type { AdminLocale } from '../../i18n/admin';
@@ -28,7 +28,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
   const { s, locale, prefix } = useAdminT();
   const { events } = useAllEvents();
   const { songs } = useAllSongs();
-  const { albums } = useAlbums();
+  const { albums } = useAllAlbums();
   const { venues } = useVenues();
   const { people } = usePeople();
   const { areas } = useAreas();

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAllSongs, useAllSetlists, useTracklists, useAllEvents, useAlbums } from '../../hooks/useSheetData';
+import { useAllSongs, useAllSetlists, useAllTracklists, useAllEvents, useAllAlbums } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import SuggestInput, { normalize } from './SuggestInput';
 import { addMissingSongs, isPlaceholderTitle, retitleEverywhere } from './songs';
@@ -22,9 +22,9 @@ export default function NeedsLook() {
   const { s, prefix } = useAdminT();
   const { songs, loading: songsLoading, refresh: refreshSongs } = useAllSongs();
   const { setlists, loading: setlistsLoading, refresh: refreshSetlists } = useAllSetlists();
-  const { tracklists, loading: tracklistsLoading, refresh: refreshTracklists } = useTracklists();
+  const { tracklists, loading: tracklistsLoading, refresh: refreshTracklists } = useAllTracklists();
   const { events } = useAllEvents();
-  const { albums } = useAlbums();
+  const { albums } = useAllAlbums();
   const [fixing, setFixing] = useState<string | null>(null);
   const [choice, setChoice] = useState('');
   const [busy, setBusy] = useState<string | null>(null);

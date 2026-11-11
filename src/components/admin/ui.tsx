@@ -501,3 +501,20 @@ export function makeId(parts: (string | undefined)[], taken: Set<string>): strin
 export function errorText(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
+
+/**
+ * A compact on/off beside a ✎ ("公開" / "下書き"), saved the moment it's
+ * flipped. `none`: nothing to switch yet (shown off and greyed, with why).
+ */
+export function VisToggle({ on, onLabel, offLabel, tip, onFlip, busy, none, noneTip }: {
+  on: boolean; onLabel: string; offLabel: string; tip: string; onFlip: () => void;
+  busy?: boolean; none?: string; noneTip?: string;
+}) {
+  return (
+    <button type="button" role="switch" aria-checked={on && !none} className={`lu-vis-toggle${on && !none ? ' is-on' : ''}${none ? ' is-none' : ''}`}
+      title={none ? noneTip : tip} aria-label={`${tip}: ${none || (on ? onLabel : offLabel)}`} disabled={busy || !!none} onClick={onFlip}>
+      <span className="lu-vis-knob" aria-hidden="true" />
+      <span>{none || (on ? onLabel : offLabel)}</span>
+    </button>
+  );
+}

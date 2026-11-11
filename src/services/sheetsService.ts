@@ -100,6 +100,16 @@ export async function getSongs(): Promise<Song[]> {
 }
 
 /** All setlists, including ones not public yet — admin pages. */
+/** Every release for the admin, drafts included. */
+export async function getAllAlbums(): Promise<Album[]> {
+  try { return await fetchAdminTab<Album[]>('albums'); } catch (err) { console.warn('Failed to fetch releases:', err); return []; }
+}
+
+/** Every tracklist for the admin, drafts' included. */
+export async function getAllTracklists(): Promise<TracklistEntry[]> {
+  try { return await fetchAdminTab<TracklistEntry[]>('tracklists'); } catch (err) { console.warn('Failed to fetch tracklists:', err); return []; }
+}
+
 /** Every song for the admin, drafts included (the public list leaves them out). */
 export async function getAllSongs(): Promise<Song[]> {
   try {

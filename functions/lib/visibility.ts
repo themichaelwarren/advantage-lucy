@@ -64,7 +64,9 @@ type Row = Record<string, unknown> & { id?: string; status?: string; publish_at?
  * and setlists only for shows whose setlist is public. `events` (all
  * events) is needed for setlists.
  */
-export function publicView(tab: string, data: unknown, events?: Row[]): unknown {
+/** `related`: what a tab's rows depend on (events for setlists, albums for tracklists). */
+export function publicView(tab: string, data: unknown, related?: Row[]): unknown {
+  const events = related;
   if (!Array.isArray(data)) return data;
   const now = nowInJapan();
   const rows = data as Row[];
@@ -72,6 +74,14 @@ export function publicView(tab: string, data: unknown, events?: Row[]): unknown 
     case 'events':
       // Where a setlist was found is a band-only note
       return rows.filter(e => e.status !== 'private').map(e => { const { setlist_source: _, ...rest } = e; return rest; });
+    case 'albums':
+      // Draft releases aren't on the site yet
+      return rows.filter(x => x.status !== 'private');
+    case 'tracklists': {
+      // …nor their tracklists (keyed by the release title)
+      const drafts = new Set((related || []).filter(a => a.status === 'private').map(a => String(a.title)));
+      return rows.filter(r => !drafts.has(String(r.release)));
+    }
     case 'songs':
       // Drafts have no page on the site (their titles still appear in setlists, unlinked).
       // Hidden lyrics: the doc isn't even named, so it can't be fetched (see lyricsAccess.ts)

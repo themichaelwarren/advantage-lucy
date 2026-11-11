@@ -149,6 +149,7 @@ export interface Album {
   label?: string;
   coverUrl?: string;
   listenUrl?: string;   // all services (song.link…)
+  status?: string;      // 'private' = draft: not on the site yet
   listen?: Partial<Record<import('../functions/lib/listen').ListenService, string>>;
   description_en?: string;
   description_ja?: string;

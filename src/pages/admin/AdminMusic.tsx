@@ -1,7 +1,7 @@
 import Icon from '../../components/admin/Icon';
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAlbums, useTracklists, useAllSetlists } from '../../hooks/useSheetData';
+import { useAllAlbums, useAllTracklists, useAllSetlists } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import type { Album } from '../../types';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
@@ -36,8 +36,8 @@ interface Row {
 export default function AdminMusic() {
   const { s, locale, prefix } = useAdminT();
   const navigate = useNavigate();
-  const { albums, loading } = useAlbums();
-  const { tracklists } = useTracklists();
+  const { albums, loading } = useAllAlbums();
+  const { tracklists } = useAllTracklists();
   const { setlists } = useAllSetlists();
   const ui = useListPrefs<string, Sort, View>('releases-v2', { filter: 'all', sort: 'date-desc', view: 'list' });
   const sort: Sort = COLS.some(c => ui.sort === c || ui.sort === `${c}-desc`) ? ui.sort : 'date-desc';
@@ -89,7 +89,10 @@ export default function AdminMusic() {
     const byDate = (x: Row, y: Row) => x.when.localeCompare(y.when);
     return rows
       .filter(r => !q || songSearchText(r.a).includes(songQuery(ui.query)) || [r.a.label, r.a.number, r.a.format, r.when, typeLabel[r.type]].some(t => t?.toLowerCase().includes(q)))
-      .filter(r => ui.filter === 'all' || (ui.filter === 'todo' ? r.missing.length > 0 : r.type === ui.filter))
+      .filter(r => ui.filter === 'all' || (ui.filter === 'todo' ? r.missing.length > 0 : ui.filter === 'draft' ? r.a.status === 'private'
+        : ui.filter === 'noen' ? /[\u3040-\u30ff\u3400-\u9fff]/.test(r.a.title) && !r.a.title_en
+        : ui.filter === 'nocover' ? r.missing.includes('cover') : ui.filter === 'notracks' ? r.missing.includes('tracks')
+        : r.type === ui.filter))
       .sort((x, y) => {
         switch (col) {
           case 'title': return dir * collator.compare(songSortKey(x.a, locale), songSortKey(y.a, locale));
@@ -146,6 +149,9 @@ export default function AdminMusic() {
           { value: 'all', label: s.filterAll },
           ...types.map(t => ({ value: t, label: typeLabel[t] || t })),
           ...(todoCount ? [{ value: 'todo', label: `${s.relFilterTodo} ${todoCount}` }] : []),
+          ...(rows.some(r => r.a.status === 'private') ? [{ value: 'draft', label: <><Icon name="lock" /> {s.songDraft}</> }] : []),
+          // From the home page's "what's missing" list (only while on)
+          ...(['noen', 'nocover', 'notracks'].includes(ui.filter) ? [{ value: ui.filter, label: ({ noen: s.dhReleasesNoEn, nocover: s.dhReleasesNoCover, notracks: s.dhReleasesNoTracks } as Record<string, string>)[ui.filter] }] : []),
         ]}
         filter={ui.filter} onFilter={ui.setFilter}
         sorts={sorts}
@@ -178,6 +184,7 @@ export default function AdminMusic() {
                         {r.a.coverUrl ? <img className="lu-rel-cover" src={r.a.coverUrl} alt="" loading="lazy" /> : <span className="lu-rel-cover" aria-hidden="true" />}
                         <span className="lu-rel-name">
                           <Link to={href}>{localTitle(r.a, locale)}</Link>
+                        {r.a.status === 'private' && <span className="lu-tag is-muted lu-sg-draft"><Icon name="lock" /> {s.songDraft}</span>}
                           {altTitle(r.a, locale) && <span className="lu-sg-alt">{altTitle(r.a, locale)}</span>}
                           <span className="lu-rel-sub">
                             <span className="lu-rel-mdate">{r.when}</span>

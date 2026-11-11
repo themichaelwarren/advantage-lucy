@@ -279,8 +279,9 @@ export default function sheetsPlugin(): Plugin {
 
           if (!isAdminRead) {
             const tab = req.url.replace('/api/sheets/', '').split(/[/?]/)[0].toLowerCase();
-            const events = tab === 'setlists' ? await fetchEvents(sheetId, email, privateKey) : undefined;
-            data = publicView(tab, data, events as never);
+            const related = tab === 'setlists' ? await fetchEvents(sheetId, email, privateKey)
+              : tab === 'tracklists' ? await fetchAlbums(sheetId, email, privateKey) : undefined;
+            data = publicView(tab, data, related as never);
           }
 
           res.setHeader('Content-Type', 'application/json');

@@ -2027,3 +2027,5 @@ a.lu-rel-svc.is-on:hover { background: var(--text); color: var(--bg); }
 .lu-vis-toggle.is-none:hover { border-color: var(--border); color: var(--text-muted); }
 .lu-sg-yes .lu-ic { width: 1rem; height: 1rem; }
 a.lu-icon-btn { text-decoration: none; }
+.lu-health { margin-top: 2rem; }
+.lu-health-n { min-width: 2.4rem; text-align: right; font-family: var(--font-main); font-variant-numeric: tabular-nums; font-size: 1.05rem; }

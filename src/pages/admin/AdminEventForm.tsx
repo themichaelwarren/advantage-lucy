@@ -7,8 +7,7 @@ import ShowVideos, { toShowVideos, fromShowVideos, videosSnapshot, songSlots, ne
 import { useAdminT } from '../../i18n/admin';
 import {
   Section, Field, FieldGroup, BilingualRow, Switch, SaveBar, ImageField, DeleteButton, EditDialog, LockHint,
-  useUnsavedWarning, makeId, errorText,
-} from '../../components/admin/ui';
+  useUnsavedWarning, makeId, errorText, VisToggle } from '../../components/admin/ui';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { formatPrice } from '../../utils/format';
 import { linkify } from '../../utils/linkify';
@@ -493,7 +492,11 @@ export default function AdminEventForm() {
           <div className="lu-song-card">
             <div className="lu-song-card-head">
               <p className="lu-eyebrow"><Link to={`${prefix}/events`}>← {s.shows}</Link></p>
-              {editBtn('details')}
+              <span className="lu-row lu-card-tools">
+                <VisToggle on={saved.status !== 'private'} onLabel={s.visPageShort} offLabel={s.hidden} tip={s.visShowTip} busy={saving}
+                  onFlip={() => run(() => writeEvent(form.id, { status: saved.status === 'private' ? 'published' : 'private' }))} />
+                {editBtn('details')}
+              </span>
             </div>
             <p className="lu-show-date">
               <strong>{saved.date.replace(/-/g, '.')}</strong>

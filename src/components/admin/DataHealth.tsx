@@ -1,0 +1,62 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import type { AdminStrings } from '../../i18n/admin';
+import type { Event, SetlistEntry } from '../../types';
+import { useAllSongs, useAllAlbums, useAllTracklists } from '../../hooks/useSheetData';
+import { getLyricsStatus } from '../../services/adminService';
+import { todayInJapan } from '../../utils/showDates';
+
+/**
+ * What's missing in the archive (admin home): one line per kind of gap,
+ * with how many and a link to exactly those. Lines with nothing missing
+ * don't show; when everything's there, it says so.
+ */
+export const hasJapanese = (t?: string) => /[぀-ヿ㐀-鿿]/.test(t || '');
+
+export default function DataHealth({ s, prefix, events, setlists }: {
+  s: AdminStrings; prefix: string; events: Event[]; setlists: SetlistEntry[];
+}) {
+  const { songs } = useAllSongs();
+  const { albums } = useAllAlbums();
+  const { tracklists } = useAllTracklists();
+  const [lyrics, setLyrics] = useState<Record<string, string> | null>(null);
+  useEffect(() => { getLyricsStatus().then(r => setLyrics(r.status)).catch(() => setLyrics({})); }, []);
+
+  const lines = useMemo(() => {
+    const today = todayInJapan();
+    const withSetlist = new Set(setlists.map(r => r.event));
+    const withTracks = new Set(tracklists.map(t => t.release));
+    const jaSongs = songs.filter(x => x.id && hasJapanese(x.title));
+    const jaReleases = albums.filter(a => hasJapanese(a.title));
+    return [
+      { n: jaSongs.filter(x => !x.title_en).length, label: s.dhSongsNoEn, to: `${prefix}/songs?flag=noen` },
+      { n: jaSongs.filter(x => !x.title_kana).length, label: s.dhSongsNoKana, to: `${prefix}/songs?flag=nokana` },
+      { n: lyrics ? songs.filter(x => x.lyrics_doc_id && lyrics[x.lyrics_doc_id] === 'empty').length : 0, label: s.dhLyricsEmpty, to: `${prefix}/songs?flag=emptylyrics` },
+      { n: jaReleases.filter(a => !a.title_en).length, label: s.dhReleasesNoEn, to: `${prefix}/releases?filter=noen` },
+      { n: albums.filter(a => !a.coverUrl).length, label: s.dhReleasesNoCover, to: `${prefix}/releases?filter=nocover` },
+      { n: albums.filter(a => !withTracks.has(a.title)).length, label: s.dhReleasesNoTracks, to: `${prefix}/releases?filter=notracks` },
+      { n: events.filter(e => (e.end_date || e.date) < today && !withSetlist.has(e.id)).length, label: s.dhShowsNoSetlist, to: `${prefix}/events?filter=nosetlist` },
+      { n: events.filter(e => e.setlist_added && !e.setlist_source).length, label: s.dhSetlistsNoSource, to: `${prefix}/events?filter=nosource` },
+    ].filter(l => l.n > 0);
+  }, [songs, albums, tracklists, events, setlists, lyrics, prefix, s]);
+
+  if (!songs.length || !events.length) return null;
+  return (
+    <section className="lu-list-group lu-health">
+      <h2>{s.dhTitle}</h2>
+      {lines.length === 0 ? <p className="lu-empty">{s.dhAllGood}</p> : (
+        <ul className="lu-list">
+          {lines.map(l => (
+            <li key={l.to}>
+              <Link to={l.to} className="lu-list-row">
+                <strong className="lu-health-n">{l.n}</strong>
+                <span className="lu-list-main"><strong>{l.label}</strong></span>
+                <span className="lu-row-cta-arrow" aria-hidden="true">→</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}

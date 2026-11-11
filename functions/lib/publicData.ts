@@ -24,7 +24,8 @@ export async function readPublicTab(
   const hit = await cache.match(key);
   if (hit) return hit.json();
   const { sheetId, email, privateKey } = getCredentials(env);
-  const data = publicView(tab, await fetchers[tab](sheetId, email, privateKey)) as Record<string, any>[];
+  const related = tab === 'tracklists' ? await fetchAlbums(sheetId, email, privateKey) : undefined;
+  const data = publicView(tab, await fetchers[tab](sheetId, email, privateKey), related as never) as Record<string, any>[];
   const res = Response.json(data, { headers: { 'Cache-Control': `public, max-age=0, s-maxage=${EDGE_TTL_SECONDS}` } });
   waitUntil(cache.put(key, res));
   return data;

@@ -9,7 +9,7 @@ import { eventToRow } from '../../utils/adminRows';
 import ListToolbar, { useListPrefs, SwitchCell, SaveStateCell } from '../../components/admin/ListToolbar';
 import { useQuickEdit } from '../../components/admin/useQuickEdit';
 
-type Filter = 'all' | 'upcoming' | 'past' | 'nosetlist' | 'hidden';
+type Filter = 'all' | 'upcoming' | 'past' | 'nosetlist' | 'hidden' | 'nosource';
 type Sort = 'newest' | 'oldest' | 'added';
 type View = 'list' | 'table';
 
@@ -33,6 +33,7 @@ export default function AdminEvents() {
         : ui.filter === 'upcoming' ? isUpcoming(e)
         : ui.filter === 'past' ? !isUpcoming(e)
         : ui.filter === 'nosetlist' ? !isUpcoming(e) && !withSetlist.has(e.id)
+        : ui.filter === 'nosource' ? !!e.setlist_added && !e.setlist_source
         : e.status === 'private')
       // "Setlists, newest added": only shows whose setlist has a date, most recent first
       .filter(e => ui.sort !== 'added' || !!e.setlist_added)
@@ -95,6 +96,7 @@ export default function AdminEvents() {
           { value: 'past', label: s.filterPast },
           { value: 'nosetlist', label: s.filterNoSetlist },
           { value: 'hidden', label: s.filterHidden },
+          ...(ui.filter === 'nosource' ? [{ value: 'nosource', label: s.dhSetlistsNoSource }] : []),
         ]}
         filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
         sorts={[{ value: 'newest', label: s.sortNewest }, { value: 'oldest', label: s.sortOldest }, { value: 'added', label: s.sortSetlistAdded }]}

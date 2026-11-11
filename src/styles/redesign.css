@@ -2234,3 +2234,10 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 .page-back { margin: 0 0 0.9rem; font-size: 0.9rem; font-weight: 600; }
 .page-back a { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-muted); text-decoration: none; padding: 0.2rem 0; }
 .page-back a:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Shows page: setlists added lately */
+.tl-recent { margin: 0 0 2.4rem; }
+.tl-recent .tl-list { border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.tl-recent-hint { margin: -0.3rem 0 0.8rem; font-size: 0.88rem; color: var(--text-muted); }
+.tl-added { flex-shrink: 0; font-size: 0.78rem; font-weight: 700; color: var(--text); background: color-mix(in srgb, var(--pop) 45%, transparent); padding: 0.15em 0.6em; border-radius: var(--pill); white-space: nowrap; }
+.tl-recent .tl-row { padding-inline: 1rem; }

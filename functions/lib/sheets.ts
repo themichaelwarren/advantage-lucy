@@ -133,6 +133,8 @@ export async function fetchAlbums(sheetId: string, email: string, key: string) {
     id: r.id, title: r.title, title_en: r.title_en || undefined, title_kana: r.title_kana || undefined, date: r.date || undefined, year: r.year, type: r.type,
     number: r.number || undefined, format: r.format || undefined, label: r.label || undefined,
     coverUrl: r.artwork_url || undefined, listenUrl: r.listen_url || undefined, listen: listenFromRow(r),
+    // 'private' = a draft: not on the site yet (e.g. before it's announced)
+    status: (r.status || '').trim() || undefined,
     description_en: r.description_en || undefined, description_ja: r.description_ja || undefined,
   }));
 }
@@ -233,7 +235,7 @@ const OPTIONAL_COLUMNS: Record<string, string[]> = {
   News: ['publish_at'],
   Blog: ['publish_at'],
   Photos: ['link', 'share_image'],
-  Albums: ['title_en', 'title_kana', ...LISTEN_COLUMNS],
+  Albums: ['title_en', 'title_kana', ...LISTEN_COLUMNS, 'status'],
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */
