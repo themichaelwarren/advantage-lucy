@@ -28,6 +28,7 @@ import { AdminPrefectures, AdminPrefectureForm, AdminCountries, AdminCountryForm
 import AdminMusic from './pages/admin/AdminMusic';
 import AdminAlbumForm from './pages/admin/AdminAlbumForm';
 import AdminSongs from './pages/admin/AdminSongs';
+import AdminVideos from './pages/admin/AdminVideos';
 import AdminSongForm from './pages/admin/AdminSongForm';
 import AdminNews from './pages/admin/AdminNews';
 import AdminNewsForm from './pages/admin/AdminNewsForm';
@@ -169,6 +170,7 @@ export default function App() {
           <Route path="releases" element={<AdminMusic />} />
           <Route path="releases/:id" element={<AdminAlbumForm />} />
           <Route path="songs" element={<AdminSongs />} />
+          <Route path="videos" element={<AdminVideos />} />
           <Route path="songs/:id" element={<AdminSongForm />} />
           <Route path="news" element={<AdminNews />} />
           <Route path="news/:id" element={<AdminNewsForm />} />

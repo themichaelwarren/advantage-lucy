@@ -6,6 +6,7 @@ import ThemeToggle from '../../components/ThemeToggle';
 import PageTitle from '../../components/PageTitle';
 import CommandPalette from '../../components/admin/CommandPalette';
 import { getMessages } from '../../services/adminService';
+import { withoutFiltered } from '../../hooks/useFilters';
 
 /**
  * Admin shell.
@@ -36,7 +37,8 @@ export default function AdminLayout() {
     const onMessages = location.pathname.includes('/admin/messages');
     if (!onMessages && Date.now() - lastCount.current < 60_000) return;
     lastCount.current = Date.now();
-    getMessages().then(list => setNewMessages(list.filter(m => !m.status).length)).catch(() => {});
+    // Filtered senders never count as new
+    getMessages().then(withoutFiltered).then(list => setNewMessages(list.filter(m => !m.status).length)).catch(() => {});
   }, [location.pathname]);
   const menuButton = useRef<HTMLButtonElement>(null);
 
@@ -129,6 +131,7 @@ export default function AdminLayout() {
     { title: s.groupMusic, links: [
       { to: `${prefix}/releases`, label: s.releases, icon: '◉' },
       { to: `${prefix}/songs`, label: s.songs, icon: '♫' },
+      { to: `${prefix}/videos`, label: s.videosTitle, icon: '▶' },
       { to: `${prefix}/people`, label: s.people, icon: '☺' },
     ] },
     { title: s.groupPlaces, links: [

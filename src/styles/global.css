@@ -20,7 +20,8 @@
   --font-main: 'Space Mono', 'Noto Sans JP', monospace;
   --font-display: 'Jost', 'Noto Sans JP', system-ui, sans-serif;
   --max-w: 780px;
-  --padding: clamp(1.25rem, 5vw, 1.5rem);
+  /* Page gutters; on a phone held sideways, at least clear of the notch */
+  --padding: max(clamp(1.25rem, 5vw, 1.5rem), env(safe-area-inset-left), env(safe-area-inset-right));
   --header-h: 3.2rem;
 
   /* Subtle texture */

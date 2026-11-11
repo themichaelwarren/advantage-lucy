@@ -52,6 +52,7 @@ type Show = Awaited<ReturnType<typeof fetchEvents>>[number] & {
 // The open/closed/full rules live in visibility.ts so the admin can use them too
 export { reserveCloses, reserveState, DEFAULT_MAX_PER_BOOKING, type ReserveState } from './visibility';
 import { reserveState } from './visibility';
+import { loadFilters, matchSender, type SenderMatch } from './filters';
 export const ticketsOf = (r: Pick<Reservation, 'tickets'>) => Math.max(0, parseInt(r.tickets, 10) || 0);
 export const isActive = (r: Pick<Reservation, 'status'>) => r.status !== 'cancelled';
 
@@ -290,7 +291,20 @@ ${table(rows)}
   return { subject, text, html };
 }
 
-async function sendConfirmation(ctx: ReserveContext, r: Reservation, show: Show): Promise<boolean> {
+/** Is this booking's address filtered, or a lookalike of one? (null if the list can't be read) */
+async function senderMatch(ctx: ReserveContext, email: string): Promise<SenderMatch> {
+  if (!email) return null;
+  const filters = await loadFilters({ sheetId: ctx.sheetId, saEmail: ctx.saEmail, saKey: ctx.saKey }).catch(() => null);
+  return filters ? matchSender(email, filters.emails) : null;
+}
+
+/**
+ * The confirmation email. Never to a filtered address, whoever asks; a
+ * lookalike only when an admin sends it on purpose (after checking).
+ */
+async function sendConfirmation(ctx: ReserveContext, r: Reservation, show: Show, opts: { lookalikeOk?: boolean; match?: SenderMatch } = {}): Promise<boolean> {
+  const match = opts.match !== undefined ? opts.match : await senderMatch(ctx, r.email);
+  if (match?.kind === 'filtered' || (match?.kind === 'lookalike' && !opts.lookalikeOk)) return false;
   const mail = confirmationEmail(r, show, ctx.siteUrl);
   const bandTo = (ctx.env.CONTACT_NOTIFY_TO || '').split(',')[0]?.trim();
   try {
@@ -382,15 +396,19 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
     else await appendReservation(ctx.sheetId, ctx.saEmail, ctx.saKey, r);
     await forgetState(show.id);
 
-    const sent = await sendConfirmation(ctx, r, show);
-    await updateReservation(ctx.sheetId, ctx.saEmail, ctx.saKey, r.id, { emailed: sent ? 'yes' : 'no' }).catch(() => {});
+    // A filtered (or lookalike) address: kept and flagged ⚠ for the band, but no
+    // confirmation goes to it. The page looks the same to them as to anyone.
+    const match = await senderMatch(ctx, r.email);
+    const sent = await sendConfirmation(ctx, r, show, { match });
+    await updateReservation(ctx.sheetId, ctx.saEmail, ctx.saKey, r.id, { emailed: match ? 'held' : sent ? 'yes' : 'no' }).catch(() => {});
     const cap = left === null ? null : taken + left;
     try {
       const note = bandEmail(r, show, { taken: taken + v.tickets, cap }, ctx.siteUrl, !!earlier);
+      const flag = match?.kind === 'filtered' ? '⚠ フィルター中の送信者からの予約 — ' : match ? '⚠ フィルター中の送信者に似たアドレスからの予約 — ' : '';
       const to = (ctx.env.CONTACT_NOTIFY_TO || '').split(',').map(s => s.trim()).filter(Boolean);
-      if (to.length) await sendEmail(ctx.env, { to, ...note, replyTo: r.email });
+      if (to.length) await sendEmail(ctx.env, { to, ...note, subject: flag + note.subject, ...(match?.kind === 'filtered' ? {} : { replyTo: r.email }) });
     } catch (err) { console.error('[reserve] band email failed', err); }
-    return json({ ok: true, tickets: v.tickets, emailed: sent, updated: !!earlier });
+    return json({ ok: true, tickets: v.tickets, emailed: match ? true : sent, updated: !!earlier });
   } catch (err) {
     console.error('[reserve]', err);
     return json({ error: 'server' }, 500);
@@ -434,7 +452,9 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
       if (!r.email) return json({ error: 'This booking has no email address' }, 400);
       const show = await findShow(ctx, r.event);
       if (!show) return json({ error: 'Show not found' }, 404);
-      const sent = await sendConfirmation(ctx, r, show);
+      const match = await senderMatch(ctx, r.email);
+      if (match?.kind === 'filtered') return json({ error: 'This address is on the filtered list, so no email is sent to it.' }, 400);
+      const sent = await sendConfirmation(ctx, r, show, { match, lookalikeOk: true });
       const next = await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: sent ? 'yes' : 'no' });
       if (!sent) return json({ error: 'The email couldn’t be sent. Is email set up (RESEND_API_KEY)?' }, 502);
       return json({ ok: true, reservation: next });
@@ -455,7 +475,7 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
       await appendReservation(sheetId, saEmail, saKey, r);
       await forgetState(event);
       if (body.send_email && r.email) {
-        r.emailed = (await sendConfirmation(ctx, r, show)) ? 'yes' : 'no';
+        r.emailed = (await sendConfirmation(ctx, r, show, { lookalikeOk: true })) ? 'yes' : 'no';
         await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: r.emailed }).catch(() => {});
       }
       return json({ ok: true, reservation: r });

@@ -4,11 +4,15 @@
  * ("payload" = the JSON fields, "files" = up to 3 images).
  * Validates, filters spam, rate-limits, stores photos privately, saves the
  * message to the private "Messages" sheet tab, and emails the band.
+ * A filtered sender (functions/lib/filters.ts) sees the same "sent": the
+ * message is saved and emailed only to the filter's forwarding address.
  */
 import { type Env, getCredentials } from '../lib/sheets';
 import { checkContact, saveMessage, verifyTurnstile, showForEmail, type ContactInput } from '../lib/messages';
 import { checkFiles, attachmentNames, allowSubmission, SUBMISSIONS_PREFIX } from '../lib/attachments';
-import { notifyBand, type NotifyEnv } from '../lib/notify';
+import { notifyBand, sendEmail, type NotifyEnv } from '../lib/notify';
+import { notificationEmail } from '../lib/messages';
+import { loadFilters, matchSender } from '../lib/filters';
 
 interface ContactEnv extends Env, NotifyEnv {
   TURNSTILE_SECRET?: string;
@@ -58,8 +62,26 @@ export const onRequestPost: PagesFunction<ContactEnv> = async ({ request, env })
       siteUrl: env.SITE_URL || new URL(request.url).origin,
       show: message.topic === 'setlist' ? await showForEmail(sheetId, email, privateKey, message.event) : undefined,
     };
-    try { notified = await notifyBand(env, message, ctx); } catch (err) { console.error('[contact] notify failed', err); }
-    await saveMessage(sheetId, email, privateKey, message, notified ? 'yes' : 'no');
+    // Filtered senders: never to the band, only to the forwarding address (if one is set).
+    // Lookalikes go to the band as usual, flagged. If the list can't be read, carry on as normal.
+    const filters = await loadFilters({ sheetId, saEmail: email, saKey: privateKey }).catch(() => null);
+    const match = filters ? matchSender(message.email, filters.emails) : null;
+    let notifiedAs = '';
+    try {
+      if (match?.kind === 'filtered') {
+        const mail = notificationEmail(message, ctx);
+        // No reply-to: replying from that inbox must never reach them
+        notified = !!filters?.forwardTo && await sendEmail(env, { to: [filters.forwardTo], subject: `[フィルター] ${mail.subject}`, text: mail.text, html: mail.html });
+        notifiedAs = notified ? 'filtered' : 'filtered (not sent)';
+      } else if (match?.kind === 'lookalike') {
+        const mail = notificationEmail(message, ctx);
+        const to = (env.CONTACT_NOTIFY_TO || '').split(',').map(s => s.trim()).filter(Boolean);
+        notified = await sendEmail(env, { to, subject: `⚠ フィルター中の送信者に似たアドレス — ${mail.subject}`, text: mail.text, html: mail.html, replyTo: mail.replyTo });
+      } else {
+        notified = await notifyBand(env, message, ctx);
+      }
+    } catch (err) { console.error('[contact] notify failed', err); }
+    await saveMessage(sheetId, email, privateKey, message, notifiedAs || (notified ? 'yes' : 'no'));
     return Response.json({ ok: true });
   } catch (err) {
     console.error('[contact]', err);

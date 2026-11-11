@@ -16,6 +16,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { publicView } from '../functions/lib/visibility';
 import { pageMeta, injectMeta, type Load } from '../functions/lib/meta';
 import { fetchInstagramThumb } from '../functions/lib/igThumb';
+import { handleAdminFilters } from '../functions/lib/filters';
 
 /** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
 async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -66,7 +67,8 @@ export default function sheetsPlugin(): Plugin {
 
       server.middlewares.use(async (req, res, next) => {
         const isMedia = req.url?.startsWith('/api/admin/media');
-        if (!isMedia && !req.url?.startsWith('/api/admin/arrangements')) return next();
+        const isFilters = req.url?.startsWith('/api/admin/filters');
+        if (!isMedia && !isFilters && !req.url?.startsWith('/api/admin/arrangements')) return next();
         if (!(await requireAdmin(req, res))) return;
         const chunks: Buffer[] = [];
         for await (const chunk of req) chunks.push(chunk as Buffer);
@@ -80,7 +82,7 @@ export default function sheetsPlugin(): Plugin {
           saEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!,
           saKey: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
         };
-        const out = isMedia ? await handleAdminMedia(request, ctx) : await handleAdminArrangements(request, ctx);
+        const out = isMedia ? await handleAdminMedia(request, ctx) : isFilters ? await handleAdminFilters(request, ctx) : await handleAdminArrangements(request, ctx);
         res.statusCode = out.status;
         res.setHeader('Content-Type', 'application/json');
         res.end(await out.text());

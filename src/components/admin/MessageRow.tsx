@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { AdminLocale, AdminStrings } from '../../i18n/admin';
+import type { SenderMatch } from '../../../functions/lib/filters';
 
 export type Message = Record<string, string>;
 
@@ -17,7 +18,7 @@ export function StatusTag({ status, s }: { status?: string; s: AdminStrings }) {
 }
 
 /** One message in a list (Messages page and admin home): links to its own page. */
-export default function MessageRow({ m, s, locale, prefix }: { m: Message; s: AdminStrings; locale: AdminLocale; prefix: string }) {
+export default function MessageRow({ m, s, locale, prefix, flag }: { m: Message; s: AdminStrings; locale: AdminLocale; prefix: string; flag?: SenderMatch }) {
   const isSetlist = m.topic === 'setlist';
   const done = m.status === 'done';
   return (
@@ -29,10 +30,12 @@ export default function MessageRow({ m, s, locale, prefix }: { m: Message; s: Ad
           <span className="lu-snippet">{m.message}</span>
         </span>
         <span className="lu-list-tags">
-          <StatusTag status={m.status} s={s} />
+          {flag?.kind === 'lookalike' && <span className="lu-tag is-warn" title={s.filterLookalikeTip.replace('{email}', flag.listed)}>⚠ {s.filterLookalike}</span>}
+          {flag?.kind !== 'filtered' && <StatusTag status={m.status} s={s} />}
           {isSetlist && <span className="lu-tag is-ok">♪ {s.setlistInfo}</span>}
           {m.attachments && <span className="lu-tag">📎 {m.attachments.split(',').filter(Boolean).length}</span>}
           {m.notified === 'no' && <span className="lu-tag is-muted">{s.notEmailed}</span>}
+          {m.notified === 'filtered' && <span className="lu-tag is-muted">{s.filterForwarded}</span>}
         </span>
       </Link>
     </li>

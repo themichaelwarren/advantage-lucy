@@ -8,6 +8,8 @@ import {
 import { errorText } from '../../components/admin/ui';
 import { reserveState, todayInJapan } from '../../utils/showDates';
 import type { Event } from '../../types';
+import { useFilters } from '../../hooks/useFilters';
+import type { SenderMatch } from '../../../functions/lib/filters';
 
 const ticketsOf = (r: Reservation) => Math.max(0, parseInt(r.tickets, 10) || 0);
 const active = (r: Reservation) => r.status !== 'cancelled';
@@ -110,6 +112,7 @@ export function AdminShowReservations() {
   const { events, loading } = useAllEvents();
   const { list, setList, error, setError } = useReservations();
   const [door, setDoor] = useState(false);
+  const { match } = useFilters();
   const [query, setQuery] = useState('');
   const [showCancelled, setShowCancelled] = useState(false);
   const [openRow, setOpenRow] = useState<string | null>(null);
@@ -224,13 +227,13 @@ export function AdminShowReservations() {
             <button type="button" className={`lu-door-row${r.arrived === 'TRUE' ? ' is-in' : ''}`} aria-pressed={r.arrived === 'TRUE'}
               onClick={() => change(r, { arrived: r.arrived === 'TRUE' ? '' : 'TRUE' })}>
               <span className="lu-door-check" aria-hidden="true">{r.arrived === 'TRUE' ? '✓' : ''}</span>
-              <span className="lu-door-name">{r.name}</span>
+              <span className="lu-door-name">{match(r.email) && <span className="lu-door-flag" title={s.resvFlagTip}>⚠ </span>}{r.name}</span>
               <span className="lu-door-count">{ticketsOf(r)}</span>
               {r.note && <span className="lu-door-note">{r.note}</span>}
             </button>
           </li>
         ) : (
-          <ReservationRow key={r.id} r={r} s={s} locale={locale} open={openRow === r.id}
+          <ReservationRow key={r.id} r={r} s={s} locale={locale} open={openRow === r.id} flag={match(r.email)}
             onToggle={() => setOpenRow(o => (o === r.id ? null : r.id))}
             onChange={fields => change(r, fields)}
             onResend={async () => {
@@ -243,8 +246,8 @@ export function AdminShowReservations() {
   );
 }
 
-function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend }: {
-  r: Reservation; s: AdminStrings; locale: AdminLocale; open: boolean;
+function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag }: {
+  r: Reservation; s: AdminStrings; locale: AdminLocale; open: boolean; flag?: SenderMatch;
   onToggle: () => void; onChange: (f: Partial<Reservation>) => Promise<void>; onResend: () => Promise<void>;
 }) {
   const [draft, setDraft] = useState({ name: r.name, email: r.email, tickets: r.tickets, note: r.note });
@@ -263,6 +266,7 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend }: {
           <span className="lu-snippet">{[r.email, r.note].filter(Boolean).join(' · ')}</span>
         </span>
         <span className="lu-list-tags">
+          {flag && <span className="lu-tag is-warn" title={s.resvFlagTip}>⚠ {flag.kind === 'filtered' ? s.resvFlagFiltered : s.filterLookalike}</span>}
           {cancelled && <span className="lu-tag is-muted">{s.resvCancelled}</span>}
           {r.arrived === 'TRUE' && <span className="lu-tag is-ok">✓ {s.resvArrived}</span>}
           {r.emailed === 'no' && <span className="lu-tag is-new">{s.resvNotEmailed}</span>}
@@ -278,12 +282,13 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend }: {
             <label className="lu-field"><span>{s.resvEmail}</span><input type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} /></label>
             <label className="lu-field"><span>{s.resvNote}</span><input value={draft.note} onChange={e => setDraft(d => ({ ...d, note: e.target.value }))} /></label>
           </div>
+          {flag && <p className="lu-alert lu-filter-banner is-warn">⚠ {flag.kind === 'filtered' ? s.resvFlagFilteredBody : s.resvFlagLookalikeBody.replace('{email}', flag.listed)}</p>}
           <p className="lu-hint">
-            {r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
+            {r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
           </p>
           <div className="lu-resv-edit-actions">
             <button type="button" className="lu-btn lu-btn-primary" disabled={!dirty || busy} onClick={() => run(() => onChange(draft))}>{s.save}</button>
-            {r.email && <button type="button" className="lu-btn" disabled={busy} onClick={() => run(onResend)}>✉ {s.resvResend}</button>}
+            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={() => run(onResend)}>✉ {s.resvResend}</button>}
             <button type="button" className={`lu-btn ${cancelled ? '' : 'lu-btn-danger-quiet'}`} disabled={busy}
               onClick={() => run(() => onChange({ status: cancelled ? '' : 'cancelled' }))}>
               {cancelled ? s.resvRestore : s.resvCancel}

@@ -243,3 +243,28 @@ export async function saveArrangements(song: string, rows: Partial<ArrangementRo
   }) as { arrangements: ArrangementRow[] };
   return out.arrangements;
 }
+
+// ── Filtered senders (admin only, see functions/lib/filters.ts) ──
+
+export interface FilterRow { kind: 'email' | 'forward'; value: string; note: string; added: string }
+export interface Filters { emails: string[]; forwardTo: string; rows: FilterRow[] }
+
+export async function getFilters(): Promise<Filters> {
+  return await adminFetch('/api/admin/filters') as Filters;
+}
+
+/** Replace the list of filtered addresses. */
+export async function saveFilterEmails(rows: { value: string; note?: string; added?: string }[]): Promise<Filters> {
+  return await adminFetch('/api/admin/filters', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind: 'email', rows }),
+  }) as Filters;
+}
+
+/** Where a filtered sender's messages are emailed ('' = nowhere). */
+export async function saveFilterForward(value: string): Promise<Filters> {
+  return await adminFetch('/api/admin/filters', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind: 'forward', value }),
+  }) as Filters;
+}

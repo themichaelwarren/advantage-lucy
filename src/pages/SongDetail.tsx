@@ -11,6 +11,7 @@ import { useFitsViewport } from '../hooks/useFitsViewport';
 import NowPlaying from '../components/NowPlaying';
 import PageTitle from '../components/PageTitle';
 import { songTitle, songAltTitle, localTitle } from '../utils/songTitles';
+import BackLink from '../components/BackLink';
 
 interface Props {
   locale: Locale;
@@ -95,6 +96,7 @@ export default function SongDetail({ locale }: Props) {
 
   return (
     <article className="song-detail">
+      <BackLink to={`${prefix}/releases?tab=songs`} label={s.music.tabSongs} />
       <PageTitle title={songTitle(song, locale)} />
       <NowPlaying title={song.title} locale={locale} watch=".song-head .song-detail-title" />
       {/* Wide screens: title, credits and releases in a sticky panel on the
@@ -217,8 +219,8 @@ export default function SongDetail({ locale }: Props) {
       )}
 
       <div className="mt-2">
-        <Link to={`${prefix}/releases`} className="tag">
-          <span>← {s.music.subtitle}</span>
+        <Link to={`${prefix}/releases?tab=songs`} className="tag">
+          <span>← {s.music.tabSongs}</span>
         </Link>
       </div>
     </article>

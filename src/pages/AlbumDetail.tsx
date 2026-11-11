@@ -10,6 +10,7 @@ import { linkify } from '../utils/linkify';
 import PageTitle from '../components/PageTitle';
 import { songTitle, localTitle, altTitle } from '../utils/songTitles';
 import { LISTEN_SERVICES } from '../../functions/lib/listen';
+import BackLink from '../components/BackLink';
 
 interface Props {
   locale: Locale;
@@ -43,6 +44,7 @@ export default function AlbumDetail({ locale }: Props) {
 
   return (
     <article className="album-detail">
+      <BackLink to={`${prefix}/releases`} label={s.music.subtitle} />
       <PageTitle title={localTitle(album, locale)} />
       {/* Wide screens: title, cover and details in a sticky panel on the left,
           tracklist (and notes) on the right. Phones: stacked in that order. */}

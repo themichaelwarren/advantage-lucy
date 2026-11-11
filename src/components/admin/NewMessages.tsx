@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getMessages } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
 import MessageRow from './MessageRow';
+import { withoutFiltered } from '../../hooks/useFilters';
 
 /** Admin home: messages nobody has marked done yet, newest first. */
 export default function NewMessages() {
@@ -10,7 +11,7 @@ export default function NewMessages() {
   const [messages, setMessages] = useState<Record<string, string>[] | null>(null);
 
   useEffect(() => {
-    getMessages().then(setMessages).catch(() => setMessages([]));
+    getMessages().then(withoutFiltered).then(setMessages).catch(() => setMessages([]));
   }, []);
 
   if (!messages) return null;

@@ -450,6 +450,8 @@ main {
   color: var(--footer-text);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding-block: 3rem;
+  /* Down behind the iPhone's home bar too, so no light strip shows below it */
+  padding-bottom: calc(3rem + env(safe-area-inset-bottom));
 }
 .site-footer a { color: var(--pop); }
 /* Every page, as plain links (News and Blog were only reachable from home) */
@@ -2227,3 +2229,8 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 @media (max-width: 900px) {
   .show-search, .tl-jump { font-size: 16px; }
 }
+
+/* "← Discography" above a detail page's title */
+.page-back { margin: 0 0 0.9rem; font-size: 0.9rem; font-weight: 600; }
+.page-back a { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-muted); text-decoration: none; padding: 0.2rem 0; }
+.page-back a:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }

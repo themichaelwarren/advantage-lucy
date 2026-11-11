@@ -8,6 +8,7 @@ import { todayInJapan } from '../utils/showDates';
 import PageLoader from '../components/PageLoader';
 import NotFound from '../components/NotFound';
 import PageTitle from '../components/PageTitle';
+import BackLink from '../components/BackLink';
 
 interface Props {
   locale: Locale;
@@ -77,6 +78,7 @@ export default function VenueDetail({ locale }: Props) {
 
   return (
     <article className="venue-detail">
+      <BackLink to={`${prefix}/events`} label={s.events.title} />
       <PageTitle title={name} />
       <header className="news-detail-header venue-head">
         <p className="venue-kicker">{s.events.venue}</p>

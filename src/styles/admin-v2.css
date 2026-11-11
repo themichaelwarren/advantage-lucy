@@ -522,7 +522,7 @@
 /* ---------- SAVE BAR ---------- */
 .lu-savebar {
   position: sticky;
-  bottom: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
   z-index: 30;
   display: flex;
   align-items: center;
@@ -1836,4 +1836,77 @@ a.lu-rel-svc.is-on:hover { background: var(--text); color: var(--bg); }
 /* Same in admin on phones and tablets: 16px text boxes, so tapping one doesn't zoom the page */
 @media (max-width: 979px) {
   .lu-shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]), textarea, select) { font-size: 16px !important; }
+}
+
+/* ---------- FILTERED SENDERS ---------- */
+.lu-tag.is-warn { background: #ffe8a3; color: #5c4300; border-color: #e6b800; }
+:root[data-theme="dark"] .lu-tag.is-warn { background: #4a3b0c; color: #ffe08a; border-color: #8a6d12; }
+.lu-filters { display: flex; flex-direction: column; gap: 1rem; }
+.lu-filter-list { list-style: none; margin: 0; padding: 0; border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.lu-filter-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.8rem; padding: 0.55rem 0.5rem 0.55rem 0.9rem; border-top: 1px solid var(--rule); background: var(--surface); }
+.lu-filter-list li:first-child { border-top: none; }
+.lu-filter-addr { font-family: var(--font-main); font-weight: 700; overflow-wrap: anywhere; }
+.lu-filter-note { color: var(--text-muted); font-size: 0.88rem; }
+.lu-filter-added { color: var(--text-muted); font-size: 0.8rem; margin-left: auto; }
+.lu-filter-add { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.lu-shell .lu-filter-add input { flex: 1 1 14rem; min-width: 0; padding: 0.55rem 0.8rem; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); }
+.lu-filter-forward { display: flex; flex-direction: column; gap: 0.35rem; padding-top: 0.9rem; border-top: 1px solid var(--rule); }
+.lu-filter-forward label { font-weight: 700; }
+.lu-filter-forward .lu-hint { margin: 0; }
+.lu-filter-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.8rem; margin: 0.6rem 0 1rem; }
+.lu-filter-banner > span { flex: 1 1 16rem; }
+.lu-filter-banner.is-warn { background: #fff4cf; border-color: #e6b800; color: #4a3800; }
+:root[data-theme="dark"] .lu-filter-banner.is-warn { background: #3a300c; border-color: #8a6d12; color: #ffe08a; }
+.lu-door-flag { color: #c98a00; }
+
+/* ---------- VIDEOS INDEX ---------- */
+.lu-video-years { flex-wrap: wrap; margin: -0.4rem 0 1.1rem; }
+.lu-video-years .lu-pill { background: none; cursor: pointer; color: var(--text); font-size: 0.82rem; padding: 0.25em 0.75em; }
+.lu-video-years .lu-pill.is-on { background: var(--text); color: var(--bg); }
+.lu-vgrid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1.4rem 1.1rem; }
+.lu-vgrid-item { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+.lu-vgrid-thumb {
+  position: relative; display: block; aspect-ratio: 16 / 9; padding: 0; overflow: hidden; cursor: pointer;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: #111;
+  transition: transform 160ms ease, box-shadow 120ms ease;
+}
+.lu-vgrid-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lu-vgrid-thumb:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--text); }
+.lu-vgrid-badge {
+  position: absolute; left: 0.45rem; bottom: 0.45rem; padding: 0.2em 0.6em; border-radius: var(--pill);
+  background: rgb(0 0 0 / 0.72); color: #fff; font-size: 0.75rem; font-weight: 700;
+}
+.lu-vgrid-text { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.lu-vgrid-title { font-size: 0.95rem; line-height: 1.35; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lu-vgrid-show { font-size: 0.82rem; color: var(--text-muted); text-decoration: none; }
+.lu-vgrid-show:hover { color: var(--text); text-decoration: underline; }
+.lu-vgrid-show time { font-family: var(--font-main); }
+.lu-vgrid-songs { list-style: none; margin: 0.15rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.lu-vgrid-songs li { font-size: 0.75rem; }
+.lu-vgrid-songs a, .lu-vgrid-songs li.is-more { display: inline-block; padding: 0.1em 0.55em; border-radius: var(--pill); border: 1px solid var(--border); color: var(--text); text-decoration: none; }
+.lu-vgrid-songs a:hover { border-color: var(--text); }
+.lu-vgrid-songs li.is-more { color: var(--text-muted); }
+.lu-vviewer { width: min(64rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem; padding-bottom: 1rem; }
+.lu-vviewer-title { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.lu-vviewer-title a { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; }
+.lu-vviewer-title a:hover { color: var(--text); text-decoration: underline; }
+.lu-vviewer-body { display: grid; gap: 1rem; padding: 0 1.2rem; }
+@media (min-width: 900px) { .lu-vviewer-body { grid-template-columns: minmax(0, 1fr) 15rem; align-items: start; } }
+.lu-vviewer-body .lu-video-chapters { max-height: 24rem; overflow-y: auto; }
+.lu-vviewer-yt { padding: 0 1.2rem; }
+.lu-videos-intro .is-short { display: none; }
+/* Phones: filters and sort on one line, years one swipeable row, a short intro */
+@media (max-width: 640px) {
+  .lu-videos-intro .is-long { display: none; }
+  .lu-videos-intro .is-short { display: inline; }
+  .lu-videos-page .lu-toolbar-row { flex-wrap: nowrap; align-items: center; gap: 0.5rem; }
+  .lu-videos-page .lu-toolbar-row > .lu-chips { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .lu-videos-page .lu-toolbar-row > .lu-chips::-webkit-scrollbar, .lu-video-years::-webkit-scrollbar { display: none; }
+  .lu-videos-page .lu-toolbar-row .lu-pill { flex-shrink: 0; font-size: 0.82rem; padding: 0.3em 0.75em; }
+  .lu-videos-page .lu-toolbar-right { flex-shrink: 0; margin: 0; }
+  .lu-videos-page .lu-toolbar-count { display: none; }
+  .lu-videos-page .lu-sort select { padding: 0.3rem 1.9rem 0.3rem 0.6rem; max-width: 8.5rem; }
+  .lu-video-years { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: -0.5rem -1rem 1rem; padding: 0 1rem; }
+  .lu-video-years .lu-pill { flex-shrink: 0; }
+  .lu-vgrid { gap: 1.2rem; }
 }

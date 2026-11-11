@@ -14,6 +14,7 @@ import ReserveForm from '../components/ReserveForm';
 import { useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { songTitle } from '../utils/songTitles';
+import BackLink from '../components/BackLink';
 
 
 interface Props {
@@ -111,6 +112,7 @@ export default function EventDetail({ locale }: Props) {
 
   return (
     <article className="event-detail">
+      <BackLink to={`${prefix}/events`} label={s.events.title} />
       <PageTitle title={title || venue} />
       {/* Wide screens: date, title and flyer in a sticky panel on the left;
           details, tickets, setlist and notes on the right. Phones: stacked. */}
