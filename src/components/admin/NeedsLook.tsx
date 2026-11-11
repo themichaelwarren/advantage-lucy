@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSongs, useAllSetlists, useTracklists, useAllEvents, useAlbums } from '../../hooks/useSheetData';
+import { useAllSongs, useAllSetlists, useTracklists, useAllEvents, useAlbums } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import SuggestInput, { normalize } from './SuggestInput';
 import { addMissingSongs, isPlaceholderTitle, retitleEverywhere } from './songs';
@@ -20,7 +20,7 @@ interface Mismatch {
  */
 export default function NeedsLook() {
   const { s, prefix } = useAdminT();
-  const { songs, loading: songsLoading, refresh: refreshSongs } = useSongs();
+  const { songs, loading: songsLoading, refresh: refreshSongs } = useAllSongs();
   const { setlists, loading: setlistsLoading, refresh: refreshSetlists } = useAllSetlists();
   const { tracklists, loading: tracklistsLoading, refresh: refreshTracklists } = useTracklists();
   const { events } = useAllEvents();

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAlbums, useTracklists, useSongs, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
+import { useAlbums, useTracklists, useAllSongs, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, replaceRows, getArrangements, type ArrangementRow } from '../../services/adminService';
 import SuggestInput, { normalize } from '../../components/admin/SuggestInput';
 import { addMissingSongs } from '../../components/admin/songs';
@@ -46,7 +46,7 @@ export default function AdminAlbumForm() {
   const navigate = useNavigate();
   const { albums, loading } = useAlbums();
   const { tracklists } = useTracklists();
-  const { songs, refresh: refreshSongs } = useSongs();
+  const { songs, refresh: refreshSongs } = useAllSongs();
   const { setlists } = useAllSetlists();
   const { events } = useAllEvents();
   const [arr, setArr] = useState<ArrangementRow[]>([]);

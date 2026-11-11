@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { usePeople, useSongs } from '../../hooks/useSheetData';
+import { usePeople, useAllSongs } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import { personName } from '../../components/admin/PeoplePicker';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
@@ -21,7 +21,7 @@ export function creditCounts(songs: { music_by?: string; lyrics_by?: string }[])
 export default function AdminPeople() {
   const { s, locale, prefix } = useAdminT();
   const { people, loading } = usePeople();
-  const { songs } = useSongs();
+  const { songs } = useAllSongs();
   const ui = useListPrefs<Filter, Sort>('people', { filter: 'all', sort: 'songs' });
   const counts = useMemo(() => creditCounts(songs), [songs]);
 

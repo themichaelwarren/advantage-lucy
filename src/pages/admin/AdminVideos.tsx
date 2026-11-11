@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAllEvents, useSongs, useAllSetlists, useVenues, useAreas } from '../../hooks/useSheetData';
+import { useAllEvents, useAllSongs, useAllSetlists, useVenues, useAreas } from '../../hooks/useSheetData';
 import VideoIntake from '../../components/admin/VideoIntake';
 import { useAdminT } from '../../i18n/admin';
 import { getMedia, type MediaRow } from '../../services/adminService';
@@ -41,7 +41,7 @@ export default function AdminVideos() {
   // Shows made from the add-a-video form, until the list is next loaded
   const [madeEvents, setMadeEvents] = useState<Event[]>([]);
   const events = useMemo(() => [...loadedEvents, ...madeEvents.filter(m => !loadedEvents.some(e => e.id === m.id))], [loadedEvents, madeEvents]);
-  const { songs, refresh: refreshSongs } = useSongs();
+  const { songs, refresh: refreshSongs } = useAllSongs();
   const { venues, refresh: refreshVenues } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
   const [media, setMedia] = useState<MediaRow[] | null>(null);

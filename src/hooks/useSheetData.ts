@@ -4,7 +4,7 @@ import { subscribeAdminToken, getAdminTokenVersion } from '../services/adminToke
 /** Changes whenever the admin signs in (again), so admin data reloads with full access. */
 const useAdminTokenVersion = () => useSyncExternalStore(subscribeAdminToken, getAdminTokenVersion);
 import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
-import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPrefectures, getCountries, getPeople } from '../services/sheetsService';
+import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getAllSongs, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPrefectures, getCountries, getPeople } from '../services/sheetsService';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -76,6 +76,22 @@ export function useSongs() {
 }
 
 /** Every setlist row, including hidden and not-yet-played ones. Admin only. */
+/** Admin: every song, drafts included. Same shape as useSongs. */
+export function useAllSongs() {
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(true);
+  const signedIn = useAdminTokenVersion();
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    getAllSongs()
+      .then(setSongs)
+      .finally(() => setLoading(false));
+  }, [tick, signedIn]);
+
+  return { songs, loading, refresh: () => setTick(t => t + 1) };
+}
+
 export function useAllSetlists() {
   const [setlists, setSetlists] = useState<SetlistEntry[]>([]);
   const [loading, setLoading] = useState(true);

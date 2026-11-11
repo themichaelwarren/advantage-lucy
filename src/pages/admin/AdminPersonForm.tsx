@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { usePeople, useSongs } from '../../hooks/useSheetData';
+import { usePeople, useAllSongs } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
 import { Section, Field, BilingualRow, SaveBar, DeleteButton, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
@@ -16,7 +16,7 @@ export default function AdminPersonForm() {
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
   const { people, loading } = usePeople();
-  const { songs } = useSongs();
+  const { songs } = useAllSongs();
 
   const [form, setForm] = useState<Form>(empty);
   const [baseline, setBaseline] = useState('');

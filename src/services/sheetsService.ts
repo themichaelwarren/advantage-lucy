@@ -100,6 +100,16 @@ export async function getSongs(): Promise<Song[]> {
 }
 
 /** All setlists, including ones not public yet — admin pages. */
+/** Every song for the admin, drafts included (the public list leaves them out). */
+export async function getAllSongs(): Promise<Song[]> {
+  try {
+    return await fetchAdminTab<Song[]>('songs');
+  } catch (err) {
+    console.warn('Failed to fetch songs from API:', err);
+    return [];
+  }
+}
+
 export async function getAllSetlists(): Promise<SetlistEntry[]> {
   try {
     return await fetchAdminTab<SetlistEntry[]>('setlists');

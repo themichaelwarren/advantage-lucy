@@ -17,6 +17,7 @@ import { publicView } from '../functions/lib/visibility';
 import { pageMeta, injectMeta, type Load } from '../functions/lib/meta';
 import { fetchInstagramThumb } from '../functions/lib/igThumb';
 import { handleAdminFilters } from '../functions/lib/filters';
+import { mayReadDoc } from '../functions/lib/lyricsAccess';
 
 /** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
 async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -395,6 +396,14 @@ export default function sheetsPlugin(): Plugin {
           res.end(JSON.stringify({ error: 'Missing Google auth env vars' }));
           return;
         }
+
+        // Same rule as production: public lyrics only, unless an admin asks
+        const sheetId = process.env.VITE_GOOGLE_SHEET_ID!;
+        const allowed = await mayReadDoc(match[1], req.headers.authorization,
+          { clientId: process.env.VITE_GOOGLE_CLIENT_ID, adminEmails: process.env.VITE_ADMIN_EMAILS },
+          async () => fetchSongs(sheetId, email, privateKey) as never,
+        ).catch(() => false);
+        if (!allowed) { res.statusCode = 404; res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ error: 'Not found' })); return; }
 
         try {
           const text = await fetchDocText(match[1], email, privateKey);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSongs, usePeople, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
+import { useAllSongs, usePeople, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import { personName } from '../../components/admin/PeoplePicker';
 import { normalize } from '../../components/admin/SuggestInput';
@@ -16,8 +16,8 @@ import { songAltTitle, songSortKey, songSearchText, songQuery } from '../../util
  * filters combine ("no lyrics" + "played live"), and there's a key picker.
  */
 type SortKey = 'title' | 'key' | 'plays' | 'last' | 'videos';
-type Flag = 'nolyrics' | 'nokey' | 'nocredits' | 'cover' | 'neverplayed' | 'played' | 'videos';
-const FLAGS: Flag[] = ['nolyrics', 'nokey', 'nocredits', 'cover', 'neverplayed', 'played', 'videos'];
+type Flag = 'nolyrics' | 'nokey' | 'nocredits' | 'cover' | 'neverplayed' | 'played' | 'videos' | 'draft';
+const FLAGS: Flag[] = ['nolyrics', 'nokey', 'nocredits', 'cover', 'neverplayed', 'played', 'videos', 'draft'];
 const PREFS = 'admin-songs-table';
 
 interface Row {
@@ -31,11 +31,13 @@ interface Row {
   keyText: string;
   keySort: number;          // first key: note position, minor after major; no key last
   lyrics: boolean;
+  lyricsHidden: boolean;
   plays: number;
   last: string;             // date of the last show that's over
   videos: number;
   music: string;
   words: string;
+  draft: boolean;
 }
 
 function loadPrefs(): { sort: SortKey; desc: boolean; flags: Flag[]; key: string } {
@@ -46,7 +48,7 @@ function loadPrefs(): { sort: SortKey; desc: boolean; flags: Flag[]; key: string
 export default function AdminSongs() {
   const { s, locale, prefix } = useAdminT();
   const navigate = useNavigate();
-  const { songs, loading } = useSongs();
+  const { songs, loading } = useAllSongs();
   const { people } = usePeople();
   const { setlists } = useAllSetlists();
   const { events } = useAllEvents();
@@ -99,10 +101,12 @@ export default function AdminSongs() {
         keys, keyText: keysText(keys, locale),
         keySort: first ? first.pos * 2 + (first.minor ? 1 : 0) : 99,
         lyrics: !!x.lyrics_doc_id,
+        lyricsHidden: x.lyrics_status === 'private',
         plays: plays ? plays.n.size : 0,
         last: plays?.last || '',
         videos: (partsBy.get(k) || 0) + media.filter(m => m.owner === `song:${x.id}`).length,
         music: names(x.music_by), words: names(x.lyrics_by),
+        draft: x.status === 'private',
       };
     });
   }, [songs, setlists, events, arr, media, names, locale]);
@@ -119,6 +123,7 @@ export default function AdminSongs() {
       (!has('neverplayed') || r.plays === 0) &&
       (!has('played') || r.plays > 0) &&
       (!has('videos') || r.videos > 0) &&
+      (!has('draft') || r.draft) &&
       (!prefs.key
         || (prefs.key === 'major' ? r.keys.some(k => !k.value.endsWith('m'))
           : prefs.key === 'minor' ? r.keys.some(k => k.value.endsWith('m'))
@@ -145,7 +150,7 @@ export default function AdminSongs() {
 
   const flagLabel: Record<Flag, string> = {
     nolyrics: s.filterNoLyrics, nokey: s.filterNoKey, nocredits: s.filterNoCredits, cover: s.coverTag,
-    neverplayed: s.filterNeverPlayed, played: s.filterPlayed, videos: s.filterHasVideos,
+    neverplayed: s.filterNeverPlayed, played: s.filterPlayed, videos: s.filterHasVideos, draft: `🔒 ${s.songDraft}`,
   };
   const head = (k: SortKey, label: string, className = '') => (
     <th className={className} aria-sort={prefs.sort === k ? (prefs.desc ? 'descending' : 'ascending') : undefined}>
@@ -208,9 +213,10 @@ export default function AdminSongs() {
                     <Link to={`${prefix}/songs/${r.id}`}>{r.title}</Link>
                     {r.alt && <span className="lu-sg-alt" lang="en">{r.alt}</span>}
                     {r.cover && <span className="lu-sg-cover">{s.coverOf.replace('{artist}', r.cover)}</span>}
+                    {r.draft && <span className="lu-tag is-muted lu-sg-draft">🔒 {s.songDraft}</span>}
                   </td>
                   <td className="lu-sg-key">{r.keyText || <span className="lu-sg-none">—</span>}</td>
-                  <td className="lu-td-center">{r.lyrics ? <span className="lu-sg-yes" aria-label={s.lyricsLinked}>✓</span> : <span className="lu-sg-none">—</span>}</td>
+                  <td className="lu-td-center">{r.lyrics ? <span className="lu-sg-yes" aria-label={r.lyricsHidden ? s.visLyricsOff : s.lyricsLinked} title={r.lyricsHidden ? s.visLyricsOff : undefined}>{r.lyricsHidden ? '🔒' : '✓'}</span> : <span className="lu-sg-none">—</span>}</td>
                   <td className="lu-td-num">{r.plays || <span className="lu-sg-none">0</span>}</td>
                   <td className="lu-sg-date">{r.last || <span className="lu-sg-none">—</span>}</td>
                   <td className="lu-td-num">{r.videos || <span className="lu-sg-none">0</span>}</td>

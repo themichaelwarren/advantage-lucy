@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAllEvents, useVenues, useAreas, useAllSetlists, useSongs } from '../../hooks/useSheetData';
+import { useAllEvents, useVenues, useAreas, useAllSetlists, useAllSongs } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, getReservations, type MediaRow, getVideoTitle } from '../../services/adminService';
 import ShowVideos, { toShowVideos, fromShowVideos, videosSnapshot, songSlots, newVideo, type ShowVideo } from '../../components/admin/ShowVideos';
 import { useAdminT } from '../../i18n/admin';
@@ -48,7 +48,7 @@ export default function AdminEventForm() {
   const { venues, refresh: refreshVenues } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
   const { setlists } = useAllSetlists();
-  const { songs, refresh: refreshSongs } = useSongs();
+  const { songs, refresh: refreshSongs } = useAllSongs();
   const [addedSongs, setAddedSongs] = useState<Song[]>([]);
 
   const [form, setForm] = useState<Form>(emptyForm);

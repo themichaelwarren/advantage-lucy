@@ -5,7 +5,7 @@
  */
 import {
   type Env, getCredentials,
-  fetchEvents, fetchSetlists, fetchNews, fetchBlog, fetchPhotos,
+  fetchEvents, fetchSetlists, fetchNews, fetchBlog, fetchPhotos, fetchSongs,
 } from '../../../lib/sheets';
 
 const fetchers: Record<string, (id: string, e: string, k: string) => Promise<unknown>> = {
@@ -14,6 +14,7 @@ const fetchers: Record<string, (id: string, e: string, k: string) => Promise<unk
   news: fetchNews,
   blog: fetchBlog,
   photos: fetchPhotos,
+  songs: fetchSongs,
 };
 
 export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {

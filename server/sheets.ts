@@ -316,6 +316,8 @@ export async function fetchSongs(
     original_artist: row.original_artist || undefined,
     title_en: (row.title_en || '').trim() || undefined,
     title_kana: (row.title_kana || '').trim() || undefined,
+    status: (row.status || '').trim() || undefined,
+    lyrics_status: (row.lyrics_status || '').trim() || undefined,
   }));
 }
 
@@ -425,7 +427,7 @@ function colLetter(n: number): string {
  * known names, never arbitrary fields.
  */
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
-  Songs: ['original_artist', 'title_en', 'title_kana'],
+  Songs: ['original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status'],
   Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until', 'setlist_added', 'setlist_source'],
   News: ['publish_at'],
   Blog: ['publish_at'],

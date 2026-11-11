@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useSongs, usePeople, useAllSetlists, useAllEvents, useTracklists, useAlbums } from '../../hooks/useSheetData';
+import { useAllSongs, usePeople, useAllSetlists, useAllEvents, useTracklists, useAlbums } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, getMedia, getArrangements, saveArrangements, type MediaRow, type ArrangementRow } from '../../services/adminService';
 import KeysEditor, { toDrafts, fromDrafts, keysText, type KeyDraft } from '../../components/admin/KeysEditor';
 import SongVideos from '../../components/admin/SongVideos';
@@ -10,13 +10,14 @@ import { createDriveDoc } from '../../services/driveService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminT } from '../../i18n/admin';
 import { Section, Field, FieldGroup, SaveBar, DeleteButton, EditDialog, LockHint, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
+import { getAdminToken } from '../../services/adminToken';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
 import { localTitle } from '../../utils/songTitles';
 import PeoplePicker from '../../components/admin/PeoplePicker';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
-const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist', 'title_en', 'title_kana'] as const;
+const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status'] as const;
 type SongField = typeof SONG_COLUMNS[number];
 type Form = Record<SongField, string>;
 const emptyForm = (): Form => Object.fromEntries(SONG_COLUMNS.map(c => [c, ''])) as Form;
@@ -31,7 +32,7 @@ export default function AdminSongForm() {
   const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
-  const { songs, loading } = useSongs();
+  const { songs, loading } = useAllSongs();
   const { people } = usePeople();
   const { accessToken } = useAuth();
   const { setlists, refresh: refreshSetlists } = useAllSetlists();
@@ -67,7 +68,8 @@ export default function AdminSongForm() {
   useEffect(() => {
     setLyrics(null);
     if (!docId) return;
-    fetch(`/api/docs/${docId}`).then(r => r.json()).then(d => setLyrics(String(d.text || '').trim())).catch(() => setLyrics(''));
+    const token = getAdminToken();
+    fetch(`/api/docs/${docId}`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined).then(r => r.json()).then(d => setLyrics(String(d.text || '').trim())).catch(() => setLyrics(''));
   }, [docId]);
   // Keys (admin only, private Arrangements tab): edited in their own window
   const [arrangements, setArrangements] = useState<ArrangementRow[] | null>(null);
@@ -106,7 +108,7 @@ export default function AdminSongForm() {
       id: song.id, title: song.title || '', lyrics_by: song.lyrics_by || '',
       music_by: song.music_by || '', lyrics_doc_id: song.lyrics_doc_id || '',
       original_artist: song.original_artist || '',
-      title_en: song.title_en || '', title_kana: song.title_kana || '',
+      title_en: song.title_en || '', title_kana: song.title_kana || '', status: song.status || '', lyrics_status: song.lyrics_status || '',
     };
     setForm(f);
     setBaseline(JSON.stringify(f));
@@ -291,6 +293,16 @@ export default function AdminSongForm() {
     if (g && g[0] === y) g[1].push(x); else byYear.push([y, [x]]);
   }
   const saved = baseline ? (JSON.parse(baseline) as Form) : form;
+  // What the site shows, flipped right where it is (saved at once)
+  const pagePublic = saved.status !== 'private';
+  const lyricsPublic = saved.lyrics_status !== 'private';
+  const visToggle = (on: boolean, onLabel: string, offLabel: string, tip: string, flip: () => void) => (
+    <button type="button" role="switch" aria-checked={on} className={`lu-vis-toggle${on ? ' is-on' : ''}`}
+      title={tip} aria-label={`${tip}: ${on ? onLabel : offLabel}`} disabled={saving} onClick={flip}>
+      <span className="lu-vis-knob" aria-hidden="true" />
+      <span>{on ? onLabel : offLabel}</span>
+    </button>
+  );
   const editBtn = (which: 'details' | 'lyrics') => (
     <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={s.songEdit} title={s.songEdit}>✎</button>
   );
@@ -304,7 +316,10 @@ export default function AdminSongForm() {
           <div className="lu-song-card">
             <div className="lu-song-card-head">
               <p className="lu-eyebrow"><Link to={`${prefix}/songs`}>← {s.songsTitle}</Link></p>
-              {editBtn('details')}
+              <span className="lu-row lu-card-tools">
+                {visToggle(pagePublic, s.visPageShort, s.songDraft, s.visPageTip, () => save({ ...saved, status: pagePublic ? 'private' : '' }))}
+                {editBtn('details')}
+              </span>
             </div>
             <h1>{saved.title}</h1>
             {(saved.title_en && saved.title_en !== saved.title || saved.title_kana) && (
@@ -313,6 +328,7 @@ export default function AdminSongForm() {
                 {saved.title_kana && <span lang="ja">{saved.title_kana}</span>}
               </p>
             )}
+            {!pagePublic && <p className="lu-song-draft"><span className="lu-tag is-muted">🔒 {s.songDraft}</span><span className="lu-hint">{s.visPageOff}</span></p>}
             <dl className="lu-song-credits">
               {saved.original_artist && (<><dt>{s.coverTag}</dt><dd>{saved.original_artist}</dd></>)}
               {saved.music_by && (<><dt>{s.musicBy}</dt><dd>{names(saved.music_by)}</dd></>)}
@@ -338,7 +354,7 @@ export default function AdminSongForm() {
                 </span></li>
               )}
             </ul>
-            <Link to={`/${locale}/songs/${form.id}`} className="lu-btn lu-btn-quiet lu-song-site">{s.viewOnSite} ↗</Link>
+            {saved.status !== 'private' && <Link to={`/${locale}/songs/${form.id}`} className="lu-btn lu-btn-quiet lu-song-site">{s.viewOnSite} ↗</Link>}
           </div>
 
           {usage.releases.length > 0 && (
@@ -381,6 +397,7 @@ export default function AdminSongForm() {
             title={s.secLyrics}
             aside={<span className="lu-row">
               {saved.lyrics_doc_id && <a className="lu-btn lu-btn-quiet" href={`https://docs.google.com/document/d/${saved.lyrics_doc_id}/edit`} target="_blank" rel="noopener noreferrer">{s.lyricsDocOpen}</a>}
+              {visToggle(lyricsPublic, s.visLyricsShort, s.visLyricsHiddenShort, s.visLyricsTip, () => save({ ...saved, lyrics_status: lyricsPublic ? 'private' : '' }))}
               {editBtn('lyrics')}
             </span>}
           >
@@ -390,6 +407,7 @@ export default function AdminSongForm() {
               <p className="lu-hint">{s.loading}</p>
             ) : (
               <>
+                {!lyricsPublic && <p className="lu-hint lu-lyrics-hidden">🔒 {s.visLyricsOff}</p>}
                 <div className={`lu-lyrics${lyricsOpen ? ' is-open' : ''}`}>{lyrics || '—'}</div>
                 {lyrics.split('\n').length > 10 && (
                   <button type="button" className="lu-link-btn" onClick={() => setLyricsOpen(o => !o)}>

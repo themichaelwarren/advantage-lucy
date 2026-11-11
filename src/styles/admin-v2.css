@@ -1991,3 +1991,21 @@ a.lu-rel-svc.is-on:hover { background: var(--text); color: var(--bg); }
 .lu-paste-closed .lu-note { margin: 0; }
 .lu-paste-box { margin: 0.2rem 0 0.8rem; padding: 0.8rem; border: 1.5px dashed var(--border); border-radius: var(--radius-sm); background: var(--bg); }
 .lu-shell .lu-paste-box textarea { width: 100%; padding: 0.7rem 0.9rem; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); font-family: var(--font-main); line-height: 1.6; resize: vertical; }
+.lu-song-draft { margin: -0.2rem 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.5rem; }
+.lu-song-draft .lu-hint { margin: 0; font-size: 0.82rem; }
+.lu-sg-draft { display: inline-block; margin-top: 0.2rem; font-size: 0.7rem; }
+.lu-card-tools { gap: 0.4rem; flex-wrap: nowrap; }
+/* Compact on/off beside a ✎ ("公開" / "下書き"), saved at once */
+.lu-vis-toggle {
+  display: inline-flex; align-items: center; gap: 0.4rem; height: 2.1rem; padding: 0 0.7rem 0 0.35rem; cursor: pointer;
+  border: 1.5px solid var(--border); border-radius: var(--pill); background: var(--surface); color: var(--text-muted);
+  font: inherit; font-size: 0.8rem; font-weight: 700; white-space: nowrap;
+}
+.lu-vis-toggle:hover { border-color: var(--text); color: var(--text); }
+.lu-vis-knob { position: relative; width: 1.9rem; height: 1.1rem; border-radius: 99px; background: var(--border); transition: background-color 150ms ease; flex-shrink: 0; }
+.lu-vis-knob::after { content: ''; position: absolute; top: 2px; left: 2px; width: calc(1.1rem - 4px); height: calc(1.1rem - 4px); border-radius: 50%; background: var(--bg); transition: transform 150ms ease; }
+.lu-vis-toggle.is-on { color: var(--text); }
+.lu-vis-toggle.is-on .lu-vis-knob { background: #3fcf8e; }
+.lu-vis-toggle.is-on .lu-vis-knob::after { transform: translateX(0.8rem); background: #1a1a1a; }
+.lu-vis-toggle:disabled { opacity: 0.6; cursor: wait; }
+.lu-lyrics-hidden { margin: 0 0 0.6rem; }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useVenues, useAreas, useAllEvents, usePrefectures, useCountries, useAllSetlists, useSongs } from '../../hooks/useSheetData';
+import { useVenues, useAreas, useAllEvents, usePrefectures, useCountries, useAllSetlists, useAllSongs } from '../../hooks/useSheetData';
 import { prefectureSuggestions } from '../../components/admin/places';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
@@ -38,7 +38,7 @@ export default function AdminVenueForm() {
   const [newAreaPrefecture, setNewAreaPrefecture] = useState('');
   const { events } = useAllEvents();
   const { setlists } = useAllSetlists();
-  const { songs } = useSongs();
+  const { songs } = useAllSongs();
 
   // `areaText` is what's typed in the area box: a name in either language
   const [form, setForm] = useState<Form>(empty);

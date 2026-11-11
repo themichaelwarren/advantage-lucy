@@ -185,7 +185,8 @@ export default function SongDetail({ locale }: Props) {
                 ))}
               </div>
             ) : (
-              <p className="lyrics-placeholder">{s.songs.noLyrics}</p>
+              // Lyrics held back for now (e.g. until the release) vs. no lyrics at all
+              <p className="lyrics-placeholder">{(song as { lyrics_hidden?: boolean }).lyrics_hidden ? s.songs.lyricsSoon : s.songs.noLyrics}</p>
             )}
         </section>
       </div>

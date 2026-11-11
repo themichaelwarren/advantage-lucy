@@ -72,6 +72,14 @@ export function publicView(tab: string, data: unknown, events?: Row[]): unknown 
     case 'events':
       // Where a setlist was found is a band-only note
       return rows.filter(e => e.status !== 'private').map(e => { const { setlist_source: _, ...rest } = e; return rest; });
+    case 'songs':
+      // Drafts have no page on the site (their titles still appear in setlists, unlinked).
+      // Hidden lyrics: the doc isn't even named, so it can't be fetched (see lyricsAccess.ts)
+      return rows.filter(x => x.status !== 'private').map(x => {
+        if (x.lyrics_status !== 'private') return x;
+        const { lyrics_doc_id: _, ...rest } = x;
+        return { ...rest, lyrics_hidden: true };
+      });
     case 'news':
     case 'blog':
       return rows.filter(x => isLive(x, now));

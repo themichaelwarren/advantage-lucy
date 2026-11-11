@@ -90,6 +90,8 @@ export interface Song {
   original_artist?: string;  // covers: who did it first, e.g. "The Smiths"
   title_en?: string;         // English title (mostly romaji, as on streaming services); shown first on English pages
   title_kana?: string;       // 読み in kana, for 50音順 and search
+  status?: string;        // 'private' = draft: no page on the site yet
+  lyrics_status?: string; // 'private' = page live, lyrics not shown yet
 }
 
 export interface SetlistEntry {
