@@ -3,7 +3,7 @@ import type { AdminStrings } from '../../i18n/admin';
 import { getVideoTitle, type MediaRow } from '../../services/adminService';
 import type { SetlistItem } from './SetlistEditor';
 import YouTubePlayer, { type PlayerHandle } from './YouTubePlayer';
-import { youTubeId, youTubeStart, youTubeWatch, youTubeThumb, formatTime, parseTime } from '../../utils/youtube';
+import { youTubeId, youTubeStart, youTubeWatch, youTubeThumb, formatTime, parseTypedTime } from '../../utils/youtube';
 import { normalize } from './SuggestInput';
 import { ConfirmDialog } from './ui';
 
@@ -239,11 +239,11 @@ export default function ShowVideos({ s, videos, onChange, setlist, editing = tru
                             <li key={item.key} className={t !== undefined ? 'has-time' : ''}>
                               <span className="lu-video-song">{item.song}</span>
                               <input
-                                className="lu-video-time" inputMode="numeric" placeholder="0:00" aria-label={`${item.song}: ${s.videoStart}`}
+                                className="lu-video-time" inputMode="decimal" placeholder="0:00" aria-label={`${item.song}: ${s.videoStart}`}
                                 value={draft ?? (t !== undefined ? formatTime(t) : '')}
                                 onChange={e => {
                                   const text = e.target.value;
-                                  const sec = parseTime(text);
+                                  const sec = parseTypedTime(text);
                                   setDrafts(d => ({ ...d, [draftKey]: text }));
                                   if (sec !== null || !text.trim()) setStart(v, item.key, text.trim() ? sec : null);
                                 }}

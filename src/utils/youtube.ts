@@ -36,6 +36,29 @@ export function formatTime(sec: number): string {
 }
 
 /** "1:23", "1:02:03", "83", "1h2m3s", "2m" → seconds; null if it isn't a time. */
+/**
+ * A time typed in a box, on any keyboard. The iPhone number pad has no ":",
+ * so digits read like a clock: 505 → 5:05, 1234 → 12:34, 10305 → 1:03:05;
+ * one or two digits are seconds (45 → 0:45). "5.05" and "5:05" work too.
+ * (Not for YouTube's ?t=505, which is seconds: that's parseTime.)
+ */
+export function parseTypedTime(text: string): number | null {
+  const t = text.trim().replace(/[：．。]/g, m => (m === '：' ? ':' : '.'));
+  if (!t) return null;
+  if (/^\d{1,6}$/.test(t)) {
+    const d = t.padStart(6, '0');
+    const [h, m, s] = [d.slice(0, 2), d.slice(2, 4), d.slice(4)].map(Number);
+    return s < 60 && (h === 0 ? true : m < 60) ? h * 3600 + m * 60 + s : null;
+  }
+  const parts = t.split(/[:.]/);
+  if (parts.length >= 2 && parts.length <= 3 && parts.every(p => /^\d{1,2}$/.test(p) || (p === parts[0] && /^\d{1,3}$/.test(p)))) {
+    const n = parts.map(Number);
+    if (n.slice(1).some(x => x >= 60)) return null;
+    return n.reduce((acc, x) => acc * 60 + x, 0);
+  }
+  return parseTime(t);
+}
+
 export function parseTime(text: string): number | null {
   const t = text.trim().replace(/[：]/g, ':');
   if (!t) return null;

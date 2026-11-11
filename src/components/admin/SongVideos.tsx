@@ -35,7 +35,9 @@ export default function SongVideos({ s, locale, prefix, songId, title, media, pl
     ? (locale === 'ja' ? ev.title_ja || ev.venue_ja || ev.title_en || ev.venue_en : ev.title_en || ev.venue_en || ev.title_ja || ev.venue_ja)
     : '';
 
-  // Live: marked starts first; shows it was played at with a video but no mark, as "whole show"
+  // Live: marked starts first; then, from shows it was played at, videos with
+  // no songs marked at all, as "whole show". A video with any song marked is a
+  // clip or a marked-up show: it only appears on the pages of the songs marked in it
   const live = useMemo<Item[]>(() => {
     const key = normalize(title);
     const byEvent = new Map(events.map(e => [e.id, e]));
@@ -44,8 +46,8 @@ export default function SongVideos({ s, locale, prefix, songId, title, media, pl
       const ev = byEvent.get(r.owner);
       return { key: `p${i}`, url: r.url, start: r.start === '' ? null : Number(r.start), label: ev?.date || r.owner, sub: showName(ev), href: `${prefix}/events/${r.owner}` };
     });
-    const marked = new Set(parts.map(r => `${r.owner}|${r.url}`));
-    media.filter(r => r.kind === 'show' && played.includes(r.owner) && !marked.has(`${r.owner}|${r.url}`)).forEach((r, i) => {
+    const anyMarked = new Set(media.filter(r => r.kind === 'part').map(r => `${r.owner}|${r.url}`));
+    media.filter(r => r.kind === 'show' && played.includes(r.owner) && !anyMarked.has(`${r.owner}|${r.url}`)).forEach((r, i) => {
       const ev = byEvent.get(r.owner);
       out.push({ key: `w${i}`, url: r.url, start: null, label: ev?.date || r.owner, sub: [showName(ev), r.title].filter(Boolean).join(' · '), href: `${prefix}/events/${r.owner}`, whole: true });
     });
