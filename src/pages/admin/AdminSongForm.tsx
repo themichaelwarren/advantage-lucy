@@ -297,13 +297,17 @@ export default function AdminSongForm() {
   // What the site shows, flipped right where it is (saved at once)
   const pagePublic = saved.status !== 'private';
   const lyricsPublic = saved.lyrics_status !== 'private';
-  const visToggle = (on: boolean, onLabel: string, offLabel: string, tip: string, flip: () => void) => (
-    <button type="button" role="switch" aria-checked={on} className={`lu-vis-toggle${on ? ' is-on' : ''}`}
-      title={tip} aria-label={`${tip}: ${on ? onLabel : offLabel}`} disabled={saving} onClick={flip}>
+  const visToggle = (on: boolean, onLabel: string, offLabel: string, tip: string, flip: () => void, off?: string) => (
+    // `off`: nothing to switch yet (e.g. no lyrics): shown off and greyed, with why
+    <button type="button" role="switch" aria-checked={on && !off} className={`lu-vis-toggle${on && !off ? ' is-on' : ''}${off ? ' is-none' : ''}`}
+      title={off ? s.visLyricsNoneTip : tip} aria-label={`${tip}: ${off || (on ? onLabel : offLabel)}`} disabled={saving || !!off} onClick={flip}>
       <span className="lu-vis-knob" aria-hidden="true" />
-      <span>{on ? onLabel : offLabel}</span>
+      <span>{off || (on ? onLabel : offLabel)}</span>
     </button>
   );
+  // No lyrics doc, or a doc with nothing in it: nothing to show or hide yet
+  const lyricsEmpty = !!saved.lyrics_doc_id && lyrics !== null && !lyrics.replace(/\s/g, '');
+  const noLyrics = !saved.lyrics_doc_id || lyricsEmpty;
   const editBtn = (which: 'details' | 'lyrics') => (
     <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
   );
@@ -397,8 +401,12 @@ export default function AdminSongForm() {
           <Section
             title={s.secLyrics}
             aside={<span className="lu-row">
-              {saved.lyrics_doc_id && <a className="lu-btn lu-btn-quiet" href={`https://docs.google.com/document/d/${saved.lyrics_doc_id}/edit`} target="_blank" rel="noopener noreferrer">{s.lyricsDocOpen}</a>}
-              {visToggle(lyricsPublic, s.visLyricsShort, s.visLyricsHiddenShort, s.visLyricsTip, () => save({ ...saved, lyrics_status: lyricsPublic ? 'private' : '' }))}
+              {visToggle(lyricsPublic, s.visLyricsShort, s.visLyricsHiddenShort, s.visLyricsTip, () => save({ ...saved, lyrics_status: lyricsPublic ? 'private' : '' }), noLyrics ? s.visLyricsNone : undefined)}
+              {/* The doc itself, as a small button beside ✎ */}
+              {saved.lyrics_doc_id && (
+                <a className="lu-icon-btn lu-edit-btn" href={`https://docs.google.com/document/d/${saved.lyrics_doc_id}/edit`} target="_blank" rel="noopener noreferrer"
+                  aria-label={s.lyricsDocOpen} title={s.lyricsDocOpen}><Icon name="doc" /></a>
+              )}
               {editBtn('lyrics')}
             </span>}
           >
@@ -406,6 +414,8 @@ export default function AdminSongForm() {
               <p className="lu-hint">{s.songNoLyrics} <button type="button" className="lu-link-btn" onClick={() => setDialog('lyrics')}>{s.songEdit}</button></p>
             ) : lyrics === null ? (
               <p className="lu-hint">{s.loading}</p>
+            ) : lyricsEmpty ? (
+              <p className="lu-hint">{s.lyricsDocEmpty}</p>
             ) : (
               <>
                 {!lyricsPublic && <p className="lu-hint lu-lyrics-hidden"><Icon name="lock" /> {s.visLyricsOff}</p>}

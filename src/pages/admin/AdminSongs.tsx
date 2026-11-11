@@ -5,7 +5,7 @@ import { useAllSongs, usePeople, useAllSetlists, useAllEvents } from '../../hook
 import { useAdminT } from '../../i18n/admin';
 import { personName } from '../../components/admin/PeoplePicker';
 import { normalize } from '../../components/admin/SuggestInput';
-import { getArrangements, getMedia, type ArrangementRow, type MediaRow } from '../../services/adminService';
+import { getArrangements, getMedia, getLyricsStatus, type ArrangementRow, type MediaRow } from '../../services/adminService';
 import { KEYS, parseKey } from '../../../functions/lib/keys';
 import { keysText } from '../../components/admin/KeysEditor';
 import { todayInJapan } from '../../utils/showDates';
@@ -33,6 +33,7 @@ interface Row {
   keySort: number;          // first key: note position, minor after major; no key last
   lyrics: boolean;
   lyricsHidden: boolean;
+  lyricsEmpty: boolean;
   plays: number;
   last: string;             // date of the last show that's over
   videos: number;
@@ -55,8 +56,10 @@ export default function AdminSongs() {
   const { events } = useAllEvents();
   const [arr, setArr] = useState<ArrangementRow[]>([]);
   const [media, setMedia] = useState<MediaRow[]>([]);
+  const [lyricsState, setLyricsState] = useState<Record<string, string>>({});
   useEffect(() => {
     getArrangements().then(setArr).catch(() => {});
+    getLyricsStatus().then(r => setLyricsState(r.status)).catch(() => {});
     getMedia().then(setMedia).catch(() => {});
   }, []);
 
@@ -101,7 +104,9 @@ export default function AdminSongs() {
         sortTitle: songSortKey(x, locale), search: songSearchText(x),
         keys, keyText: keysText(keys, locale),
         keySort: first ? first.pos * 2 + (first.minor ? 1 : 0) : 99,
-        lyrics: !!x.lyrics_doc_id,
+        // A doc with nothing in it counts as no lyrics
+        lyrics: !!x.lyrics_doc_id && lyricsState[x.lyrics_doc_id] !== 'empty',
+        lyricsEmpty: !!x.lyrics_doc_id && lyricsState[x.lyrics_doc_id] === 'empty',
         lyricsHidden: x.lyrics_status === 'private',
         plays: plays ? plays.n.size : 0,
         last: plays?.last || '',
@@ -110,7 +115,7 @@ export default function AdminSongs() {
         draft: x.status === 'private',
       };
     });
-  }, [songs, setlists, events, arr, media, names, locale]);
+  }, [songs, setlists, events, arr, media, names, locale, lyricsState]);
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -217,7 +222,10 @@ export default function AdminSongs() {
                     {r.draft && <span className="lu-tag is-muted lu-sg-draft"><Icon name="lock" /> {s.songDraft}</span>}
                   </td>
                   <td className="lu-sg-key">{r.keyText || <span className="lu-sg-none">—</span>}</td>
-                  <td className="lu-td-center">{r.lyrics ? <span className="lu-sg-yes" aria-label={r.lyricsHidden ? s.visLyricsOff : s.lyricsLinked} title={r.lyricsHidden ? s.visLyricsOff : undefined}>{r.lyricsHidden ? '🔒' : '✓'}</span> : <span className="lu-sg-none">—</span>}</td>
+                  <td className="lu-td-center">{r.lyrics
+                    ? <span className="lu-sg-yes" aria-label={r.lyricsHidden ? s.visLyricsOff : s.lyricsLinked} title={r.lyricsHidden ? s.visLyricsOff : undefined}>{r.lyricsHidden ? <Icon name="lock" /> : <Icon name="check" />}</span>
+                    : r.lyricsEmpty ? <span className="lu-tag is-todo" title={s.lyricsDocEmpty}>{s.lyricsEmptyShort}</span>
+                    : <span className="lu-sg-none">—</span>}</td>
                   <td className="lu-td-num">{r.plays || <span className="lu-sg-none">0</span>}</td>
                   <td className="lu-sg-date">{r.last || <span className="lu-sg-none">—</span>}</td>
                   <td className="lu-td-num">{r.videos || <span className="lu-sg-none">0</span>}</td>

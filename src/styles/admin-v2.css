@@ -2023,3 +2023,7 @@ a.lu-rel-svc.is-on:hover { background: var(--text); color: var(--bg); }
 .lu-message-facts dt .lu-ic { width: 1rem; height: 1rem; }
 .lu-side-tool .lu-ic { width: 1.1rem; height: 1.1rem; vertical-align: middle; }
 .lu-help-icon .lu-ic { width: 1.15em; height: 1.15em; vertical-align: -0.15em; }
+.lu-vis-toggle.is-none { opacity: 0.55; cursor: default; }
+.lu-vis-toggle.is-none:hover { border-color: var(--border); color: var(--text-muted); }
+.lu-sg-yes .lu-ic { width: 1rem; height: 1rem; }
+a.lu-icon-btn { text-decoration: none; }

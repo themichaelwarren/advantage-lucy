@@ -18,6 +18,7 @@ import { pageMeta, injectMeta, type Load } from '../functions/lib/meta';
 import { fetchInstagramThumb } from '../functions/lib/igThumb';
 import { handleAdminFilters } from '../functions/lib/filters';
 import { mayReadDoc } from '../functions/lib/lyricsAccess';
+import { handleLyricsStatus } from '../functions/lib/lyricsStatus';
 
 /** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
 async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -56,6 +57,20 @@ export default function sheetsPlugin(): Plugin {
     },
     configureServer(server) {
       // Media and arrangements (admin only; same code as production: functions/lib/media.ts, arrangements.ts)
+      // Which lyrics docs have text (same code as production: functions/lib/lyricsStatus.ts)
+      server.middlewares.use(async (req, res, next) => {
+        if (req.method !== 'GET' || !req.url?.startsWith('/api/admin/lyrics-status')) return next();
+        if (!(await requireAdmin(req, res))) return;
+        const out = await handleLyricsStatus(new Request(new URL(req.url, `http://${req.headers.host}`)), {
+          sheetId: process.env.VITE_GOOGLE_SHEET_ID!,
+          email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!,
+          key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
+        });
+        res.statusCode = out.status;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(await out.text());
+      });
+
       // Instagram post pictures (same code as production: functions/lib/igThumb.ts)
       server.middlewares.use(async (req, res, next) => {
         const code = req.method === 'GET' ? req.url?.match(/^\/api\/ig\/([^/?]+)/)?.[1] : undefined;

@@ -268,3 +268,8 @@ export async function saveFilterForward(value: string): Promise<Filters> {
     body: JSON.stringify({ kind: 'forward', value }),
   }) as Filters;
 }
+
+// ── Lyrics docs: which have text (admin only, see functions/lib/lyricsStatus.ts) ──
+export async function getLyricsStatus(fresh = false): Promise<{ status: Record<string, 'text' | 'empty' | 'error'>; checkedAt: string }> {
+  return await adminFetch(`/api/admin/lyrics-status${fresh ? '?fresh=1' : ''}`) as { status: Record<string, 'text' | 'empty' | 'error'>; checkedAt: string };
+}
