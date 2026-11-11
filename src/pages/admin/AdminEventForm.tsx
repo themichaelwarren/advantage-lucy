@@ -27,6 +27,7 @@ import type { Song } from '../../types';
 import TimestampPaste from '../../components/admin/TimestampPaste';
 import { matchSong, type PastedSong } from '../../utils/timestamps';
 import { youTubeId } from '../../utils/youtube';
+import { ActivityHistory } from '../../components/admin/Activity';
 
 type EventField = typeof EVENT_COLUMNS[number];
 type Form = Record<EventField, string>;
@@ -635,6 +636,7 @@ export default function AdminEventForm() {
               ? <div className="event-notes lu-show-notes">{notes.split(/\n\s*\n/).map((para, i) => <p key={i}>{linkify(para.trim())}</p>)}</div>
               : <p className="lu-hint">{s.notesNone}</p>}
           </Section>
+          <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`Events:${id}`, `Setlists:${id}`]} /></div>
         </div>
       </div>
 

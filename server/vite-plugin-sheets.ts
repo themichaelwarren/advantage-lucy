@@ -20,6 +20,7 @@ import { handleAdminFilters } from '../functions/lib/filters';
 import { mayReadDoc } from '../functions/lib/lyricsAccess';
 import { handleLyricsStatus } from '../functions/lib/lyricsStatus';
 import { handleLinkCheck } from '../functions/lib/linkCheck';
+import { safePlan, recordActivity, handleAdminActivity } from '../functions/lib/activity';
 
 /** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
 async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -57,6 +58,56 @@ export default function sheetsPlugin(): Plugin {
       }
     },
     configureServer(server) {
+      // An API route that throws (a Sheets 429, say) shouldn't take the whole dev server down
+      if (!process.listenerCount('unhandledRejection')) {
+        process.on('unhandledRejection', err => console.error('[dev api] unhandled', err));
+      }
+      // The activity log, as the production admin middleware keeps it
+      // (functions/api/admin/_middleware.ts, functions/lib/activity.ts): read the
+      // row as it was before an admin save, add the entry once the save worked.
+      // The body is read here and handed on to the route that handles it.
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url?.startsWith('/api/admin/') || req.method === 'GET' || req.method === 'HEAD') return next();
+        const check = await checkAdmin(req.headers.authorization, {
+          clientId: process.env.VITE_GOOGLE_CLIENT_ID,
+          adminEmails: process.env.VITE_ADMIN_EMAILS,
+        });
+        if (!check.ok) return next(); // the route itself says no
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) chunks.push(chunk as Buffer);
+        const buf = Buffer.concat(chunks);
+        (req as any)[Symbol.asyncIterator] = async function* () { if (buf.length) yield buf; };
+        const ctx = {
+          sheetId: process.env.VITE_GOOGLE_SHEET_ID!,
+          saEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!,
+          saKey: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
+        };
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        let body: any = {};
+        if ((req.headers['content-type'] || '').includes('application/json')) { try { body = JSON.parse(buf.toString() || '{}'); } catch { /* not ours */ } }
+        const plan = await safePlan(ctx, { method: req.method!, path: url.pathname, query: url.searchParams, body });
+        if (plan) {
+          res.on('finish', () => {
+            if (res.statusCode < 300) recordActivity(ctx, plan, check.email).catch(err => console.error('[activity] record', err));
+          });
+        }
+        next();
+      });
+
+      // GET /api/admin/activity (same code as production)
+      server.middlewares.use(async (req, res, next) => {
+        if (req.method !== 'GET' || !req.url?.startsWith('/api/admin/activity')) return next();
+        if (!(await requireAdmin(req, res))) return;
+        const out = await handleAdminActivity(new Request(new URL(req.url, `http://${req.headers.host}`)), {
+          sheetId: process.env.VITE_GOOGLE_SHEET_ID!,
+          saEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!,
+          saKey: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
+        });
+        res.statusCode = out.status;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(await out.text());
+      });
+
       // Media and arrangements (admin only; same code as production: functions/lib/media.ts, arrangements.ts)
       // Which lyrics docs have text (same code as production: functions/lib/lyricsStatus.ts)
       server.middlewares.use(async (req, res, next) => {

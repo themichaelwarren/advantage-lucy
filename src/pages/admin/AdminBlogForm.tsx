@@ -13,6 +13,7 @@ import InstagramEmbed from '../../components/InstagramEmbed';
 import Icon from '../../components/admin/Icon';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { nowInJapan, normDateTime } from '../../utils/showDates';
+import { ActivityHistory } from '../../components/admin/Activity';
 
 type BlogField = typeof BLOG_COLUMNS[number];
 type Form = Record<BlogField, string>;
@@ -181,6 +182,7 @@ export default function AdminBlogForm() {
           <Section title={s.preview}>
             {savedCode ? <InstagramEmbed url={saved.instagram_url} /> : <p className="lu-hint">{s.instagramBad}</p>}
           </Section>
+          <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`Blog:${id}`]} /></div>
         </div>
       </div>
 

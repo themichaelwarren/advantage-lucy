@@ -139,6 +139,9 @@ export default function AdminLayout() {
       { to: `${prefix}/venues`, label: s.venues, icon: 'venues' },
       { to: `${prefix}/areas`, label: s.areas, icon: 'areas' },
     ] },
+    { title: s.groupRecords, links: [
+      { to: `${prefix}/activity`, label: s.actTitle, icon: 'history' },
+    ] },
   ];
 
   return (

@@ -22,10 +22,12 @@ async function sheetsFetch(token: string, url: string, init: RequestInit = {}) {
 }
 
 /** Make the tab (with its headings) the first time it's needed. */
+const known = new Set<string>();
 async function ensureTab(sheetId: string, token: string, tab: string, columns: readonly string[]) {
+  if (known.has(`${sheetId}/${tab}`)) return;
   const base = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
   const meta = await sheetsFetch(token, `${base}?fields=sheets.properties.title`);
-  if (meta.sheets?.some((s: any) => s.properties?.title === tab)) return;
+  if (meta.sheets?.some((s: any) => s.properties?.title === tab)) { known.add(`${sheetId}/${tab}`); return; }
   await sheetsFetch(token, `${base}:batchUpdate`, {
     method: 'POST',
     body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tab } } }] }),
@@ -34,6 +36,7 @@ async function ensureTab(sheetId: string, token: string, tab: string, columns: r
     method: 'PUT',
     body: JSON.stringify({ values: [[...columns]] }),
   });
+  known.add(`${sheetId}/${tab}`);
 }
 
 /** Every row (trimmed, only the known columns). [] before the tab exists. */
@@ -66,6 +69,17 @@ export async function replacePrivate(ctx: SheetContext, tab: string, columns: re
   });
   await sheetsFetch(token, `${base}/values/${encodeURIComponent(`${tab}!A${values.length + 1}:${last}`)}:clear`, { method: 'POST', body: '{}' });
   return rows;
+}
+
+/** Add one row at the end (for logs: nothing is ever rewritten). */
+export async function appendPrivate(ctx: SheetContext, tab: string, columns: readonly string[], row: Row): Promise<void> {
+  const token = await getAccessToken(ctx.saEmail, ctx.saKey, SCOPE);
+  await ensureTab(ctx.sheetId, token, tab, columns);
+  const base = `https://sheets.googleapis.com/v4/spreadsheets/${ctx.sheetId}`;
+  await sheetsFetch(token, `${base}/values/${encodeURIComponent(`${tab}!A:${col(columns.length)}`)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
+    method: 'POST',
+    body: JSON.stringify({ values: [columns.map(c => row[c] ?? '')] }),
+  });
 }
 
 export const json = (data: unknown, status = 200) =>

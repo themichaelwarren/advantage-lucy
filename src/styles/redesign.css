@@ -2243,10 +2243,8 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 .tl-recent .tl-row { padding-inline: 1rem; }
 
 /* Venue page: the songs played here most */
-.venue-top-songs { list-style: none; counter-reset: top; margin: 0; padding: 0; display: grid; gap: 0.5rem 1.5rem; }
-@media (min-width: 640px) { .venue-top-songs { grid-template-columns: 1fr 1fr; } }
-.venue-top-songs li { counter-increment: top; display: flex; align-items: baseline; gap: 0.7rem; padding: 0.55rem 0; border-bottom: 1px dashed var(--rule); }
-.venue-top-songs li::before { content: counter(top); min-width: 1.4rem; font-family: var(--font-main); color: var(--text-muted); font-size: 0.85rem; text-align: right; }
-.venue-top-title { font-weight: 700; flex: 1; min-width: 0; color: var(--text); text-decoration: none; }
-a.venue-top-title:hover { text-decoration: underline; }
-.venue-top-count { flex: 0 0 auto; font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-main); }
+/* Played here most: the site's pill-with-count tags, wrapping, most played first */
+.venue-top-songs { list-style: none; margin: 0; padding: 0; gap: 0.5rem; }
+.venue-top-songs .tag { text-decoration: none; color: var(--text); }
+.venue-top-songs .venue-top-title { font-weight: 700; }
+.venue-top-songs .venue-top-count { font-family: var(--font-main); font-variant-numeric: tabular-nums; color: var(--text-muted); min-width: 2.2em; text-align: center; }

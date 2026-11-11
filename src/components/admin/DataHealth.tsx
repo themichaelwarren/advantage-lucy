@@ -23,7 +23,10 @@ export default function DataHealth({ s, prefix, events, setlists }: {
   const [lyrics, setLyrics] = useState<Record<string, string> | null>(null);
   useEffect(() => { getLyricsStatus().then(r => setLyrics(r.status)).catch(() => setLyrics({})); }, []);
   const [links, setLinks] = useState<LinkCheck | null>(null);
-  useEffect(() => { getLinkCheck().then(setLinks).catch(() => {}); }, []);
+  const [linksDone, setLinksDone] = useState(false);
+  useEffect(() => { getLinkCheck().then(setLinks).catch(() => {}).finally(() => setLinksDone(true)); }, []);
+  // The lyrics and link checks are slow the first time (then kept for hours)
+  const checking = lyrics === null || !linksDone;
 
   const lines = useMemo(() => {
     const today = todayInJapan();
@@ -49,7 +52,7 @@ export default function DataHealth({ s, prefix, events, setlists }: {
   return (
     <section className="lu-list-group lu-health">
       <h2>{s.dhTitle}</h2>
-      {lines.length === 0 ? <p className="lu-empty">{s.dhAllGood}</p> : (
+      {lines.length === 0 && !checking ? <p className="lu-empty">{s.dhAllGood}</p> : (
         <ul className="lu-list">
           {lines.map(l => (
             <li key={l.to}>
@@ -60,6 +63,12 @@ export default function DataHealth({ s, prefix, events, setlists }: {
               </Link>
             </li>
           ))}
+          {checking && (
+            <li className="lu-health-checking" role="status">
+              <span className="lu-spinner" aria-hidden="true" />
+              <span>{s.dhChecking}</span>
+            </li>
+          )}
         </ul>
       )}
     </section>

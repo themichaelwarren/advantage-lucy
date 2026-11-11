@@ -12,6 +12,7 @@ import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
 import { songTitle, compareSongs } from '../../utils/songTitles';
 import type { Event } from '../../types';
+import { ActivityHistory } from '../../components/admin/Activity';
 
 interface Form { id: string; name_en: string; name_ja: string; area: string; url: string }
 const empty: Form = { id: '', name_en: '', name_ja: '', area: '', url: '' };
@@ -313,6 +314,7 @@ export default function AdminVenueForm() {
             )}
           </Section>
 
+          <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`Venues:${id}`]} /></div>
         </div>
       </div>
 

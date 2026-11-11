@@ -127,6 +127,16 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       ],
     },
     {
+      id: 'history', icon: 'history', title: 'History and recent changes',
+      link: { to: 'activity', label: 'Open Recent changes' },
+      points: [
+        'Every save in the admin is recorded: who made it, when, and what changed (for example “title: グッバイ → Good Bye”, or which songs were added to a setlist).',
+        'Each show, song, release, venue and post has a History section at the bottom of its page. Recent changes lists everything, by day, and you can filter by kind or by person.',
+        'A show saved with its setlist and videos reads as one change. Saves that changed nothing aren’t recorded.',
+        'It’s private: only signed-in band members see it, and it starts from the day it was added (older edits aren’t in it). Who’s on the sender filter list is never written to it, only that the list changed.',
+      ],
+    },
+    {
       id: 'sheet', icon: 'table', title: 'Behind the scenes',
       points: [
         'All the data lives in the band’s Google Sheet. You can edit it there directly, but the admin is safer: never rename tabs or column headings, or the site can’t find them.',
@@ -237,6 +247,16 @@ const ja: typeof en = {
         '会場はエリア（下北沢など）に、エリアは都道府県に、都道府県は国に属しています。',
         '会場のページには、地図、その会場の次のライブ、年ごとのライブ一覧（セットリストがまだのものもわかります）、その会場でよく演奏した曲が出ます。セットリストを考えるときに便利です。',
         'ライブがある会場など、使われているものは削除できません。',
+      ],
+    },
+    {
+      id: 'history', icon: 'history', title: '履歴と最近の変更',
+      link: { to: 'activity', label: '最近の変更を開く' },
+      points: [
+        '管理画面での保存はすべて記録されます：だれが、いつ、何を変えたか（たとえば「タイトル：グッバイ → Good Bye」や、セットリストに追加された曲）。',
+        'ライブ・曲・リリース・会場・投稿のページのいちばん下に「履歴」があります。「最近の変更」では、すべての変更を日ごとに見られ、種類や人で絞り込めます。',
+        'セットリストや動画といっしょに保存したライブは、ひとつの変更として表示されます。何も変わっていない保存は記録されません。',
+        'バンドのメンバーだけが見られます。記録はこの機能を入れた日から始まります（それより前の編集は入っていません）。送信者フィルターの中身は記録せず、変更したことだけを残します。',
       ],
     },
     {

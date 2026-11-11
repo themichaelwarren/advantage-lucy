@@ -11,6 +11,7 @@ import {
 import { PHOTO_COLUMNS, photoToRow } from '../../utils/adminRows';
 import { showLinkId } from '../../utils/photoLinks';
 import { todayInJapan } from '../../utils/showDates';
+import { ActivityHistory } from '../../components/admin/Activity';
 
 // The server rewrites whole rows, so every column is always sent
 type PhotoField = typeof PHOTO_COLUMNS[number];
@@ -198,6 +199,7 @@ export default function AdminPhotoForm() {
         )}
       </Section>
 
+      {!isNew && id && <ActivityHistory s={s} locale={locale} refs={[`Photos:${id}`]} />}
       <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} backHref={`${prefix}/photos`} />
     </form>
   );

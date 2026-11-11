@@ -16,6 +16,7 @@ import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
 import { localTitle } from '../../utils/songTitles';
 import PeoplePicker from '../../components/admin/PeoplePicker';
+import { ActivityHistory } from '../../components/admin/Activity';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
 const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status'] as const;
@@ -460,6 +461,7 @@ export default function AdminSongForm() {
               </div>
             )}
           </Section>
+          <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`Songs:${id}`]} /></div>
         </div>
       </div>
 

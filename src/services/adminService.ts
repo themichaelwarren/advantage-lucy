@@ -34,6 +34,8 @@ async function adminFetch(url: string, options?: RequestInit, retried = false): 
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `Admin API error: ${res.status}`);
   }
+  // A save: open history lists look again (components/admin/Activity.tsx)
+  if (options?.method && options.method !== 'GET' && typeof window !== 'undefined') window.dispatchEvent(new Event('lu-admin-saved'));
   return res.json();
 }
 
@@ -285,3 +287,15 @@ export function getLinkCheck(fresh = false): Promise<LinkCheck> {
 }
 /** Dead: deleted, private, or a page that's gone (not "couldn't check"). */
 export const isDeadLink = (state?: LinkState) => state === 'gone' || state === 'private' || state === 'broken';
+
+// ── The activity log: who changed what, when (admin only, see functions/lib/activity.ts) ──
+export interface ActivityChange { f: string; from?: string; to?: string }
+export interface ActivityEntry {
+  at: string; who: string; action: string; tab: string; item: string; label: string; changes: ActivityChange[];
+}
+/** Newest first. `refs` limits it to those items ("Events:abc", "Setlists:abc"…). */
+export async function getActivity(refs: string[] = [], limit = 300): Promise<ActivityEntry[]> {
+  const q = new URLSearchParams({ limit: String(limit) });
+  if (refs.length) q.set('for', refs.join(','));
+  return ((await adminFetch(`/api/admin/activity?${q}`)) as { activity: ActivityEntry[] }).activity;
+}

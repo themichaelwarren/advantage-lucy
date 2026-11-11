@@ -2065,3 +2065,61 @@ a.lu-icon-btn { text-decoration: none; }
 }
 .lu-vgrid-dead { position: absolute; left: 0.45rem; top: 0.45rem; display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2em 0.6em; border-radius: var(--pill); background: #d23c42; color: #fff; font-size: 0.75rem; font-weight: 700; }
 .lu-rel-svc.is-dead { border-color: #d23c42; color: #d23c42; text-decoration: line-through; }
+
+/* ---------- Spinner (small, inline) ---------- */
+.lu-spinner {
+  display: inline-block; width: 1em; height: 1em; flex: 0 0 auto;
+  border: 2px solid var(--rule); border-top-color: var(--text); border-radius: 50%;
+  animation: lu-spin 0.8s linear infinite;
+}
+@keyframes lu-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .lu-spinner { animation-duration: 2.4s; } }
+.lu-health-checking { display: flex; align-items: center; gap: 0.7rem; padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.9rem; }
+
+/* ---------- Activity log: 履歴 on detail pages, 最近の変更 page ---------- */
+.lu-history-wrap { min-width: 0; }
+@media (max-width: 1099px) { .lu-song-layout .lu-song-main > .lu-history-wrap { order: 99; } }
+.lu-acts { list-style: none; margin: 0; padding: 0; display: grid; }
+.lu-act { display: grid; gap: 0.35rem; padding: 0.8rem 0; border-top: 1px solid var(--rule); }
+.lu-acts > .lu-act:first-child { border-top: none; padding-top: 0.2rem; }
+.lu-act-head { display: flex; align-items: flex-start; gap: 0.6rem; min-width: 0; }
+.lu-act-head .lu-act-meta { padding-top: 0.15rem; }
+.lu-act-who {
+  flex: 0 0 auto; width: 1.7rem; height: 1.7rem; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 700; font-size: 0.8rem;
+  background: var(--surface-hover); color: var(--text); border: 1.5px solid var(--border);
+}
+.lu-act-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.6rem; min-width: 0; }
+.lu-act-by { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
+.lu-act-by strong { color: var(--text); font-weight: 600; }
+.lu-act-thing { display: inline-flex; align-items: baseline; gap: 0.45rem; min-width: 0; font-weight: 700; }
+.lu-act-thing a { color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+.lu-act-thing a:hover { text-decoration: underline; }
+.lu-act-kind { font-size: 0.72rem; font-weight: 600; flex: 0 0 auto; }
+.lu-act-gone { text-decoration: line-through; color: var(--text-muted); }
+.lu-act-body { display: grid; gap: 0.35rem; padding-left: 2.3rem; min-width: 0; }
+.lu-act-part { margin: 0; display: grid; gap: 0.2rem; min-width: 0; }
+.lu-act-what { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; color: var(--text-muted); }
+.lu-act-what.is-create { color: #2f8f5b; }
+.lu-act-what.is-delete { color: #c2412d; }
+.lu-act-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; font-size: 0.88rem; line-height: 1.45; }
+.lu-act-lines li { overflow-wrap: anywhere; }
+.lu-act-field { color: var(--text-muted); font-size: 0.8rem; }
+.lu-act-field::after { content: ':'; }
+.lu-act-from { color: var(--text-muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text-muted) 60%, transparent); }
+.lu-act-to { text-decoration: none; font-weight: 600; background: color-mix(in srgb, var(--pop) 30%, transparent); border-radius: 4px; padding: 0 0.2em; }
+.lu-act-arrow { color: var(--text-muted); }
+.lu-act-add { color: #2f8f5b; }
+.lu-act-add span, .lu-act-del span { display: inline-block; width: 0.8em; font-weight: 700; }
+.lu-act-del { color: var(--text-muted); }
+.lu-act-note { color: var(--text-muted); font-style: italic; }
+.lu-act-toggle { margin-top: 0.4rem; }
+.lu-act-people { margin: -0.3rem 0 1rem; }
+.lu-act-day { margin-top: 1.4rem; }
+.lu-act-date { font-family: var(--font-main); font-size: 0.85rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.04em; margin: 0 0 0.5rem; padding-bottom: 0.4rem; border-bottom: 1.5px solid var(--text); }
+.lu-act-day .lu-acts > .lu-act:first-child { padding-top: 0.6rem; }
+.lu-act-more { margin-top: 1.5rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lu-act-what.is-create, :root:not([data-theme="light"]) .lu-act-add { color: #6fd39b; } :root:not([data-theme="light"]) .lu-act-what.is-delete { color: #ff8a73; } }
+:root[data-theme="dark"] .lu-act-what.is-create, :root[data-theme="dark"] .lu-act-add { color: #6fd39b; }
+:root[data-theme="dark"] .lu-act-what.is-delete { color: #ff8a73; }
+@media (max-width: 640px) { .lu-act-body { padding-left: 0; } }

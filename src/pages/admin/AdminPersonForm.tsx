@@ -7,6 +7,7 @@ import { Section, Field, BilingualRow, SaveBar, DeleteButton, EditDialog, useUns
 import { personName } from '../../components/admin/PeoplePicker';
 import Icon from '../../components/admin/Icon';
 import { songTitle, compareSongs } from '../../utils/songTitles';
+import { ActivityHistory } from '../../components/admin/Activity';
 
 // The server rewrites whole rows, so every column is always sent
 interface Form { id: string; name_family_en: string; name_given_en: string; name_family_ja: string; name_given_ja: string }
@@ -175,6 +176,7 @@ export default function AdminPersonForm() {
               </div>
             )}
           </Section>
+          <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`People:${id}`]} /></div>
         </div>
       </div>
 

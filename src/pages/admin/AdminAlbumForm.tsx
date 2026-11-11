@@ -18,6 +18,7 @@ import {
   Section, Field, FieldGroup, BilingualRow, SaveBar, ImageField, DeleteButton, EditDialog,
   useUnsavedWarning, makeId, errorText, VisToggle,
 } from '../../components/admin/ui';
+import { ActivityHistory } from '../../components/admin/Activity';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
 const ALBUM_COLUMNS = [
@@ -472,6 +473,7 @@ export default function AdminAlbumForm() {
               </div>
             )}
           </Section>
+          <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`Albums:${id}`, `Tracklists:${savedTitle}`]} /></div>
         </div>
       </div>
 

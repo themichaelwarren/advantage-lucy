@@ -10,6 +10,7 @@ import Icon from '../../components/admin/Icon';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
 import type { Event } from '../../types';
+import { ActivityHistory } from '../../components/admin/Activity';
 
 // The server rewrites whole rows, so every column is always sent
 interface Form { id: string; name_en: string; name_ja: string; prefecture: string }
@@ -239,6 +240,7 @@ export default function AdminAreaForm() {
               </div>
             )}
           </Section>
+          <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`Areas:${id}`]} /></div>
         </div>
       </div>
 

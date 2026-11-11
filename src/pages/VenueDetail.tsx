@@ -125,15 +125,18 @@ export default function VenueDetail({ locale }: Props) {
       {topSongs.length > 0 && (
         <section className="venue-section">
           <h2 className="section-label">{s.venues.playedMost}</h2>
-          <ol className="venue-top-songs">
-            {topSongs.map(t => (
-              <li key={t.title}>
-                {t.song?.id
-                  ? <Link className="venue-top-title" to={`${prefix}/songs/${t.song.id}`}>{songTitle(t.song, locale)}</Link>
-                  : <span className="venue-top-title">{t.title}</span>}
-                <span className="venue-top-count">{s.venues.timesPlayed.replace('{n}', String(t.n))}</span>
-              </li>
-            ))}
+          <ol className="tag-list venue-top-songs">
+            {topSongs.map(t => {
+              const times = s.venues.timesPlayed.replace('{n}', String(t.n));
+              const inner = <><span className="venue-top-title">{t.song ? songTitle(t.song, locale) : t.title}</span><span className="venue-top-count" aria-label={times} title={times}>{t.n}</span></>;
+              return (
+                <li key={t.title}>
+                  {t.song?.id
+                    ? <Link className="tag" to={`${prefix}/songs/${t.song.id}`}>{inner}</Link>
+                    : <span className="tag">{inner}</span>}
+                </li>
+              );
+            })}
           </ol>
         </section>
       )}

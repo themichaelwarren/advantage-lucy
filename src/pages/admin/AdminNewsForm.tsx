@@ -14,6 +14,7 @@ import Icon from '../../components/admin/Icon';
 import { linkify } from '../../utils/linkify';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { nowInJapan, normDateTime } from '../../utils/showDates';
+import { ActivityHistory } from '../../components/admin/Activity';
 
 type NewsField = typeof NEWS_COLUMNS[number];
 type Form = Record<NewsField, string>;
@@ -201,6 +202,7 @@ export default function AdminNewsForm() {
               </div>
             )}
           </Section>
+          <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`News:${id}`]} /></div>
         </div>
       </div>
 
