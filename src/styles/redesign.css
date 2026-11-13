@@ -1463,17 +1463,23 @@ time,
 .tl-main strong { font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; line-height: 1.3; }
 .tl-main span { font-family: var(--font-display); font-size: 0.85rem; color: var(--text-muted); }
 .tl-row.is-featured .tl-main strong { font-weight: 700; }
+/* "Has a setlist": the list icon and the word (SetlistBadge.tsx) */
 .tl-setlist {
   flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 1.7rem;
-  height: 1.7rem;
-  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem 0.22rem 0.5rem;
+  border-radius: var(--pill);
   background: color-mix(in srgb, #3fcf8e 30%, transparent);
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background-color 120ms ease;
 }
+.tl-setlist svg { width: 0.95rem; height: 0.95rem; flex-shrink: 0; }
 .tl-row:hover .tl-setlist { background: #3fcf8e; color: var(--on-pop); }
 @media (max-width: 520px) {
   .tl-row { align-items: flex-start; gap: 0.8rem; }
@@ -2237,10 +2243,42 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 
 /* Shows page: setlists added lately */
 .tl-recent { margin: 0 0 2.4rem; }
-.tl-recent .tl-list { border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
-.tl-recent-hint { margin: -0.3rem 0 0.8rem; font-size: 0.88rem; color: var(--text-muted); }
+.tl-recent > summary {
+  display: flex; align-items: center; gap: 0.6rem; cursor: pointer; list-style: none;
+  padding: 0.85rem 1.1rem; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--surface);
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+.tl-recent > summary::-webkit-details-marker { display: none; }
+/* Closed: the box darkens on hover. Open: the header is the top of a bigger box, so just a tint */
+.tl-recent:not([open]) > summary:hover { border-color: var(--text); }
+.tl-recent[open] > summary:hover { background: var(--surface-hover); }
+.tl-recent > summary .section-label { margin: 0; }
+.tl-recent > summary .section-label::before { content: none; display: none; }
+.tl-recent-count { font-family: var(--font-main); font-size: 0.85rem; color: var(--text-muted); }
+.tl-recent-new { font-size: 0.72rem; font-weight: 700; padding: 0.1em 0.55em; border-radius: var(--pill); background: var(--pop); color: var(--on-pop); }
+.tl-recent-chevron { margin-left: auto; font-size: 1.3rem; line-height: 1; color: var(--text-muted); transition: transform 200ms var(--ease-bounce); }
+.tl-recent[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom-style: dashed; }
+.tl-recent[open] .tl-recent-chevron { transform: rotate(90deg); }
+.tl-recent .tl-list { border: 1.5px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); background: var(--surface); overflow: hidden; }
+.tl-recent-hint { margin: 0; padding: 0.7rem 1.2rem 0.2rem; font-size: 0.88rem; color: var(--text-muted); background: var(--surface); border-inline: 1.5px solid var(--border); }
 .tl-added { flex-shrink: 0; font-size: 0.78rem; font-weight: 700; color: var(--text); background: color-mix(in srgb, var(--pop) 45%, transparent); padding: 0.15em 0.6em; border-radius: var(--pill); white-space: nowrap; }
-.tl-recent .tl-row { padding-inline: 1rem; }
+/* Dug-up setlists: the year on top, big, then the day ("2009" / "Apr 24 Fri") */
+.tl-row time.has-year { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 0.15rem; width: 6.4rem; align-self: center; }
+.tl-row time.has-year .tl-showyear { font-family: var(--font-display); font-weight: 700; font-size: 1.35rem; line-height: 1; letter-spacing: -0.01em; }
+.tl-row time.has-year .tl-md { display: inline-flex; align-items: baseline; gap: 0.35rem; white-space: nowrap; }
+.tl-row time.has-year .tl-day { font-size: 0.82rem; }
+/* Inside the box: real padding (timeline rows normally reach out past the edge for their hover) */
+.tl-recent .tl-row { margin-inline: 0; padding: 0.85rem 1.2rem; border-radius: 0; }
+.tl-recent .tl-row:hover { transform: none; }
+@media (max-width: 600px) {
+  /* Phones: date | title with its "added" tag underneath | ♪ */
+  .tl-recent .tl-row { display: grid; grid-template-columns: 4.7rem minmax(0, 1fr) auto; column-gap: 0.8rem; row-gap: 0.35rem; align-items: center; padding: 0.85rem 1rem; }
+  .tl-recent .tl-row time.has-year { grid-column: 1; grid-row: 1 / span 2; width: auto; align-self: center; }
+  .tl-recent .tl-row time.has-year .tl-showyear { font-size: 1.2rem; }
+  .tl-recent .tl-main { grid-column: 2; grid-row: 1; }
+  .tl-recent .tl-added { grid-column: 2; grid-row: 2; justify-self: start; margin: 0; }
+  .tl-recent .tl-setlist { grid-column: 3; grid-row: 1 / span 2; }
+}
 
 /* Venue page: the songs played here most */
 /* Played here most: the site's pill-with-count tags, wrapping, most played first */

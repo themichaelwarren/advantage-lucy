@@ -8,7 +8,10 @@ import type { Event } from '../types';
 import PageLoader from '../components/PageLoader';
 import ShowCard from '../components/ShowCard';
 import { todayInJapan } from '../utils/showDates';
+import { normalize } from '../utils/text';
+import { hira } from '../utils/songTitles';
 import PageTitle from '../components/PageTitle';
+import SetlistBadge from '../components/SetlistBadge';
 
 interface Props {
   locale: Locale;
@@ -36,12 +39,20 @@ export default function Events({ locale }: Props) {
 
   const today = todayInJapan();
 
+  // Search: title, venue (its name then and now), area, prefecture, country, line-up and date,
+  // in either language. Case, width and hiragana/katakana don't matter; every word must match
+  // ("aomori 2014", "青森", "下北沢 que")
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
+    const fold = (x: string) => hira(normalize(x));
+    const words = search.trim().split(/\s+/).map(fold).filter(Boolean);
+    const text = (e: Event) => fold([
+      e.title_en, e.title_ja, e.venue_en, e.venue_ja, e.venue_now_en, e.venue_now_ja,
+      e.city_en, e.city_ja, e.prefecture_en, e.prefecture_ja, e.country_en, e.country_ja, e.performers,
+      e.date, e.date.replace(/-/g, '/'), e.date.replace(/-/g, '.'),
+    ].filter(Boolean).join(' '));
     return [...events]
       .sort((a, b) => b.date.localeCompare(a.date))
-      .filter(e => !q || [e.title_en, e.title_ja, e.venue_en, e.venue_ja, e.city_en, e.city_ja, e.performers || '']
-        .join(' ').toLowerCase().includes(q));
+      .filter(e => { if (!words.length) return true; const tx = text(e); return words.every(w => tx.includes(w)); });
   }, [events, search]);
 
   // Upcoming soonest-first; past grouped by year, newest first
@@ -59,10 +70,11 @@ export default function Events({ locale }: Props) {
 
   if (loading) return <PageLoader locale={locale} />;
 
-  const setlistLabel = locale === 'ja' ? 'セットリストあり' : 'Has setlist';
 
   // Setlists added lately (the archive keeps growing): newest first, public ones only
   const since = new Date(Date.parse(`${today}T00:00:00Z`) - 90 * 86400000).toISOString().slice(0, 10);
+  // "New" on the closed section when a setlist was added this past week
+  const weekAgo = (() => { const d = new Date(`${today}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - 7); return d.toISOString().slice(0, 10); })();
   const recentlyAdded = events
     .filter(e => e.setlist_added && e.setlist_added >= since && withSetlist.has(e.id))
     .sort((a, b) => (b.setlist_added || '').localeCompare(a.setlist_added || '') || b.date.localeCompare(a.date))
@@ -77,18 +89,27 @@ export default function Events({ locale }: Props) {
     return (
       <li key={event.id}>
         <Link to={`${prefix}/events/${event.id}`} className={`tl-row${event.featured ? ' is-featured' : ''}`}>
-          <time dateTime={event.date}>
-            <span className="tl-day">{day}</span>
-            <span className="tl-weekday">{weekday}</span>
+          <time dateTime={event.date} className={added ? 'has-year' : undefined}>
+            {/* Dug-up setlists are of old shows from any year: the year leads */}
+            {added ? (
+              <>
+                <span className="tl-showyear">{event.date.slice(0, 4)}</span>
+                <span className="tl-md"><span className="tl-day">{day}</span> <span className="tl-weekday">{weekday}</span></span>
+              </>
+            ) : (
+              <>
+                <span className="tl-day">{day}</span>
+                <span className="tl-weekday">{weekday}</span>
+              </>
+            )}
           </time>
           <span className="tl-main">
             <strong>{title || venue}</strong>
-            {/* Dug-up setlists are of old shows: say which year */}
-            <span>{[added ? event.date.slice(0, 4) : '', title ? venue : '', area].filter(Boolean).join(' · ')}</span>
+            <span>{[title ? venue : '', area].filter(Boolean).join(' · ')}</span>
           </span>
           {added && <span className="tl-added">{addedOn(added)}</span>}
           {withSetlist.has(event.id) && (
-            <span className="tl-setlist" title={setlistLabel} aria-label={setlistLabel}>♪</span>
+            <SetlistBadge locale={locale} />
           )}
         </Link>
       </li>
@@ -139,11 +160,17 @@ export default function Events({ locale }: Props) {
       )}
 
       {!search && recentlyAdded.length > 0 && (
-        <section className="tl-recent">
-          <h2 className="section-label">{s.events.recentSetlists}</h2>
+        // Closed at first: the archive comes first; open it to see what's been dug up lately
+        <details className="tl-recent">
+          <summary>
+            <span className="section-label">{s.events.recentSetlists}</span>
+            <span className="tl-recent-count">{recentlyAdded.length}</span>
+            {recentlyAdded.some(e => (e.setlist_added || '') >= weekAgo) && <span className="tl-recent-new" aria-label={s.events.recentNew}>{s.events.recentNew}</span>}
+            <span className="tl-recent-chevron" aria-hidden="true">›</span>
+          </summary>
           <p className="tl-recent-hint">{s.events.recentSetlistsHint}</p>
           <ul className="tl-list">{recentlyAdded.map(e => row(e, e.setlist_added))}</ul>
-        </section>
+        </details>
       )}
 
       <div className="timeline">

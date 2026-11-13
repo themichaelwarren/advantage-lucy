@@ -15,6 +15,7 @@ import BackLink from '../components/BackLink';
 import RelatedLinks from '../components/RelatedLinks';
 import { linkify } from '../utils/linkify';
 import { movedTo } from '../utils/formerIds';
+import SetlistBadge from '../components/SetlistBadge';
 
 interface Props {
   locale: Locale;
@@ -230,7 +231,7 @@ export default function SongDetail({ locale }: Props) {
                       <strong>{title || venue}</strong>
                       <span>{[title ? venue : '', area].filter(Boolean).join(' · ')}</span>
                     </span>
-                    {eventsWithSetlist.has(event.id) && <span className="show-tag">♪ {locale === 'ja' ? 'セトリ' : 'Setlist'}</span>}
+                    {eventsWithSetlist.has(event.id) && <SetlistBadge locale={locale} />}
                   </Link>
                 </li>
               );

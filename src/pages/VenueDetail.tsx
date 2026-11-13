@@ -13,6 +13,7 @@ import PageTitle from '../components/PageTitle';
 import BackLink from '../components/BackLink';
 import { parseFormerNames, formerPeriods } from '../../functions/lib/venueNames';
 import { movedTo } from '../utils/formerIds';
+import SetlistBadge from '../components/SetlistBadge';
 
 interface Props {
   locale: Locale;
@@ -86,7 +87,6 @@ export default function VenueDetail({ locale }: Props) {
     const last = pastByYear[pastByYear.length - 1];
     if (last && last[0] === y) last[1].push(e); else pastByYear.push([y, [e]]);
   }
-  const setlistLabel = locale === 'ja' ? 'セットリストあり' : 'Has setlist';
 
   const row = (e: typeof shows[number]) => {
     const title = pick(e.title_en, e.title_ja);
@@ -100,7 +100,7 @@ export default function VenueDetail({ locale }: Props) {
             <strong>{title || (e.performers ? `w/ ${e.performers}` : 'advantage Lucy')}</strong>
             {title && e.performers && <span>w/ {e.performers}</span>}
           </span>
-          {withSetlist.has(e.id) && <span className="tl-setlist" title={setlistLabel} aria-label={setlistLabel}>♪</span>}
+          {withSetlist.has(e.id) && <SetlistBadge locale={locale} />}
         </Link>
       </li>
     );
