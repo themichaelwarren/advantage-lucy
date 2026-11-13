@@ -11,16 +11,20 @@ import { reserveState, todayInJapan } from '../../utils/showDates';
 import type { Event } from '../../types';
 import { useFilters } from '../../hooks/useFilters';
 import type { SenderMatch } from '../../../functions/lib/filters';
+import { toKatakana, sortKey } from '../../../functions/lib/kana';
 
 const ticketsOf = (r: Reservation) => Math.max(0, parseInt(r.tickets, 10) || 0);
+/** By reading where there is one (フリガナ), else by name: kanji names sort right only with their reading */
+const byReading = (a: Reservation, b: Reservation) => sortKey(a).localeCompare(sortKey(b), 'ja');
 const active = (r: Reservation) => r.status !== 'cancelled';
 const sumTickets = (rs: Reservation[]) => rs.reduce((n, r) => n + ticketsOf(r), 0);
 
 const showName = (e: Event, locale: AdminLocale) =>
   (locale === 'ja' ? e.title_ja || e.title_en || e.venue_ja || e.venue_en : e.title_en || e.title_ja || e.venue_en || e.venue_ja) || e.id;
 
+/** When a booking came in, Japan time: "9月8日(火) 22:23" / "Tue 8 Sep, 22:23" */
 const when = (iso: string, locale: AdminLocale) =>
-  iso ? new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' }).format(new Date(iso)) : '';
+  iso ? new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { month: 'short', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' }).format(new Date(iso)) : '';
 
 /** "2026-11-28T23:59" (Japan time) → "11月28日(土) 23:59" */
 const closesText = (at: string, locale: AdminLocale) =>
@@ -115,7 +119,10 @@ export function AdminShowReservations() {
   const [door, setDoor] = useState(false);
   const { match } = useFilters();
   const [query, setQuery] = useState('');
-  const [showCancelled, setShowCancelled] = useState(false);
+  // Which bookings: those still on (the default), only the cancelled ones, or all
+  const [view, setView] = useState<'active' | 'cancelled' | 'all'>('active');
+  // Order: when they booked (oldest first, as they came in), newest first, or by name
+  const [order, setOrder] = useState<'oldest' | 'newest' | 'name'>('oldest');
   const [openRow, setOpenRow] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -139,11 +146,12 @@ export function AdminShowReservations() {
 
   const venueList = () => {
     const name = event ? `${Number(event.date.slice(5, 7))}/${Number(event.date.slice(8, 10))} ${showName(event, 'ja')}` : '';
-    const rows = [...booked].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+    const rows = [...booked].sort(byReading);
     return [
       `${name} advantage Lucy ${s.resvListTitle}`,
       '',
-      ...rows.map(r => `${r.name}　${ticketsOf(r)}${locale === 'ja' ? '枚' : ''}`),
+      // The venue reads names out at the door: the reading alongside (山田花子（ヤマダ ハナコ）)
+      ...rows.map(r => `${r.name}${r.kana ? `（${r.kana}）` : ''}　${ticketsOf(r)}${locale === 'ja' ? '枚' : ''}`),
       '',
       s.resvTotalLine.replace('{tickets}', String(taken)).replace('{n}', String(booked.length)),
     ].join('\n');
@@ -169,9 +177,10 @@ export function AdminShowReservations() {
 
   const q = query.trim().toLowerCase();
   const shown = mine
-    .filter(r => (showCancelled && !door) || active(r))
-    .filter(r => !q || [r.name, r.email, r.note].some(t => t.toLowerCase().includes(q)))
-    .sort((a, b) => door ? a.name.localeCompare(b.name, 'ja') : a.received_at.localeCompare(b.received_at));
+    .filter(r => door || view === 'active' ? active(r) : view === 'cancelled' ? !active(r) : true)
+    .filter(r => !q || [r.name, r.kana || '', r.email, r.note].some(t => t.toLowerCase().includes(q)) || (!!r.kana && toKatakana(r.kana).includes(toKatakana(q))))
+    .sort((a, b) => door || order === 'name' ? byReading(a, b) || a.received_at.localeCompare(b.received_at)
+      : order === 'newest' ? b.received_at.localeCompare(a.received_at) : a.received_at.localeCompare(b.received_at));
   const cancelledCount = mine.length - booked.length;
 
   return (
@@ -215,7 +224,21 @@ export function AdminShowReservations() {
         <div className="lu-resv-filter">
           <input type="search" className="lu-search" placeholder={s.search} value={query} onChange={e => setQuery(e.target.value)} />
           {!door && cancelledCount > 0 && (
-            <label className="lu-check"><input type="checkbox" checked={showCancelled} onChange={e => setShowCancelled(e.target.checked)} /> {s.resvShowCancelled} ({cancelledCount})</label>
+            <div className="lu-chips" role="group" aria-label={s.resvViewLabel}>
+              {([['active', s.resvViewActive, mine.length - cancelledCount], ['cancelled', s.resvCancelled, cancelledCount], ['all', s.filterAll, mine.length]] as const).map(([v, label, n]) => (
+                <button key={v} type="button" className={`lu-pill${view === v ? ' is-on' : ''}`} aria-pressed={view === v} onClick={() => setView(v)}>{label} · {n}</button>
+              ))}
+            </div>
+          )}
+          {!door && mine.length > 1 && (
+            <label className="lu-sort">
+              <span className="lu-visually-hidden">{s.sortBy}</span>
+              <select value={order} onChange={e => setOrder(e.target.value as typeof order)} aria-label={s.sortBy}>
+                <option value="oldest">↕ {s.resvSortOldest}</option>
+                <option value="newest">↕ {s.resvSortNewest}</option>
+                <option value="name">↕ {s.resvSortName}</option>
+              </select>
+            </label>
           )}
         </div>
       )}
@@ -228,7 +251,7 @@ export function AdminShowReservations() {
             <button type="button" className={`lu-door-row${r.arrived === 'TRUE' ? ' is-in' : ''}`} aria-pressed={r.arrived === 'TRUE'}
               onClick={() => change(r, { arrived: r.arrived === 'TRUE' ? '' : 'TRUE' })}>
               <span className="lu-door-check" aria-hidden="true">{r.arrived === 'TRUE' ? '✓' : ''}</span>
-              <span className="lu-door-name">{match(r.email) && <span className="lu-door-flag" title={s.resvFlagTip}><Icon name="warn" /> </span>}{r.name}</span>
+              <span className="lu-door-name">{match(r.email) && <span className="lu-door-flag" title={s.resvFlagTip}><Icon name="warn" /> </span>}{r.name}{r.kana && <small className="lu-door-kana">{r.kana}</small>}</span>
               <span className="lu-door-count">{ticketsOf(r)}</span>
               {r.note && <span className="lu-door-note">{r.note}</span>}
             </button>
@@ -251,11 +274,11 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
   r: Reservation; s: AdminStrings; locale: AdminLocale; open: boolean; flag?: SenderMatch;
   onToggle: () => void; onChange: (f: Partial<Reservation>) => Promise<void>; onResend: () => Promise<void>;
 }) {
-  const [draft, setDraft] = useState({ name: r.name, email: r.email, tickets: r.tickets, note: r.note });
+  const [draft, setDraft] = useState({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note });
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (open) setDraft({ name: r.name, email: r.email, tickets: r.tickets, note: r.note }); }, [open, r]);
+  useEffect(() => { if (open) setDraft({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note }); }, [open, r]);
   const cancelled = r.status === 'cancelled';
-  const dirty = draft.name !== r.name || draft.email !== r.email || draft.tickets !== r.tickets || draft.note !== r.note;
+  const dirty = draft.name !== r.name || draft.kana !== (r.kana || '') || draft.email !== r.email || draft.tickets !== r.tickets || draft.note !== r.note;
   const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } finally { setBusy(false); } };
 
   return (
@@ -263,7 +286,7 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
       <button type="button" className="lu-list-row lu-resv-row" aria-expanded={open} onClick={onToggle}>
         <span className="lu-resv-count">{ticketsOf(r)}</span>
         <span className="lu-list-main">
-          <strong>{r.name}</strong>
+          <strong>{r.name}{r.kana && <small className="lu-resv-kana">{r.kana}</small>}</strong>
           <span className="lu-snippet">{[r.email, r.note].filter(Boolean).join(' · ')}</span>
         </span>
         <span className="lu-list-tags">
@@ -272,20 +295,22 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
           {r.arrived === 'TRUE' && <span className="lu-tag is-ok">✓ {s.resvArrived}</span>}
           {r.emailed === 'no' && <span className="lu-tag is-new">{s.resvNotEmailed}</span>}
           {r.source === 'admin' && <span className="lu-tag is-muted">{s.resvByHand}</span>}
-          <time>{when(r.received_at, locale)}</time>
+          {r.source === 'form' && <span className="lu-tag is-muted" title={s.resvFromFormTip}>{s.resvFromForm}</span>}
+          <time dateTime={r.received_at} title={s.resvBookedAt} className="lu-resv-when">{when(r.received_at, locale)}</time>
         </span>
       </button>
       {open && (
         <div className="lu-resv-edit">
           <div className="lu-resv-edit-grid">
             <label className="lu-field"><span>{s.resvName}</span><input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} /></label>
+            <label className="lu-field"><span>{s.resvKana}</span><input lang="ja" value={draft.kana} placeholder={s.resvKanaHint} onChange={e => setDraft(d => ({ ...d, kana: e.target.value }))} onBlur={() => setDraft(d => ({ ...d, kana: toKatakana(d.kana) }))} /></label>
             <label className="lu-field"><span>{s.resvCount}</span><input type="number" min={1} inputMode="numeric" value={draft.tickets} onChange={e => setDraft(d => ({ ...d, tickets: e.target.value }))} /></label>
             <label className="lu-field"><span>{s.resvEmail}</span><input type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} /></label>
             <label className="lu-field"><span>{s.resvNote}</span><input value={draft.note} onChange={e => setDraft(d => ({ ...d, note: e.target.value }))} /></label>
           </div>
           {flag && <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFilteredBody : s.resvFlagLookalikeBody.replace('{email}', flag.listed)}</p>}
           <p className="lu-hint">
-            {r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
+            {r.source === 'form' ? s.resvFromFormTip : r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
           </p>
           <div className="lu-resv-edit-actions">
             <button type="button" className="lu-btn lu-btn-primary" disabled={!dirty || busy} onClick={() => run(() => onChange(draft))}>{s.save}</button>
@@ -305,7 +330,7 @@ function AddForm({ s, eventId, onAdded, onCancel, onError }: {
   s: AdminStrings; eventId: string;
   onAdded: (r: Reservation) => void; onCancel: () => void; onError: (msg: string) => void;
 }) {
-  const [f, setF] = useState({ name: '', email: '', tickets: '1', note: '' });
+  const [f, setF] = useState({ name: '', kana: '', email: '', tickets: '1', note: '' });
   const [send, setSend] = useState(false);
   const [busy, setBusy] = useState(false);
   return (
@@ -321,6 +346,7 @@ function AddForm({ s, eventId, onAdded, onCancel, onError }: {
       <p className="lu-hint">{s.resvAddHint}</p>
       <div className="lu-resv-edit-grid">
         <label className="lu-field"><span>{s.resvName}</span><input autoFocus value={f.name} onChange={e => setF(x => ({ ...x, name: e.target.value }))} /></label>
+        <label className="lu-field"><span>{s.resvKana} <span className="lu-optional">· {s.optional}</span></span><input lang="ja" value={f.kana} placeholder={s.resvKanaHint} onChange={e => setF(x => ({ ...x, kana: e.target.value }))} onBlur={() => setF(x => ({ ...x, kana: toKatakana(x.kana) }))} /></label>
         <label className="lu-field"><span>{s.resvCount}</span><input type="number" min={1} inputMode="numeric" value={f.tickets} onChange={e => setF(x => ({ ...x, tickets: e.target.value }))} /></label>
         <label className="lu-field"><span>{s.resvEmail} <span className="lu-optional">· {s.optional}</span></span><input type="email" value={f.email} onChange={e => setF(x => ({ ...x, email: e.target.value }))} /></label>
         <label className="lu-field"><span>{s.resvNote} <span className="lu-optional">· {s.optional}</span></span><input value={f.note} onChange={e => setF(x => ({ ...x, note: e.target.value }))} /></label>

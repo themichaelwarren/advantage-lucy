@@ -70,6 +70,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       id: 'reservations', icon: 'reservations', title: 'Reservations',
       link: { to: 'reservations', label: 'Open Reservations' },
       points: [
+        'Japanese bookings ask for the name’s reading (フリガナ) in katakana whenever the name has kanji, so lists sort in 五十音順 and the door list and the list for the venue show it. Add or fix a reading by opening the booking; older bookings (from the Google Form) don’t have one yet.',
         'Turn it on in a show’s Tickets section with “Take reservations on the site”. Then set how many tickets there are (the form closes by itself when they’re gone), the most per person (blank = 4), and when the form closes (blank = 23:59 the day before, Japan time).',
         'Fans fill in the form on the show page, check it on a confirmation screen, and get an email straight away, in the language of the page they used. Nobody needs to reply by hand. The band gets an email for each booking too.',
         'If someone books again with the same email, the new booking replaces the old one.',
@@ -215,6 +216,7 @@ const ja: typeof en = {
       id: 'reservations', icon: 'reservations', title: '予約',
       link: { to: 'reservations', label: '予約を開く' },
       points: [
+        '日本語の予約フォームでは、お名前に漢字があるとき、フリガナ（カタカナ）を入力してもらいます。一覧が五十音順に並び、受付リストと会場用のリストにもフリガナが出ます。フリガナは予約を開いて追加・修正できます（Googleフォームからの古い予約にはまだありません）。',
         'ライブの「チケット」欄で「サイトで予約を受け付ける」をオンにします。予約枠（埋まったら自動で締め切り）、1人あたりの上限（空欄＝4枚）、締め切り（空欄＝前日23:59、日本時間）を設定できます。',
         'お客さんはライブページのフォームに入力し、確認画面でチェックしてから予約します。確認メールはすぐに自動で届きます（予約したページの言語で）。手作業で返信する必要はありません。バンドにも予約ごとにメールが届きます。',
         '同じメールアドレスで予約し直すと、前の予約が新しい内容に置き換わります。',

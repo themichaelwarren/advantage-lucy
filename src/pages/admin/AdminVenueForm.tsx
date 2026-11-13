@@ -323,7 +323,7 @@ export default function AdminVenueForm() {
                 <span>{showName(upcoming[0]) || name}</span>
               </Link>
             )}
-            <Link to={`/${locale}/venues/${saved.id}`} className="lu-btn lu-btn-quiet lu-song-site">{s.viewOnSite} ↗</Link>
+            <a href={`/${locale}/venues/${saved.id}`} target="_blank" rel="noopener" className="lu-btn lu-site-link"><Icon name="external" /> {s.viewOnSite}</a>
           </div>
 
           {mapQuery && (

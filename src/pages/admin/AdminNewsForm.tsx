@@ -182,7 +182,7 @@ export default function AdminNewsForm() {
               {saved.image_url && <span className="lu-rel-art-edit">{editBtn('image', s.image)}</span>}
             </div>
             {saved.status !== 'private' && !scheduled && (
-              <Link to={`/${locale}/news/${saved.id}`} className="lu-btn lu-btn-quiet lu-song-site">{s.viewOnSite} <Icon name="external" /></Link>
+              <a href={`/${locale}/news/${saved.id}`} target="_blank" rel="noopener" className="lu-btn lu-site-link"><Icon name="external" /> {s.viewOnSite}</a>
             )}
           </div>
         </aside>

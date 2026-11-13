@@ -158,6 +158,8 @@ function invalidateCache(tab: string) {
 export type Reservation = {
   id: string; event: string; received_at: string; locale: string; name: string; email: string;
   tickets: string; note: string; status: string; emailed: string; arrived: string; source: string;
+  /** フリガナ (katakana) of a Japanese name, for sorting and the door list */
+  kana?: string;
 };
 
 /** Every ticket reservation, oldest first (admin only). */

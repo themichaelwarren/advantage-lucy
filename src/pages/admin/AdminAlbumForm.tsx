@@ -415,7 +415,7 @@ export default function AdminAlbumForm() {
             )}
             <div className="lu-row lu-rel-links">
               {!hasListen && <button type="button" className="lu-btn lu-btn-quiet" onClick={() => setDialog('details')}>+ {s.listenUrl}</button>}
-              <Link to={`/${locale}/releases/${sf.id}`} className="lu-btn lu-btn-quiet">{s.viewOnSite} ↗</Link>
+              <a href={`/${locale}/releases/${sf.id}`} target="_blank" rel="noopener" className="lu-btn lu-site-link"><Icon name="external" /> {s.viewOnSite}</a>
             </div>
           </div>
         </aside>

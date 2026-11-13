@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
 import Turnstile, { type TurnstileHandle } from './Turnstile';
+import { toKatakana, isKatakana, needsKana } from '../../functions/lib/kana';
 
 export type ReserveFormState = 'loading' | 'off' | 'closed' | 'full' | 'open';
 
@@ -43,7 +44,32 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
   const [max, setMax] = useState(0);
   const [closes, setCloses] = useState('');
   const [step, setStep] = useState<Step>('form');
-  const [form, setForm] = useState({ name: '', email: '', tickets: 1, note: '', website: '' });
+  const [form, setForm] = useState({ name: '', kana: '', email: '', tickets: 1, note: '', website: '' });
+  // Japanese form: the name's reading (フリガナ), needed when the name has kanji
+  const askKana = locale === 'ja';
+  const kanaNeeded = askKana && needsKana(form.name);
+  // Each problem is said right under its own field, which gets a red outline
+  // (as soon as they leave the box, and on 次へ, which also jumps to the first one)
+  type Field = 'name' | 'kana' | 'email' | 'tickets';
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<Field, string>>>({});
+  const refs = { name: useRef<HTMLInputElement>(null), kana: useRef<HTMLInputElement>(null), email: useRef<HTMLInputElement>(null), tickets: useRef<HTMLDivElement>(null) };
+  const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const problem = (f: Field, v = form): string => {
+    if (f === 'name') return v.name.trim() ? '' : s.needName;
+    if (f === 'kana') return !askKana ? '' : v.kana.trim() && !isKatakana(v.kana) ? s.badKana : needsKana(v.name) && !v.kana.trim() ? s.needKana : '';
+    if (f === 'email') return EMAIL_OK.test(v.email.trim()) ? '' : s.badEmail;
+    return '';
+  };
+  const setFieldError = (f: Field, msg: string) => setFieldErrors(e => ({ ...e, [f]: msg }));
+  const clearFieldError = (f: Field) => setFieldErrors(e => (e[f] ? { ...e, [f]: '' } : e));
+  const showFirst = (errs: Partial<Record<Field, string>>) => {
+    const first = (['name', 'kana', 'email', 'tickets'] as Field[]).find(f => errs[f]);
+    const el = first && refs[first].current;
+    if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); (el as HTMLElement).focus?.({ preventScroll: true }); }
+  };
+  const errorFor = (f: Field) => fieldErrors[f]
+    ? <span id={`reserve-${f}-error`} className="reserve-field-error" role="alert">{fieldErrors[f]}</span> : null;
+  const invalid = (f: Field) => ({ 'aria-invalid': !!fieldErrors[f], 'aria-describedby': fieldErrors[f] ? `reserve-${f}-error` : undefined, className: fieldErrors[f] ? 'has-error' : undefined });
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState<{ tickets: number; email: string; emailed: boolean; updated: boolean } | null>(null);
@@ -106,8 +132,9 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
 
   function toConfirm(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) { setError(s.needName); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) { setError(s.badEmail); return; }
+    const errs = { name: problem('name'), kana: problem('kana'), email: problem('email') };
+    setFieldErrors(errs);
+    if (Object.values(errs).some(Boolean)) { showFirst(errs); return; }
     setError('');
     setStep('confirm');
   }
@@ -128,7 +155,7 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: eventId, locale,
-          name: form.name, email: form.email, tickets: form.tickets, note: form.note,
+          name: form.name, kana: askKana ? toKatakana(form.kana) : '', email: form.email, tickets: form.tickets, note: form.note,
           website: form.website, started_at: startedAt.current,
           turnstile_token: turnstile.current?.token() || '',
         }),
@@ -144,11 +171,26 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
         }
         if (data.error === 'full') setState('full');
         if (data.error === 'closed') setState('closed');
-        if (data.error === 'email') setStep('form');
+        const fieldMsg: Partial<Record<Field, string>> | null =
+          data.error === 'email' ? { email: s.badEmail }
+          : data.error === 'kana_required' ? { kana: s.needKana }
+          : data.error === 'kana' ? { kana: s.badKana }
+          : data.error === 'too_many' ? { tickets: s.tooMany.replace('{n}', String(data.max || max)) }
+          : data.error === 'required' && data.field === 'name' ? { name: s.needName }
+          : null;
+        if (fieldMsg) {
+          setStep('form');
+          setFieldErrors(fieldMsg);
+          setTimeout(() => showFirst(fieldMsg), 50);
+          setError('');
+          return;
+        }
         setError(data.error === 'too_many' ? s.tooMany.replace('{n}', String(data.max || max))
           : data.error === 'slow_down' ? s.slowDown
           : data.error === 'verify' ? s.verifyFailed
           : data.error === 'email' ? s.badEmail
+          : data.error === 'kana_required' ? s.needKana
+          : data.error === 'kana' ? s.badKana
           : data.error === 'full' ? s.full
           : data.error === 'closed' ? s.closed
           : s.failed);
@@ -231,26 +273,41 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
                 <h2 id="reserve-step-title" className="reserve-step-title" tabIndex={-1}>{s.title}</h2>
                 <label className="reserve-field">
                   <span>{s.name}</span>
-                  <input value={form.name} autoComplete="name" onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setError(''); }} />
+                  <input ref={refs.name} value={form.name} autoComplete="name" {...invalid('name')}
+                    onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setError(''); clearFieldError('name'); }} />
+                  {errorFor('name')}
                 </label>
+                {askKana && (
+                  <label className="reserve-field">
+                    <span>{s.kana}{!kanaNeeded && <em className="reserve-optional"> {s.kanaOptional}</em>}</span>
+                    {/* Hiragana is fine too: it becomes katakana when they leave the box */}
+                    <input ref={refs.kana} value={form.kana} lang="ja" autoComplete="off" placeholder={s.kanaPlaceholder} {...invalid('kana')}
+                      onChange={e => { setForm(f => ({ ...f, kana: e.target.value })); setError(''); clearFieldError('kana'); }}
+                      onBlur={() => { const k = toKatakana(form.kana); setForm(f => ({ ...f, kana: k })); if (k && !isKatakana(k)) setFieldError('kana', s.badKana); }} />
+                    {errorFor('kana')}
+                  </label>
+                )}
                 <label className="reserve-field">
                   <span>{s.email}</span>
-                  <input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setError(''); }} />
-                  <em>{s.emailHint}</em>
+                  <input ref={refs.email} type="email" inputMode="email" autoComplete="email" value={form.email} {...invalid('email')}
+                    onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setError(''); clearFieldError('email'); }}
+                    onBlur={() => { if (form.email.trim() && !EMAIL_OK.test(form.email.trim())) setFieldError('email', s.badEmail); }} />
+                  {errorFor('email') || <em>{s.emailHint}</em>}
                 </label>
-                <div className="reserve-tickets" role="radiogroup" aria-label={s.tickets}>
+                <div ref={refs.tickets} tabIndex={-1} className={`reserve-tickets${fieldErrors.tickets ? ' has-error' : ''}`} role="radiogroup" aria-label={s.tickets}>
                   <span className="reserve-label">{s.tickets}</span>
                   <div className="reserve-counts">
                     {Array.from({ length: max }, (_, i) => i + 1).map(n => (
                       <button
                         key={n} type="button" role="radio" aria-checked={form.tickets === n}
                         className={`reserve-count${form.tickets === n ? ' is-on' : ''}`}
-                        onClick={() => { setForm(f => ({ ...f, tickets: n })); setError(''); }}
+                        onClick={() => { setForm(f => ({ ...f, tickets: n })); setError(''); clearFieldError('tickets'); }}
                       >
                         {n}
                       </button>
                     ))}
                   </div>
+                  {errorFor('tickets')}
                 </div>
                 <label className="reserve-field">
                   <span>{s.note} <em>· {s.optional}</em></span>
@@ -269,7 +326,7 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
               <div className="reserve-confirm">
                 <h2 id="reserve-step-title" className="reserve-step-title" tabIndex={-1}>{s.confirmTitle}</h2>
                 <dl className="reserve-review">
-                  <dt>{s.name}</dt><dd>{form.name.trim()}</dd>
+                  <dt>{s.name}</dt><dd>{form.name.trim()}{askKana && form.kana.trim() && <span className="reserve-review-kana">{toKatakana(form.kana)}</span>}</dd>
                   <dt>{s.tickets}</dt><dd className="reserve-review-big">{ticketsText(form.tickets)}</dd>
                   <dt>{s.email}</dt><dd className="reserve-review-big reserve-review-email">{form.email.trim()}</dd>
                   {form.note.trim() && (<><dt>{s.note}</dt><dd>{form.note.trim()}</dd></>)}

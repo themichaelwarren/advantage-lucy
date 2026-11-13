@@ -2300,3 +2300,13 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 .related-links a:hover { text-decoration: underline; text-decoration-color: var(--pop); text-decoration-thickness: 2px; }
 .related-links-host { font-size: 0.78rem; color: var(--text-muted); }
 .related-links p { margin: 0.1rem 0 0; font-size: 0.9rem; color: var(--text-muted); }
+.reserve-review-kana { display: block; font-size: 0.85rem; color: var(--text-muted); margin-top: 0.1rem; }
+.reserve-optional { font-style: normal; font-weight: 400; color: var(--text-muted); font-size: 0.85em; }
+/* A field's own problem, right under it (the フリガナ box) */
+.reserve-field-error { display: block; margin-top: 0.35rem; font-size: 0.88rem; font-weight: 600; color: #c2412d; }
+.reserve-field input.has-error, .reserve-field input.has-error:focus {
+  border-color: #c2412d !important; box-shadow: 0 0 0 3px color-mix(in srgb, #c2412d 22%, transparent) !important;
+}
+.reserve-tickets.has-error .reserve-count:not(.is-on) { border-color: #c2412d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .reserve-field-error { color: #ff8a73; } }
+:root[data-theme="dark"] .reserve-field-error { color: #ff8a73; }

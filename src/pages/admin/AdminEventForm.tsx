@@ -552,7 +552,7 @@ export default function AdminEventForm() {
                 {saved.featured === 'TRUE' && <span className="lu-tag is-ok">{s.featured}</span>}
               </p>
             )}
-            <Link to={`/${locale}/events/${saved.id}`} className="lu-btn lu-btn-quiet lu-song-site">{s.viewOnSite} ↗</Link>
+            <a href={`/${locale}/events/${saved.id}`} target="_blank" rel="noopener" className="lu-btn lu-site-link"><Icon name="external" /> {s.viewOnSite}</a>
           </div>
 
           <div className="lu-song-card">

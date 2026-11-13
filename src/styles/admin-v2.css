@@ -1419,7 +1419,7 @@ body:has(tr.is-dragging) { cursor: grabbing; user-select: none; }
 
 /* ---------- VIDEOS (admin only) ---------- */
 .lu-videos { display: flex; flex-direction: column; gap: 0.9rem; }
-.lu-video { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 0.8rem; background: var(--surface); display: flex; flex-direction: column; gap: 0.8rem; }
+.lu-video { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 0.8rem; background: var(--surface); display: flex; flex-direction: column; gap: 0.8rem; container-type: inline-size; }
 .lu-video.is-open { border-color: var(--text); }
 .lu-video-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .lu-shell .lu-video-head input { padding: 0.5rem 0.7rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
@@ -1427,12 +1427,19 @@ body:has(tr.is-dragging) { cursor: grabbing; user-select: none; }
 .lu-video-title { flex: 1 1 10rem; min-width: 0; }
 /* Player and the song list side by side when there's room */
 .lu-video-body { display: grid; gap: 1rem; }
-@media (min-width: 1100px) { .lu-video-body:not(.is-song) { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; } }
+/* Player beside the song times only when the video card itself is wide enough for both
+   (by the card's width, not the window's: split-screen or a narrow column stacks them,
+   player on top, songs underneath at full width) */
+@container (min-width: 820px) {
+  .lu-video-body:not(.is-song) { grid-template-columns: minmax(0, 1.25fr) minmax(19rem, 1fr); align-items: start; }
+  /* Beside the player, a long setlist scrolls in its own box; stacked, it just runs on */
+  .lu-video-body:not(.is-song) .lu-video-parts ol, .lu-video-body:not(.is-song) .lu-video-chapters { max-height: 26rem; overflow: auto; }
+}
 .lu-video-body.is-song { max-width: 720px; gap: 0.4rem; }
 .lu-yt { position: relative; aspect-ratio: 16 / 9; width: 100%; border-radius: var(--radius-sm); overflow: hidden; background: #000; }
 .lu-yt iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .lu-video-parts { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
-.lu-video-parts ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 26rem; overflow: auto; }
+.lu-video-parts ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .lu-video-parts li { display: grid; grid-template-columns: minmax(0, 1fr) 5.2rem auto auto; align-items: center; gap: 0.4rem; padding: 0.25rem 0; border-top: 1px solid var(--rule); }
 .lu-video-parts li:first-child { border-top: none; }
 .lu-video-song { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 0.92rem; }
@@ -1628,7 +1635,7 @@ a.lu-show-line { font-weight: 600; }
 .lu-video.is-read { gap: 0.6rem; }
 .lu-video-read-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
 .lu-video-read-head strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lu-video-chapters { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 26rem; overflow: auto; }
+.lu-video-chapters { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .lu-video-chapters li + li { border-top: 1px solid var(--rule); }
 .lu-video-chapters button {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
@@ -2333,3 +2340,26 @@ a.lu-icon-btn { text-decoration: none; }
 /* Stacked rows (a song's videos): the show picker is one line tall, not a grown flex box */
 .lu-shell .lu-song-side .lu-video-head select.lu-video-show { flex: none; width: 100%; }
 .lu-vgrid-connect { align-self: flex-start; margin-top: 0.3rem; padding: 0.35rem 0.8rem; font-size: 0.85rem; }
+
+/* ---------- The admin looks like the admin, not the site ----------
+   The site is warm paper; the admin sits on a cool grey-blue so it's
+   obvious at a glance which one you're in. Cards and fields keep the
+   site's white surfaces. */
+.lu-shell { --bg: #e9ecf0; --rule: color-mix(in srgb, #1d2733 14%, transparent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lu-shell { --bg: #111419; } }
+:root[data-theme="dark"] .lu-shell { --bg: #111419; }
+
+/* "View on site": a solid ink button across the bottom of an item's card (opens in a new tab) */
+.lu-shell .lu-site-link {
+  align-self: stretch; justify-content: center; gap: 0.45rem;
+  background: var(--text); color: var(--surface) !important; border-color: var(--text);
+  font-weight: 700; text-decoration: none;
+}
+.lu-shell .lu-site-link:hover { background: color-mix(in srgb, var(--text) 85%, var(--pop)); border-color: var(--text); }
+.lu-shell .lu-site-link svg { width: 1rem; height: 1rem; }
+.lu-rel-links .lu-site-link { flex: 1 1 100%; }
+/* When each booking came in: readable, not a whisper */
+.lu-resv-row .lu-list-tags time.lu-resv-when { font-size: 0.82rem; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* A booking's reading, small after the name (and under it at the door) */
+.lu-resv-kana { margin-left: 0.5rem; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); }
+.lu-door-kana { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }

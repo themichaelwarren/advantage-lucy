@@ -31,7 +31,8 @@ export const RESERVATION_COLUMNS = [
   'status',   // '' = booked, 'cancelled'
   'emailed',  // 'yes' once the confirmation email went out, 'no' if it failed, '' if none was sent (added by hand)
   'arrived',  // 'TRUE' once checked in at the door
-  'source',   // 'web' or 'admin'
+  'source',   // 'web', 'admin' or 'form' (imported from the old Google Form)
+  'kana',     // フリガナ of a Japanese name (katakana), for sorting and the door list
 ] as const;
 export type Reservation = Record<typeof RESERVATION_COLUMNS[number], string>;
 
@@ -54,6 +55,7 @@ export { reserveCloses, reserveState, DEFAULT_MAX_PER_BOOKING, type ReserveState
 import { reserveState } from './visibility';
 import { loadFilters, matchSender, type SenderMatch } from './filters';
 import { showPrice } from './price';
+import { toKatakana, isKatakana, needsKana } from './kana';
 export const ticketsOf = (r: Pick<Reservation, 'tickets'>) => Math.max(0, parseInt(r.tickets, 10) || 0);
 export const isActive = (r: Pick<Reservation, 'status'>) => r.status !== 'cancelled';
 
@@ -61,6 +63,7 @@ export interface ReserveInput {
   event?: string;
   locale?: string;
   name?: string;
+  kana?: string;
   email?: string;
   tickets?: number | string;
   note?: string;
@@ -71,7 +74,7 @@ export interface ReserveInput {
 
 type Checked =
   | { ok: true; spam: true }
-  | { ok: true; spam: false; value: { event: string; locale: 'en' | 'ja'; name: string; email: string; tickets: number; note: string } }
+  | { ok: true; spam: false; value: { event: string; locale: 'en' | 'ja'; name: string; kana: string; email: string; tickets: number; note: string } }
   | { ok: false; error: string; field?: string };
 
 export function checkReservation(input: ReserveInput, now = Date.now()): Checked {
@@ -85,9 +88,13 @@ export function checkReservation(input: ReserveInput, now = Date.now()): Checked
   const tickets = Number(input.tickets);
   if (!event) return { ok: false, error: 'required', field: 'event' };
   if (!name) return { ok: false, error: 'required', field: 'name' };
+  // A Japanese name with kanji needs its reading (フリガナ), in katakana (hiragana is converted)
+  const kana = toKatakana(clean(input.kana, 100));
+  if (kana && !isKatakana(kana)) return { ok: false, error: 'kana', field: 'kana' };
+  if (!kana && input.locale === 'ja' && needsKana(name)) return { ok: false, error: 'kana_required', field: 'kana' };
   if (!EMAIL_RE.test(email)) return { ok: false, error: 'email', field: 'email' };
   if (!Number.isInteger(tickets) || tickets < 1) return { ok: false, error: 'tickets', field: 'tickets' };
-  return { ok: true, spam: false, value: { event, locale: input.locale === 'ja' ? 'ja' : 'en', name, email, tickets, note } };
+  return { ok: true, spam: false, value: { event, locale: input.locale === 'ja' ? 'ja' : 'en', name, kana, email, tickets, note } };
 }
 
 // ── Sheet ────────────────────────────────────────────────────────────────
@@ -103,10 +110,23 @@ async function sheetsFetch(token: string, url: string, init: RequestInit = {}) {
 
 const lastCol = String.fromCharCode(64 + RESERVATION_COLUMNS.length); // L
 
+let headingChecked = false;
 async function ensureTab(sheetId: string, token: string) {
   const base = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
   const meta = await sheetsFetch(token, `${base}?fields=sheets.properties.title`);
-  if (meta.sheets?.some((s: any) => s.properties?.title === RESERVATIONS_TAB)) return;
+  if (meta.sheets?.some((s: any) => s.properties?.title === RESERVATIONS_TAB)) {
+    // Columns added since the tab was made (kana): write the full heading row once
+    if (headingChecked) return;
+    const head = await sheetsFetch(token, `${base}/values/${encodeURIComponent(`${RESERVATIONS_TAB}!1:1`)}`);
+    const have: string[] = head.values?.[0] || [];
+    if (have.length < RESERVATION_COLUMNS.length && RESERVATION_COLUMNS.slice(0, have.length).every((c, i) => have[i] === c)) {
+      await sheetsFetch(token, `${base}/values/${encodeURIComponent(`${RESERVATIONS_TAB}!A1`)}?valueInputOption=RAW`, {
+        method: 'PUT', body: JSON.stringify({ values: [[...RESERVATION_COLUMNS]] }),
+      });
+    }
+    headingChecked = true;
+    return;
+  }
   await sheetsFetch(token, `${base}:batchUpdate`, {
     method: 'POST',
     body: JSON.stringify({ requests: [{ addSheet: { properties: { title: RESERVATIONS_TAB } } }] }),
@@ -144,6 +164,7 @@ async function appendReservation(sheetId: string, saEmail: string, saKey: string
 export async function updateReservation(sheetId: string, saEmail: string, saKey: string, id: string, fields: Partial<Reservation>): Promise<Reservation> {
   if (!id?.trim()) throw new Error('Missing reservation id');
   const token = await getAccessToken(saEmail, saKey, SCOPE);
+  await ensureTab(sheetId, token); // newer columns (kana) get their heading
   const base = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
   const data = await sheetsFetch(token, `${base}/values/${encodeURIComponent(`${RESERVATIONS_TAB}!A:${lastCol}`)}`);
   const rows = (data.values as string[][] | undefined) || [];
@@ -384,6 +405,7 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
       received_at: now.toISOString(),
       locale: v.locale,
       name: v.name,
+      kana: v.kana,
       email: v.email,
       tickets: String(v.tickets),
       note: v.note,
@@ -430,9 +452,10 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
     const body = await request.json() as { id?: string; resend?: string; fields?: Partial<Reservation>; send_email?: boolean };
     const allowed = (f: Partial<Reservation> = {}) => {
       const out: Partial<Reservation> = {};
-      for (const c of ['name', 'email', 'tickets', 'note', 'status', 'arrived', 'locale'] as const) {
+      for (const c of ['name', 'kana', 'email', 'tickets', 'note', 'status', 'arrived', 'locale'] as const) {
         if (f[c] !== undefined) out[c] = String(f[c]).slice(0, c === 'note' ? 1000 : 254);
       }
+      if (out.kana !== undefined) { out.kana = toKatakana(out.kana); if (out.kana && !isKatakana(out.kana)) throw new Error('フリガナ should be in katakana (カタカナ)'); }
       if (out.status !== undefined && !['', 'cancelled'].includes(out.status)) throw new Error(`Unknown status "${out.status}"`);
       if (out.tickets !== undefined && !(parseInt(out.tickets, 10) >= 1)) throw new Error('Tickets must be 1 or more');
       if (out.email && !EMAIL_RE.test(out.email)) throw new Error('That email address doesn’t look right');
@@ -470,7 +493,7 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
       const r: Reservation = {
         id: newId(), event, received_at: new Date().toISOString(),
         locale: f.locale === 'en' ? 'en' : 'ja',
-        name: f.name.trim(), email: f.email || '', tickets: f.tickets || '1', note: f.note || '',
+        name: f.name.trim(), kana: f.kana || '', email: f.email || '', tickets: f.tickets || '1', note: f.note || '',
         status: '', emailed: '', arrived: '', source: 'admin',
       };
       await appendReservation(sheetId, saEmail, saKey, r);

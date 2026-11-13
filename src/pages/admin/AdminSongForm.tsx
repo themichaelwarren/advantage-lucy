@@ -365,7 +365,7 @@ export default function AdminSongForm() {
                 </span></li>
               )}
             </ul>
-            {saved.status !== 'private' && <Link to={`/${locale}/songs/${form.id}`} className="lu-btn lu-btn-quiet lu-song-site">{s.viewOnSite} ↗</Link>}
+            {saved.status !== 'private' && <a href={`/${locale}/songs/${form.id}`} target="_blank" rel="noopener" className="lu-btn lu-site-link"><Icon name="external" /> {s.viewOnSite}</a>}
           </div>
 
           {usage.releases.length > 0 && (
