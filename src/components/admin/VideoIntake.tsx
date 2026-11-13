@@ -2,7 +2,7 @@ import Icon from './Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AdminLocale, AdminStrings } from '../../i18n/admin';
 import type { Area, Event, SetlistEntry, Song, Venue } from '../../types';
-import { saveMedia, getVideoTitle, createRow, updateRow, replaceRows, type MediaRow } from '../../services/adminService';
+import { saveMedia, getVideoTitle, createRow, updateRow, replaceRows, type MediaRow, UNSORTED_VIDEOS } from '../../services/adminService';
 import { youTubeId, youTubeThumb, youTubeStart, parseTypedTime, formatTime } from '../../utils/youtube';
 import { songTitle, songAltTitle, songSearchText, songQuery, hira, compareSongs } from '../../utils/songTitles';
 import { parseTimestamps, matchSong, looseKey } from '../../utils/timestamps';
@@ -39,7 +39,7 @@ export function dateInTitle(title: string): string | null {
   return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-export default function VideoIntake({ s, locale, media, events, songs, setlists, venues, areas, onVenuesChanged, onClose, onSaved }: {
+export default function VideoIntake({ s, locale, media, events, songs, setlists, venues, areas, onVenuesChanged, onClose, onSaved, start }: {
   s: AdminStrings;
   locale: AdminLocale;
   media: MediaRow[];
@@ -51,11 +51,13 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
   onVenuesChanged: () => void;
   onClose: () => void;
   /** After saving: the owner's rows; a show made here; whether the setlist or songs changed */
-  onSaved: (owner: string, rows: MediaRow[], extra: { newEvent?: Event; setlistChanged?: boolean; songsAdded?: boolean }) => void;
+  onSaved: (owner: string, rows: MediaRow[], extra: { newEvent?: Event; setlistChanged?: boolean; songsAdded?: boolean; unsorted?: MediaRow[] }) => void;
+  /** Connecting a video saved earlier without a show: start from it */
+  start?: { url: string; title: string };
 }) {
-  const [step, setStep] = useState<Step>('link');
-  const [url, setUrl] = useState('');
-  const [title, setTitle] = useState('');
+  const [step, setStep] = useState<Step>(start ? 'kind' : 'link');
+  const [url, setUrl] = useState(start?.url || '');
+  const [title, setTitle] = useState(start?.title || '');
   const [kind, setKind] = useState<Kind | null>(null);
   const [eventId, setEventId] = useState('');
   const [newShow, setNewShow] = useState<{ date: string; venue: string; title: string } | null>(null);
@@ -156,6 +158,25 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
     setPasteOpen(false);
   }
 
+  /** Once it's with a show or song, it's no longer waiting: the remaining unsorted rows (undefined if nothing changed) */
+  async function outOfUnsorted(clean: string): Promise<MediaRow[] | undefined> {
+    const waiting = media.filter(r => r.owner === UNSORTED_VIDEOS);
+    const rest = waiting.filter(r => !same(r.url, clean));
+    return rest.length === waiting.length ? undefined : await saveMedia(UNSORTED_VIDEOS, rest);
+  }
+  /** "Not sure which show": keep just the video for now */
+  async function saveLater() {
+    setSaving(true); setError('');
+    try {
+      const clean = url.trim();
+      const waiting = media.filter(r => r.owner === UNSORTED_VIDEOS && !same(r.url, clean));
+      onSaved(UNSORTED_VIDEOS, await saveMedia(UNSORTED_VIDEOS, [...waiting, { kind: 'show', url: clean, title: title.trim() }]), {});
+    } catch (err) {
+      setError(errorText(err));
+      setSaving(false);
+    }
+  }
+
   async function save() {
     if (kind === 'show' && newShow && isDoubleShow(newShow.date, newShow.venue, events) && !window.confirm(s.dupShowConfirm)) return;
     setSaving(true); setError('');
@@ -165,7 +186,8 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
         const owner = `song:${song.id}`;
         const mine = media.filter(r => r.owner === owner);
         const next: Partial<MediaRow>[] = [...mine, ...(mine.some(r => same(r.url, clean)) ? [] : [{ kind: 'song' as const, url: clean, title: title.trim() }])];
-        onSaved(owner, await saveMedia(owner, next), {});
+        const saved = await saveMedia(owner, next);
+        onSaved(owner, saved, { unsorted: await outOfUnsorted(clean) });
         return;
       }
       // The show: an existing one, or a new one for the archive
@@ -224,7 +246,8 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
           for (const r of filled) addPart(canonical(r.song), filled.length === 1 && !r.time.trim() ? 0 : parseTypedTime(r.time));
         }
       }
-      onSaved(ev.id, await saveMedia(ev.id, next), { newEvent, setlistChanged, songsAdded });
+      const saved = await saveMedia(ev.id, next);
+      onSaved(ev.id, saved, { newEvent, setlistChanged, songsAdded, unsorted: await outOfUnsorted(clean) });
     } catch (err) {
       setError(errorText(err));
       setSaving(false);
@@ -304,6 +327,13 @@ export default function VideoIntake({ s, locale, media, events, songs, setlists,
                   <span>{hint}</span>
                 </button>
               ))}
+              {!start && (
+                <button type="button" className="lu-vi-choice" disabled={saving} onClick={saveLater}>
+                  <span className="lu-vi-choice-icon" aria-hidden="true"><Icon name="clock" /></span>
+                  <strong>{saving ? s.saving : s.viKindLater}</strong>
+                  <span>{s.viKindLaterHint}</span>
+                </button>
+              )}
             </div>
           </div>
         )}

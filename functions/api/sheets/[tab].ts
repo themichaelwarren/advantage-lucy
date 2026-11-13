@@ -8,6 +8,7 @@ import {
 } from '../../lib/sheets';
 import { EDGE_TTL_SECONDS, sheetCacheKey } from '../../lib/edgeCache';
 import { publicView } from '../../lib/visibility';
+import { fetchLinks } from '../../lib/links';
 
 const fetchers: Record<string, (id: string, e: string, k: string) => Promise<unknown>> = {
   events: fetchEvents,
@@ -23,6 +24,7 @@ const fetchers: Record<string, (id: string, e: string, k: string) => Promise<unk
   areas: fetchAreas,
   prefectures: fetchPrefectures,
   countries: fetchCountries,
+  links: fetchLinks,
 };
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, params, env, waitUntil }) => {

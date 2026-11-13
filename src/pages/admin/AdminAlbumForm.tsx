@@ -1,6 +1,6 @@
 import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAllAlbums, useAllTracklists, useAllSongs, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, replaceRows, getArrangements, type ArrangementRow, getLinkCheck, isDeadLink, type LinkState } from '../../services/adminService';
 import SuggestInput, { normalize } from '../../components/admin/SuggestInput';
@@ -19,6 +19,9 @@ import {
   useUnsavedWarning, makeId, errorText, VisToggle,
 } from '../../components/admin/ui';
 import { ActivityHistory } from '../../components/admin/Activity';
+import ItemLinks from '../../components/admin/ItemLinks';
+import BandNotes from '../../components/admin/BandNotes';
+import AddressDialog, { movedTo } from '../../components/admin/AddressDialog';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
 const ALBUM_COLUMNS = [
@@ -47,6 +50,7 @@ export default function AdminAlbumForm() {
   const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
+  const [addrOpen, setAddrOpen] = useState(false);
   const { albums, loading } = useAllAlbums();
   const { tracklists } = useAllTracklists();
   const { songs, refresh: refreshSongs } = useAllSongs();
@@ -303,6 +307,9 @@ export default function AdminAlbumForm() {
     return by;
   }, [setlists, events]);
 
+  // An old address (before the id changed) forwards to the new one
+  const movedId = movedTo(albums, isNew ? undefined : id);
+  if (movedId) return <Navigate to={`${prefix}/releases/${movedId}`} replace />;
   if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   // ---------- A new release: one plain form ----------
@@ -473,18 +480,24 @@ export default function AdminAlbumForm() {
               </div>
             )}
           </Section>
+          <ItemLinks s={s} owner={`album:${id}`} />
+          <BandNotes s={s} locale={locale} owner={`album:${id}`} />
           <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`Albums:${id}`, `Tracklists:${savedTitle}`]} /></div>
         </div>
       </div>
 
+      <AddressDialog s={s} kind="album" id={form.id} open={addrOpen} onClose={() => setAddrOpen(false)} />
       <EditDialog s={s} title={s.secDetails} open={dialog === 'details'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={dirty}
-        footer={<DeleteButton s={s} onConfirm={async () => {
+        footer={<span className="lu-row">
+          <button type="button" className="lu-btn" onClick={() => { closeDialog(); setAddrOpen(true); }}>{s.addrButton}</button>
+          <DeleteButton s={s} onConfirm={async () => {
           try {
             if (savedTitle) await replaceRows('Tracklists', savedTitle, []);
             await deleteRow('Albums', form.id);
             navigate(`${prefix}/releases`);
           } catch (err) { setError(errorText(err)); }
-        }} />}
+        }} />
+        </span>}
       >
         {detailsFields}
       </EditDialog>

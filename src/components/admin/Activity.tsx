@@ -73,6 +73,9 @@ function headline(e: ActivityEntry, s: AdminStrings): string {
     case 'videos': return s.actVideos;
     case 'arrangements': return s.actArrangements;
     case 'filters': return s.actFilters;
+    case 'links': return s.actLinks;
+    case 'rename': return s.actRename;
+    case 'notes': return s.actNotes;
     default: return s.actChanged;
   }
 }

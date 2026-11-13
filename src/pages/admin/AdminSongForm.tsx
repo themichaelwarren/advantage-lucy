@@ -1,6 +1,6 @@
 import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAllSongs, usePeople, useAllSetlists, useAllEvents, useAllTracklists, useAllAlbums } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, getMedia, getArrangements, saveArrangements, type MediaRow, type ArrangementRow } from '../../services/adminService';
 import KeysEditor, { toDrafts, fromDrafts, keysText, type KeyDraft } from '../../components/admin/KeysEditor';
@@ -17,9 +17,14 @@ import { todayInJapan } from '../../utils/showDates';
 import { localTitle } from '../../utils/songTitles';
 import PeoplePicker from '../../components/admin/PeoplePicker';
 import { ActivityHistory } from '../../components/admin/Activity';
+import ItemLinks from '../../components/admin/ItemLinks';
+import BandNotes from '../../components/admin/BandNotes';
+import LinkTextarea from '../../components/admin/LinkTextarea';
+import { linkify } from '../../utils/linkify';
+import AddressDialog, { movedTo } from '../../components/admin/AddressDialog';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
-const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status'] as const;
+const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status', 'about_en', 'about_ja'] as const;
 type SongField = typeof SONG_COLUMNS[number];
 type Form = Record<SongField, string>;
 const emptyForm = (): Form => Object.fromEntries(SONG_COLUMNS.map(c => [c, ''])) as Form;
@@ -34,6 +39,7 @@ export default function AdminSongForm() {
   const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
+  const [addrOpen, setAddrOpen] = useState(false);
   const { songs, loading } = useAllSongs();
   const { people } = usePeople();
   const { accessToken } = useAuth();
@@ -51,7 +57,7 @@ export default function AdminSongForm() {
   const [error, setError] = useState('');
   // Read first: each section has its own ✎ that opens a small edit window
   // (a new song opens as the full form instead)
-  const [dialog, setDialog] = useState<null | 'details' | 'lyrics' | 'keys'>(null);
+  const [dialog, setDialog] = useState<null | 'details' | 'lyrics' | 'keys' | 'about'>(null);
   const panel = useFitsViewport<HTMLElement>(32);
   useEffect(() => { setDialog(null); }, [id]);
   const closeDialog = () => {
@@ -111,6 +117,7 @@ export default function AdminSongForm() {
       music_by: song.music_by || '', lyrics_doc_id: song.lyrics_doc_id || '',
       original_artist: song.original_artist || '',
       title_en: song.title_en || '', title_kana: song.title_kana || '', status: song.status || '', lyrics_status: song.lyrics_status || '',
+      about_en: song.about_en || '', about_ja: song.about_ja || '',
     };
     setForm(f);
     setBaseline(JSON.stringify(f));
@@ -189,6 +196,9 @@ export default function AdminSongForm() {
     }
   }
 
+  // An old address (before the id changed) forwards to the new one
+  const moved = movedTo(songs, isNew ? undefined : id);
+  if (moved) return <Navigate to={`${prefix}/songs/${moved}`} replace />;
   if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   const personName = (pid: string) => {
@@ -304,7 +314,7 @@ export default function AdminSongForm() {
   // No lyrics doc, or a doc with nothing in it: nothing to show or hide yet
   const lyricsEmpty = !!saved.lyrics_doc_id && lyrics !== null && !lyrics.replace(/\s/g, '');
   const noLyrics = !saved.lyrics_doc_id || lyricsEmpty;
-  const editBtn = (which: 'details' | 'lyrics') => (
+  const editBtn = (which: 'details' | 'lyrics' | 'about') => (
     <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
   );
 
@@ -461,15 +471,35 @@ export default function AdminSongForm() {
               </div>
             )}
           </Section>
+          <Section title={s.songAboutTitle} aside={editBtn('about')}>
+            {!saved.about_ja && !saved.about_en ? (
+              <p className="lu-hint">{s.songAboutNone} <button type="button" className="lu-link-btn" onClick={() => setDialog('about')}>{s.songEdit}</button></p>
+            ) : (
+              <div className="lu-rel-notes is-stacked">
+                {([['ja', saved.about_ja, s.japanese], ['en', saved.about_en, s.english]] as const).map(([lang, text, label]) => (
+                  <div key={lang} className="lu-rel-note">
+                    <p className="lu-publish-label">{label}</p>
+                    {text ? <p lang={lang} className="lu-rel-note-text">{linkify(text, lang)}</p> : <p className="lu-hint">{s.relNoTranslation}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+          <ItemLinks s={s} owner={`song:${id}`} />
+          <BandNotes s={s} locale={locale} owner={`song:${id}`} />
           <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`Songs:${id}`]} /></div>
         </div>
       </div>
 
+      <AddressDialog s={s} kind="song" id={form.id} open={addrOpen} onClose={() => setAddrOpen(false)} />
       <EditDialog s={s} title={s.secDetails} open={dialog === 'details'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={dirty}
-        footer={<DeleteButton s={s} onConfirm={async () => {
+        footer={<span className="lu-row">
+          <button type="button" className="lu-btn" onClick={() => { closeDialog(); setAddrOpen(true); }}>{s.addrButton}</button>
+          <DeleteButton s={s} onConfirm={async () => {
           try { await deleteRow('Songs', form.id); navigate(`${prefix}/songs`); }
           catch (err) { setError(errorText(err)); }
-        }} />}
+        }} />
+        </span>}
       >
         {detailsFields}
       </EditDialog>
@@ -479,6 +509,15 @@ export default function AdminSongForm() {
       </EditDialog>
       <EditDialog s={s} title={s.secLyrics} open={dialog === 'lyrics'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={dirty}>
         {lyricsFields}
+      </EditDialog>
+      <EditDialog s={s} title={s.songAboutTitle} open={dialog === 'about'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={dirty}>
+        <p className="lu-hint">{s.bothLanguagesHint}</p>
+        <Field label={`${s.songAboutTitle} · ${s.japanese}`} optional s={s}>
+          {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={8} lang="ja" value={form.about_ja} onChange={v => set('about_ja', v)} />}
+        </Field>
+        <Field label={`${s.songAboutTitle} · ${s.english}`} optional s={s}>
+          {fid => <LinkTextarea s={s} id={fid} className="lu-textarea-long" rows={8} value={form.about_en} onChange={v => set('about_en', v)} />}
+        </Field>
       </EditDialog>
     </div>
   );

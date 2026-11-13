@@ -1,6 +1,6 @@
 import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link, useSearchParams, Navigate } from 'react-router-dom';
 import { useAllEvents, useVenues, useAreas, useAllSetlists, useAllSongs } from '../../hooks/useSheetData';
 import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, getReservations, type MediaRow, getVideoTitle } from '../../services/adminService';
 import ShowVideos, { toShowVideos, fromShowVideos, videosSnapshot, songSlots, newVideo, type ShowVideo } from '../../components/admin/ShowVideos';
@@ -30,6 +30,10 @@ import { youTubeId } from '../../utils/youtube';
 import { ActivityHistory } from '../../components/admin/Activity';
 import { ShowDupeHint, isDoubleShow } from '../../components/admin/DupeHint';
 import { venueNameAt } from '../../../functions/lib/venueNames';
+import ItemLinks from '../../components/admin/ItemLinks';
+import BandNotes from '../../components/admin/BandNotes';
+import { typedDate } from '../../utils/typedDate';
+import AddressDialog, { movedTo } from '../../components/admin/AddressDialog';
 
 type EventField = typeof EVENT_COLUMNS[number];
 type Form = Record<EventField, string>;
@@ -46,6 +50,7 @@ export default function AdminEventForm() {
   const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
+  const [addrOpen, setAddrOpen] = useState(false);
 
   const { events, loading } = useAllEvents();
   const { venues, refresh: refreshVenues } = useVenues();
@@ -54,7 +59,11 @@ export default function AdminEventForm() {
   const { songs, refresh: refreshSongs } = useAllSongs();
   const [addedSongs, setAddedSongs] = useState<Song[]>([]);
 
-  const [form, setForm] = useState<Form>(emptyForm);
+  // "New show on 2008-09-21" from ⌘K: the date comes in the address (?date=)
+  const [params] = useSearchParams();
+  const dateParam = isNew ? typedDate(params.get('date') || '') : null;
+  const [form, setForm] = useState<Form>(() => ({ ...emptyForm(), ...(dateParam ? { date: dateParam } : {}) }));
+  useEffect(() => { if (dateParam) setForm(f => ({ ...f, date: dateParam })); }, [dateParam]);
   const [setlist, setSetlist] = useState<SetlistItem[]>([]);
   // Videos (admin only, private Media tab): loaded once, saved with the show
   const [media, setMedia] = useState<MediaRow[] | null>(null);
@@ -268,6 +277,9 @@ export default function AdminEventForm() {
       .catch(() => setBooked(null));
   }, [isNew, id, form.reserve]);
 
+  // An old address (before the id changed) forwards to the new one
+  const moved = movedTo(events, isNew ? undefined : id);
+  if (moved) return <Navigate to={`${prefix}/events/${moved}`} replace />;
   if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   // ---------- The edit fields, for the new-show form and the edit windows ----------
@@ -650,18 +662,24 @@ export default function AdminEventForm() {
               ? <div className="event-notes lu-show-notes">{notes.split(/\n\s*\n/).map((para, i) => <p key={i}>{linkify(para.trim())}</p>)}</div>
               : <p className="lu-hint">{s.notesNone}</p>}
           </Section>
+          <ItemLinks s={s} owner={`event:${id}`} />
+          <BandNotes s={s} locale={locale} owner={`event:${id}`} />
           <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`Events:${id}`, `Setlists:${id}`]} /></div>
         </div>
       </div>
 
+      <AddressDialog s={s} kind="event" id={form.id} open={addrOpen} onClose={() => setAddrOpen(false)} />
       <EditDialog s={s} title={s.secDetails} open={dialog === 'details'} onClose={closeDialog} onSave={saveDialog} saving={saving} error={error} dirty={formDirty}
-        footer={<DeleteButton s={s} onConfirm={async () => {
+        footer={<span className="lu-row">
+          <button type="button" className="lu-btn" onClick={() => { closeDialog(); setAddrOpen(true); }}>{s.addrButton}</button>
+          <DeleteButton s={s} onConfirm={async () => {
           try {
             if (setlists.some(x => x.event === form.id)) await replaceRows('Setlists', form.id, []);
             await deleteRow('Events', form.id);
             navigate(`${prefix}/events`);
           } catch (err) { setError(errorText(err)); }
-        }} />}
+        }} />
+        </span>}
       >
         <FieldGroup title={s.groupWhen}>{whenWhereFields}</FieldGroup>
         <FieldGroup title={s.groupShow}>{aboutFields}</FieldGroup>

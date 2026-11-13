@@ -4,7 +4,7 @@ import type { AdminStrings } from '../../i18n/admin';
 import type { Event, SetlistEntry } from '../../types';
 import { useAllSongs, useAllAlbums, useAllTracklists, useVenues } from '../../hooks/useSheetData';
 import { showDupes, venueDupes } from '../../utils/duplicates';
-import { getLyricsStatus, getLinkCheck, isDeadLink, type LinkCheck } from '../../services/adminService';
+import { getLyricsStatus, getLinkCheck, isDeadLink, getMedia, UNSORTED_VIDEOS, type LinkCheck } from '../../services/adminService';
 import { LISTEN_SERVICES } from '../../../functions/lib/listen';
 import { todayInJapan } from '../../utils/showDates';
 
@@ -26,6 +26,9 @@ export default function DataHealth({ s, prefix, events, setlists }: {
   useEffect(() => { getLyricsStatus().then(r => setLyrics(r.status)).catch(() => setLyrics({})); }, []);
   const [links, setLinks] = useState<LinkCheck | null>(null);
   const [linksDone, setLinksDone] = useState(false);
+  // Videos saved without a show (date unknown), waiting to be connected
+  const [unsorted, setUnsorted] = useState(0);
+  useEffect(() => { getMedia().then(m => setUnsorted(new Set(m.filter(r => r.owner === UNSORTED_VIDEOS).map(r => r.url)).size)).catch(() => {}); }, []);
   useEffect(() => { getLinkCheck().then(setLinks).catch(() => {}).finally(() => setLinksDone(true)); }, []);
   // The lyrics and link checks are slow the first time (then kept for hours)
   const checking = lyrics === null || !linksDone;
@@ -44,6 +47,7 @@ export default function DataHealth({ s, prefix, events, setlists }: {
       { n: albums.filter(a => !a.coverUrl).length, label: s.dhReleasesNoCover, to: `${prefix}/releases?filter=nocover` },
       { n: albums.filter(a => !withTracks.has(a.title)).length, label: s.dhReleasesNoTracks, to: `${prefix}/releases?filter=notracks` },
       { n: links ? Object.values(links.videos).filter(isDeadLink).length : 0, label: s.dhDeadVideos, to: `${prefix}/videos?filter=dead` },
+      { n: unsorted, label: s.dhUnsortedVideos, to: `${prefix}/videos?filter=unsorted` },
       { n: links ? albums.filter(a => [a.listenUrl, ...LISTEN_SERVICES.map(x => a.listen?.[x.key])].some(u => u && isDeadLink(links.listen[u]))).length : 0, label: s.dhDeadListen, to: `${prefix}/releases?filter=deadlink` },
       { n: events.filter(e => (e.end_date || e.date) < today && !withSetlist.has(e.id)).length, label: s.dhShowsNoSetlist, to: `${prefix}/events?filter=nosetlist` },
       { n: events.filter(e => e.setlist_added && !e.setlist_source).length, label: s.dhSetlistsNoSource, to: `${prefix}/events?filter=nosource` },
@@ -51,7 +55,7 @@ export default function DataHealth({ s, prefix, events, setlists }: {
       { n: new Set(showDupes(events.map(e => ({ ...e, venue_id: e.venue_id || '' }))).flat().map(e => e.id)).size, label: s.dhShowDupes, to: `${prefix}/events?filter=dupes` },
       { n: new Set(venueDupes(venues).flat().map(v => v.id)).size, label: s.dhVenueDupes, to: `${prefix}/venues?filter=dupes` },
     ].filter(l => l.n > 0);
-  }, [songs, albums, tracklists, events, setlists, venues, lyrics, links, prefix, s]);
+  }, [songs, albums, tracklists, events, setlists, venues, lyrics, links, unsorted, prefix, s]);
 
   if (!songs.length || !events.length) return null;
   return (

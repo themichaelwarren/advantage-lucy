@@ -2254,3 +2254,11 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 .venue-former > span:first-child { font-weight: 700; color: var(--text-muted); font-size: 0.8rem; letter-spacing: 0.04em; }
 .venue-former small { color: var(--text-muted); font-size: 0.78rem; }
 .evd-venue-now { color: var(--text-muted); font-size: 0.88em; }
+
+/* Links about a show, song or release (RelatedLinks.tsx) */
+.related-links ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.1rem; }
+.related-links li { display: grid; gap: 0.1rem; padding: 0.55rem 0; border-bottom: 1px dashed var(--rule); }
+.related-links a { font-weight: 700; color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+.related-links a:hover { text-decoration: underline; text-decoration-color: var(--pop); text-decoration-thickness: 2px; }
+.related-links-host { font-size: 0.78rem; color: var(--text-muted); }
+.related-links p { margin: 0.1rem 0 0; font-size: 0.9rem; color: var(--text-muted); }

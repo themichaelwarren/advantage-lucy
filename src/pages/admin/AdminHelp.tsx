@@ -49,6 +49,12 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       points: [
         'Add a show with the date, venue, times, prices, ticket link and flyer. Type to find a venue, or add a new one right there.',
         'Leave the show title blank for a regular gig: the site shows the venue name instead.',
+        'Found a video but don’t know which show it’s from? Add it on the Videos page and choose “Not sure which show”. It waits under “No show yet” (and in What’s missing on the home page); “Connect to a show” takes it to the right show once you know.',
+        'Deleting a show (or a song, or a release) also removes what belonged to it: its setlist, videos and song times, keys, links and band notes. Reservations are kept, as a record of who booked.',
+        'Changing a page’s address (shows, venues, songs, releases): ✎ → “Change address…”. Its setlist, videos, reservations, links and notes move with it, and the old address keeps working: it forwards to the new one.',
+        'Linking to one of our own pages in a note or post (a song, a release, another show): copy that page’s address from the browser (the site or the admin, either works), select the words and paste. It becomes a link within the site that opens in the reader’s language.',
+        'Links (shows, songs and releases): add any number of links to things written about it (a fan’s blog, a setlist page, an interview). Paste the link and its title fills in. New links are “Band only”; switch one to “On the site” to list it on its page as Links.',
+        'Band notes (shows, songs and releases): a private thread for the band (“setlist from the flyer, encore order unsure”), each with who wrote it and when. Never on the site.',
         'Adding a show on a date that already has one at the same venue? An orange note says so (with a link to it), and saving asks you to confirm, so the same show doesn’t go in twice. Another show that day at a different venue is just listed for a look.',
         '“Goes live” decides when the show appears on the site: now, at a set time (Japan time), or hidden as a draft that only the admin can see.',
         'Setlist: type song titles, drag ⇅ to reorder, and add sets and encores. It goes public the day after the show, so you can fill it in on the night without spoilers. You can pick a different time.',
@@ -102,6 +108,7 @@ const en: { title: string; intro: string; contents: string; askTitle: string; as
       link: { to: 'songs', label: 'Open Songs' },
       points: [
         'Songs is a table: click a heading to sort (again to reverse), and combine the filters (no lyrics, no key, never played…) or pick a key.',
+        '“About this song” (✎ on the song page): a description in either language, shown on the song’s page on the site, like a release’s notes.',
         'Each song has an English title and a reading. The English title is how fans outside Japan know it (usually romaji, as on Apple Music and Spotify); English pages show it first. The reading (hiragana or katakana, either is fine) puts Japanese pages in 50音 order. Releases have the same two fields.',
         'Keys (band only): a song can have several, in order, each with an optional label like “サビ” or “after the key change”.',
         'Each song can have music and lyrics credits, an original artist (for covers), and lyrics in a Google Doc that you can create from the song page.',
@@ -187,6 +194,12 @@ const ja: typeof en = {
       points: [
         '日付・会場・時間・料金・チケットのリンク・フライヤーを入れてライブを追加します。会場は名前を打つと候補が出ます。新しい会場はその場で追加できます。',
         '普通のライブならタイトルは空欄でOKです。サイトには会場名が表示されます。',
+        'どのライブの動画かわからないときは：動画のページで追加して「どのライブかわからない」を選びます。「ライブ未定」（とホームの「足りないもの」）に入り、日付がわかったら「ライブにつなぐ」でそのライブに移せます。',
+        'ライブ（曲・リリース）を削除すると、それに付いていたもの（セットリスト、動画と曲の位置、キー、リンク、バンドメモ）もいっしょに消えます。予約は、だれが予約したかの記録として残ります。',
+        'ページのアドレスを変えるには（ライブ・会場・曲・リリース）：✎ →「アドレスを変更…」。セットリスト・動画・予約・リンク・メモもいっしょに移り、前のアドレスもそのまま使えます（新しいアドレスに転送されます）。',
+        'メモや投稿の中でサイト内のページ（曲・リリース・ほかのライブ）にリンクするには：そのページのアドレスをブラウザからコピーし（サイトでも管理画面でも大丈夫です）、文字を選んで貼り付けます。サイト内のリンクになり、読む人の言語で開きます。',
+        'リンク（ライブ・曲・リリース）：これについて書かれたもの（ファンのブログ、セトリのページ、インタビューなど）のリンクを、いくつでも追加できます。リンクを貼るとタイトルが自動で入ります。新しいリンクは「バンドだけ」です。「サイトに表示」にすると、ページの「関連リンク」に載ります。',
+        'バンドメモ（ライブ・曲・リリース）：バンドだけのメモです（「セトリはフライヤーから、アンコールの順番は不確か」など）。だれがいつ書いたかも残ります。サイトには出ません。',
         '同じ日・同じ会場のライブがもうあるときは、オレンジのお知らせ（リンクつき）が出て、保存の前に確認します。同じライブを二重に登録しないためです。同じ日の別の会場のライブは、参考として表示されるだけです。',
         '「公開」で、サイトに出るタイミングを選べます：すぐ／日時を指定（日本時間）／非公開（下書き。管理画面でしか見えません）。',
         'セットリスト：曲名を打って追加し、⇅ をドラッグして並べ替えます。セットやアンコールも追加できます。公開はライブの翌日なので、当日に入力してもネタバレになりません。公開日時は変更もできます。',
@@ -240,6 +253,7 @@ const ja: typeof en = {
       link: { to: 'songs', label: '楽曲を開く' },
       points: [
         '「楽曲」は表になっています。見出しを押すと並べ替え（もう一度で逆順）、絞り込み（歌詞なし・キーなし・未演奏など）は組み合わせられ、キーでも絞り込めます。',
+        '「この曲について」（曲のページの ✎）：どちらかの言語で書いた説明が、サイトの曲のページに載ります（リリースの説明と同じです）。',
         '曲ごとに英語タイトルと読みを入れられます。英語タイトルは海外のファンが知っている名前（たいていローマ字。Apple Music や Spotify の表記）で、英語ページではこちらが先に出ます。読みはひらがなでもカタカナでもよく、日本語ページの50音順に使われます。リリースにも同じ2つの欄があります。',
         'キー（バンドだけ）：1曲に複数のキーを順番に登録でき、「サビ」「転調後」などのラベルもつけられます。',
         '曲ごとに作曲・作詞のクレジット、原曲のアーティスト（カバーの場合）、歌詞を登録できます。歌詞はGoogleドキュメントで、曲のページから作成できます。',

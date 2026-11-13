@@ -5,7 +5,7 @@
  */
 export const SHEET_TABS = [
   'events', 'albums', 'tracklists', 'songs', 'people', 'setlists', 'news',
-  'blog', 'photos', 'venues', 'areas', 'prefectures', 'countries',
+  'blog', 'photos', 'venues', 'areas', 'prefectures', 'countries', 'links',
 ];
 
 // Served from the edge for this long; after that the next visit refetches

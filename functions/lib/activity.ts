@@ -22,6 +22,8 @@ import { fetchSheet, rowsToObjects } from './sheets';
 import { listPrivate, appendPrivate, json, type SheetContext } from './privateTab';
 import { MEDIA_TAB, MEDIA_COLUMNS } from './media';
 import { ARR_TAB, ARR_COLUMNS } from './arrangements';
+import { LINKS_TAB, LINK_COLUMNS } from './links';
+import { NOTES_TAB, NOTE_COLUMNS } from './notes';
 
 export const ACTIVITY_TAB = 'Activity';
 export const ACTIVITY_COLUMNS = ['at', 'who', 'action', 'tab', 'item', 'label', 'changes'] as const;
@@ -57,7 +59,7 @@ export function rowLabel(r: Row | undefined): string {
 
 /** What a list row is called in a diff (a setlist line, a video…). */
 function lineLabel(r: Row): string {
-  const t = (r.song || r.title || r.label || r.value || r.url || '').trim();
+  const t = (r.song || r.title || r.label || r.value || r.url || r.text || '').trim();
   return r.kind === 'part' && r.song ? `${r.song}${r.start ? ` @${fmtSeconds(r.start)}` : ''}` : t;
 }
 const fmtSeconds = (s: string) => {
@@ -133,11 +135,27 @@ export async function planActivity(ctx: SheetContext, w: WriteInfo): Promise<Pen
     const owner = String(body.owner);
     const before = (await listPrivate(ctx, MEDIA_TAB, MEDIA_COLUMNS)).filter(r => r.owner === owner);
     const song = owner.startsWith('song:');
+    // Videos with no show yet (date unknown) aren't any one show's
+    if (owner === 'unsorted') return { action: 'videos', tab: 'Videos', item: '', label: '', changes: diffLists(before, body.rows || []) };
     return { action: 'videos', tab: song ? 'Songs' : 'Events', item: song ? owner.slice(5) : owner, label: '', changes: diffLists(before, body.rows || []) };
   }
   if (first === 'arrangements' && w.method === 'PUT' && body.song) {
     const before = (await listPrivate(ctx, ARR_TAB, ARR_COLUMNS)).filter(r => r.song === body.song);
     return { action: 'arrangements', tab: 'Songs', item: String(body.song), label: '', changes: diffLists(before, body.rows || []) };
+  }
+  if ((first === 'links' || first === 'notes') && w.method === 'PUT' && body.owner) {
+    // owner "event:<id>" / "song:<id>" / "album:<id>" → that show, song or release's history
+    const owner = String(body.owner);
+    const [kind, ...rest] = owner.split(':');
+    const tab = kind === 'song' ? 'Songs' : kind === 'album' ? 'Albums' : 'Events';
+    const before = first === 'links'
+      ? (await listPrivate(ctx, LINKS_TAB, LINK_COLUMNS)).filter(r => r.owner === owner)
+      : (await listPrivate(ctx, NOTES_TAB, NOTE_COLUMNS)).filter(r => r.owner === owner);
+    return { action: first, tab, item: rest.join(':'), label: '', changes: diffLists(before, body.rows || []) };
+  }
+  if (first === 'rename' && w.method === 'POST' && body.kind && body.from) {
+    const tab = ({ event: 'Events', venue: 'Venues', song: 'Songs', album: 'Albums' } as Record<string, string>)[String(body.kind)] || 'Events';
+    return { action: 'rename', tab, item: String(body.to || ''), label: '', changes: [{ f: 'id', from: String(body.from), to: String(body.to || '') }] };
   }
   if (first === 'filters' && w.method !== 'GET') {
     // Who's filtered stays out of the log: just that the list changed
@@ -181,7 +199,7 @@ export async function planActivity(ctx: SheetContext, w: WriteInfo): Promise<Pen
 /** Append the entry. An update that changed nothing isn't worth a line. */
 export async function recordActivity(ctx: SheetContext, p: Pending, who: string, at = new Date()): Promise<void> {
   // A save that changed nothing (a show saved with its setlist untouched) isn't worth a line
-  if (['update', 'replace', 'videos', 'arrangements'].includes(p.action) && p.changes.length === 0) return;
+  if (['update', 'replace', 'videos', 'arrangements', 'links', 'notes'].includes(p.action) && p.changes.length === 0) return;
   let changes = JSON.stringify(p.changes);
   if (changes.length > MAX_CHANGES_JSON) {
     const kept: Change[] = [];

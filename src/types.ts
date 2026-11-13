@@ -22,6 +22,7 @@ export interface Area {
 
 export interface Venue {
   id: string;
+  former_ids?: string;   // old ids (addresses) that forward here, comma-separated
   name_en: string;
   name_ja: string;
   area: string;          // area ID
@@ -34,6 +35,7 @@ export interface Venue {
 
 export interface Event {
   id: string;
+  former_ids?: string;   // old ids (addresses) that forward here, comma-separated
   title_en: string;
   title_ja: string;
   date: string;            // ISO date string YYYY-MM-DD
@@ -87,6 +89,7 @@ export interface Person {
 
 export interface Song {
   id: string;
+  former_ids?: string;   // old ids (addresses) that forward here, comma-separated
   title: string;
   music_by?: string;     // People ID
   lyrics_by?: string;    // People ID
@@ -96,6 +99,8 @@ export interface Song {
   title_kana?: string;       // 読み in kana, for 50音順 and search
   status?: string;        // 'private' = draft: no page on the site yet
   lyrics_status?: string; // 'private' = page live, lyrics not shown yet
+  about_en?: string;      // about this song, for its page on the site
+  about_ja?: string;
 }
 
 export interface SetlistEntry {
@@ -142,6 +147,7 @@ export interface SplashPhoto {
 
 export interface Album {
   id: string;
+  former_ids?: string;   // old ids (addresses) that forward here, comma-separated
   title: string;
   title_en?: string;     // English title (romaji / the English name, as on streaming services)
   title_kana?: string;   // 読み, for 50音順

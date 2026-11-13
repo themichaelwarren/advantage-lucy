@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAllEvents, useAllSongs, useAllSetlists, useVenues, useAreas } from '../../hooks/useSheetData';
 import VideoIntake from '../../components/admin/VideoIntake';
 import { useAdminT } from '../../i18n/admin';
-import { getMedia, getLinkCheck, isDeadLink, type MediaRow, type LinkState } from '../../services/adminService';
+import { getMedia, getLinkCheck, isDeadLink, type MediaRow, type LinkState, UNSORTED_VIDEOS } from '../../services/adminService';
 import { normalize } from '../../components/admin/SuggestInput';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
 import YouTubePlayer, { type PlayerHandle } from '../../components/admin/YouTubePlayer';
@@ -20,7 +20,7 @@ import CopyDownload from '../../components/admin/CopyDownload';
  * anything about it: its title, the show (either language, venue, city,
  * date) and the songs in it (any title or the reading).
  */
-type Filter = 'all' | 'shows' | 'songs' | 'unmarked' | 'dead';
+type Filter = 'all' | 'shows' | 'songs' | 'unmarked' | 'dead' | 'unsorted';
 type Sort = 'newest' | 'oldest' | 'title' | 'marks';
 
 interface Mark { song: string; songRow?: Song; start: number }
@@ -34,6 +34,8 @@ interface Video {
   song?: Song;          // for a song's own video
   marks: Mark[];
   date: string;
+  /** Saved without a show (date unknown), waiting to be connected */
+  unsorted?: boolean;
   search: string;
 }
 
@@ -56,7 +58,8 @@ export default function AdminVideos() {
   const ui = useListPrefs<Filter, Sort>('videos', { filter: 'all', sort: 'newest' });
   const [year, setYear] = useState('');
   const [open, setOpen] = useState<Video | null>(null);
-  const [adding, setAdding] = useState(false);
+  // The add-a-video window: new, or connecting a video saved without a show
+  const [adding, setAdding] = useState<null | { start?: { url: string; title: string } }>(null);
   const { setlists, refresh: refreshSetlists } = useAllSetlists();
 
   const pick = (en?: string, ja?: string) => (locale === 'ja' ? ja || en : en || ja) || '';
@@ -72,7 +75,7 @@ export default function AdminVideos() {
     for (const r of media) {
       if (r.kind === 'show' || r.kind === 'part') {
         const e = eventBy.get(r.owner);
-        const v = add({ key: `${r.owner}|${r.url}`, url: r.url, ytId: youTubeId(r.url), title: '', kind: 'show', event: e, marks: [], date: e?.date || '' });
+        const v = add({ key: `${r.owner}|${r.url}`, url: r.url, ytId: youTubeId(r.url), title: '', kind: 'show', event: e, marks: [], date: e?.date || '', unsorted: r.owner === UNSORTED_VIDEOS });
         if (r.kind === 'show' && r.title) v.title = r.title;
         if (r.kind === 'part' && r.start !== '') v.marks.push({ song: r.song, songRow: songBy.get(normalize(r.song)), start: Number(r.start) });
       } else if (r.kind === 'song') {
@@ -101,7 +104,7 @@ export default function AdminVideos() {
     const collator = new Intl.Collator(locale, { sensitivity: 'base', numeric: true });
     const label = (v: Video) => v.title || showName(v.event) || (v.song ? songTitle(v.song, locale) : v.url);
     return videos
-      .filter(v => ui.filter === 'all' || (ui.filter === 'dead' ? dead(v) : ui.filter === 'shows' ? v.kind === 'show' : ui.filter === 'songs' ? v.kind === 'song' : v.kind === 'show' && v.marks.length === 0))
+      .filter(v => ui.filter === 'all' || (ui.filter === 'dead' ? dead(v) : ui.filter === 'unsorted' ? !!v.unsorted : ui.filter === 'shows' ? v.kind === 'show' && !v.unsorted : ui.filter === 'songs' ? v.kind === 'song' : v.kind === 'show' && !v.unsorted && v.marks.length === 0))
       .filter(v => !year || v.date.startsWith(year))
       .filter(v => words.every(w => v.search.includes(w)))
       .sort((a, b) => ui.sort === 'title' ? collator.compare(label(a), label(b))
@@ -114,7 +117,7 @@ export default function AdminVideos() {
   if (error) return <div className="lu-alert">{error}</div>;
   if (!media) return <p className="lu-loading">{s.loading}</p>;
 
-  const count = (f: Filter) => videos.filter(v => f === 'shows' ? v.kind === 'show' : f === 'songs' ? v.kind === 'song' : v.kind === 'show' && v.marks.length === 0).length;
+  const count = (f: Filter) => videos.filter(v => f === 'unsorted' ? !!v.unsorted : f === 'shows' ? v.kind === 'show' && !v.unsorted : f === 'songs' ? v.kind === 'song' : v.kind === 'show' && !v.unsorted && v.marks.length === 0).length;
   const unmarked = count('unmarked');
 
   return (
@@ -124,7 +127,7 @@ export default function AdminVideos() {
           <h1>{s.videosTitle} <span className="lu-count">{videos.length}</span></h1>
           <p className="lu-hint lu-videos-intro"><Icon name="lock" /> <span className="is-long">{s.videosIndexHint}</span><span className="is-short">{s.videosIndexHintShort}</span></p>
         </div>
-        <button type="button" className="lu-btn lu-btn-primary lu-btn-lg" onClick={() => setAdding(true)}>+ {s.videoAdd}</button>
+        <button type="button" className="lu-btn lu-btn-primary lu-btn-lg" onClick={() => setAdding({})}>+ {s.videoAdd}</button>
       </div>
       <ListToolbar
         s={s}
@@ -135,6 +138,7 @@ export default function AdminVideos() {
           ...(count('shows') ? [{ value: 'shows', label: `${s.vfShows} · ${count('shows')}` }] : []),
           ...(count('songs') ? [{ value: 'songs', label: `${s.vfSongs} · ${count('songs')}` }] : []),
           ...(unmarked ? [{ value: 'unmarked', label: `${s.vfUnmarked} · ${unmarked}` }] : []),
+          ...(count('unsorted') ? [{ value: 'unsorted', label: <><Icon name="clock" /> {s.vfUnsorted} · {count('unsorted')}</> }] : []),
           ...(videos.some(dead) ? [{ value: 'dead', label: <><Icon name="warn" /> {s.vfDead} · {videos.filter(dead).length}</> }] : []),
         ]}
         filter={ui.filter} onFilter={v => ui.setFilter(v as Filter)}
@@ -163,7 +167,7 @@ export default function AdminVideos() {
                 <button type="button" className="lu-vgrid-thumb" onClick={() => (v.ytId ? setOpen(v) : window.open(v.url, '_blank', 'noopener'))} aria-label={`${s.videoPlay}: ${name}`}>
                   {v.ytId ? <img src={youTubeThumb(v.ytId)} alt="" loading="lazy" /> : <span className="lu-vcard-link">↗</span>}
                   {dead(v) && <span className="lu-vgrid-dead"><Icon name="warn" /> {state[v.url.trim()] === 'private' ? s.videoPrivateNow : s.videoGone}</span>}
-                  <span className="lu-vgrid-badge">{v.kind === 'song' ? `♫ ${s.vfSongs}` : v.marks.length ? `▶ ${s.videoSongsN.replace('{n}', String(v.marks.length))}` : `▶ ${s.vNoMarks}`}</span>
+                  <span className="lu-vgrid-badge">{v.unsorted ? s.vfUnsorted : v.kind === 'song' ? `♫ ${s.vfSongs}` : v.marks.length ? `▶ ${s.videoSongsN.replace('{n}', String(v.marks.length))}` : `▶ ${s.vNoMarks}`}</span>
                 </button>
                 <div className="lu-vgrid-text">
                   <CopyDownload url={v.url} label={s.copyDownload}
@@ -177,6 +181,7 @@ export default function AdminVideos() {
                     </Link>
                   )}
                   {v.song && <Link to={`${prefix}/songs/${v.song.id}`} className="lu-vgrid-show">♫ {songTitle(v.song, locale)}</Link>}
+                  {v.unsorted && <button type="button" className="lu-btn lu-vgrid-connect" onClick={() => setAdding({ start: { url: v.url, title: v.title } })}><Icon name="shows" /> {s.vConnect} →</button>}
                   {v.marks.length > 0 && (
                     <ul className="lu-vgrid-songs">
                       {v.marks.slice(0, 5).map((m, i) => (
@@ -193,16 +198,16 @@ export default function AdminVideos() {
       )}
 
       {adding && (
-        <VideoIntake s={s} locale={locale} media={media} events={events} songs={songs} setlists={setlists}
+        <VideoIntake s={s} locale={locale} media={media} events={events} songs={songs} setlists={setlists} start={adding.start}
           venues={venues} areas={areas} onVenuesChanged={() => { refreshVenues(); refreshAreas(); }}
-          onClose={() => setAdding(false)}
+          onClose={() => setAdding(null)}
           onSaved={(owner, rows, extra) => {
             if (extra.newEvent) setMadeEvents(m => [...m, extra.newEvent!]);
             if (extra.setlistChanged) refreshSetlists();
             if (extra.songsAdded) refreshSongs();
             // Show it straight away: newest first, nothing filtering it out
-            setMedia(m => [...(m || []).filter(r => r.owner !== owner), ...rows]);
-            setAdding(false);
+            setMedia(m => [...(m || []).filter(r => r.owner !== owner && (!extra.unsorted || r.owner !== UNSORTED_VIDEOS)), ...rows, ...(extra.unsorted || [])]);
+            setAdding(null);
             ui.setQuery(''); ui.setFilter('all'); ui.setSort('newest'); setYear('');
           }} />
       )}

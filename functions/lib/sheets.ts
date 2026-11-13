@@ -73,7 +73,7 @@ export async function fetchAreas(sheetId: string, email: string, key: string) {
 
 export async function fetchVenues(sheetId: string, email: string, key: string) {
   const rows = await fetchSheet(sheetId, 'Venues', email, key);
-  return rowsToObjects(rows).map(r => ({ id: r.id, name_en: r.name_en, name_ja: r.name_ja, area: r.area, url: r.url || undefined, former_names: r.former_names || undefined }));
+  return rowsToObjects(rows).map(r => ({ id: r.id, former_ids: r.former_ids || undefined, name_en: r.name_en, name_ja: r.name_ja, area: r.area, url: r.url || undefined, former_names: r.former_names || undefined }));
 }
 
 // ---------- Events (with venue join) ----------
@@ -110,7 +110,7 @@ export async function fetchEvents(sheetId: string, email: string, key: string) {
       const pref = area ? prefMap.get(area.prefecture) : undefined;
       const country = pref ? countryMap.get(pref.country) : undefined;
       return {
-        id: row.id, title_en: row.title_en, title_ja: row.title_ja,
+        id: row.id, former_ids: row.former_ids || undefined, title_en: row.title_en, title_ja: row.title_ja,
         date: row.date, end_date: row.end_date || undefined,
         doors: row.doors || undefined, start: row.start || undefined, end_time: row.end || undefined,
         adv_price: row.adv_price || undefined, door_price: row.door_price || undefined,
@@ -142,7 +142,7 @@ export async function fetchEvents(sheetId: string, email: string, key: string) {
 export async function fetchAlbums(sheetId: string, email: string, key: string) {
   const rows = await fetchSheet(sheetId, 'Albums!A:Z', email, key);
   return rowsToObjects(rows).map(r => ({
-    id: r.id, title: r.title, title_en: r.title_en || undefined, title_kana: r.title_kana || undefined, date: r.date || undefined, year: r.year, type: r.type,
+    id: r.id, former_ids: r.former_ids || undefined, title: r.title, title_en: r.title_en || undefined, title_kana: r.title_kana || undefined, date: r.date || undefined, year: r.year, type: r.type,
     number: r.number || undefined, format: r.format || undefined, label: r.label || undefined,
     coverUrl: r.artwork_url || undefined, listenUrl: r.listen_url || undefined, listen: listenFromRow(r),
     // 'private' = a draft: not on the site yet (e.g. before it's announced)
@@ -159,7 +159,7 @@ export async function fetchTracklists(sheetId: string, email: string, key: strin
 export async function fetchSongs(sheetId: string, email: string, key: string) {
   const rows = await fetchSheet(sheetId, 'Songs', email, key);
   return rowsToObjects(rows).map(r => ({
-    id: r.id, title: r.title, music_by: r.music_by || undefined,
+    id: r.id, former_ids: r.former_ids || undefined, title: r.title, music_by: r.music_by || undefined,
     lyrics_by: r.lyrics_by || undefined, lyrics_doc_id: r.lyrics_doc_id || undefined,
     // Covers: who did it first ("The Smiths"); blank for the band's own songs
     original_artist: r.original_artist || undefined,
@@ -170,6 +170,8 @@ export async function fetchSongs(sheetId: string, email: string, key: string) {
     status: (r.status || '').trim() || undefined,
     // 'private' = the page is live but the lyrics aren't shown yet (e.g. until the release)
     lyrics_status: (r.lyrics_status || '').trim() || undefined,
+    // About this song, for its page on the site (either language may be blank)
+    about_en: r.about_en || undefined, about_ja: r.about_ja || undefined,
   }));
 }
 
@@ -242,13 +244,13 @@ export async function fetchHeaders(sheetId: string, tab: string, email: string, 
  * known names, never arbitrary fields.
  */
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
-  Songs: ['original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status'],
-  Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until', 'setlist_added', 'setlist_source'],
+  Songs: ['original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status', 'about_en', 'about_ja', 'former_ids'],
+  Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until', 'setlist_added', 'setlist_source', 'former_ids'],
   News: ['publish_at'],
   Blog: ['publish_at'],
   Photos: ['link', 'share_image'],
-  Albums: ['title_en', 'title_kana', ...LISTEN_COLUMNS, 'status'],
-  Venues: ['former_names'],
+  Albums: ['title_en', 'title_kana', ...LISTEN_COLUMNS, 'status', 'former_ids'],
+  Venues: ['former_names', 'former_ids'],
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */
@@ -322,11 +324,17 @@ async function findRowIndex(sheetId: string, tab: string, id: string, email: str
 
 export async function updateRow(sheetId: string, tab: string, id: string, fields: Record<string, string>, email: string, key: string): Promise<void> {
   if (!id?.trim()) throw new Error(`Can't update a row in ${tab} without an ID`);
-  const [rowIdx, values] = await Promise.all([
+  const [rowIdx, headers] = await Promise.all([
     findRowIndex(sheetId, tab, id, email, key),
-    fieldsToRow(sheetId, tab, fields, email, key),
+    ensureColumns(sheetId, tab, fields, email, key),
   ]);
   if (rowIdx === -1) throw new Error(`Row with id "${id}" not found in ${tab}`);
+  // Columns the save doesn't mention keep what they have (a column added in
+  // the sheet by hand, former_ids…); a field sent as '' still clears it
+  const current = headers.some(h => !(h in fields))
+    ? (await fetchSheet(sheetId, `${tab}!A${rowIdx}:${colLetter(headers.length)}${rowIdx}`, email, key))[0] || []
+    : [];
+  const values = headers.map((h, i) => (h in fields ? fields[h] ?? '' : String(current[i] ?? '')));
   const token = await getToken(email, key);
   const lastCol = colLetter(values.length);
   const range = encodeURIComponent(`${tab}!A${rowIdx}:${lastCol}${rowIdx}`);

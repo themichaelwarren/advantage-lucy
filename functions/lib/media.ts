@@ -25,11 +25,23 @@ export async function listMedia(sheetId: string, saEmail: string, saKey: string)
   return (await listPrivate({ sheetId, saEmail, saKey }, MEDIA_TAB, MEDIA_COLUMNS)).filter(r => r.url) as MediaRow[];
 }
 
+/** YouTube share links carry tracking (?si=…, &feature=…): drop it, keep the video and any start time. */
+export function tidyVideoUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)(youtube\.com|youtu\.be)$/i.test(u.hostname)) return url;
+    for (const k of ['si', 'feature', 'pp', 'ab_channel']) u.searchParams.delete(k);
+    return u.toString().replace(/\?$/, '');
+  } catch {
+    return url;
+  }
+}
+
 /** Clean one row from the admin: known kinds, an http(s) link, a whole-second start. */
 function clean(owner: string, r: Partial<MediaRow>): MediaRow {
   const kind = String(r.kind || '');
   if (!KINDS.has(kind)) throw new Error(`Unknown media kind "${kind}"`);
-  const url = String(r.url || '').trim();
+  const url = tidyVideoUrl(String(r.url || '').trim());
   if (!/^https?:\/\/\S+$/i.test(url)) throw new Error('Video links need to start with https://');
   const start = r.start === undefined || r.start === '' ? '' : String(Math.max(0, Math.round(Number(r.start))));
   if (start === 'NaN') throw new Error('Start time must be in seconds');
@@ -84,6 +96,6 @@ export async function handleAdminMedia(request: Request, ctx: MediaContext): Pro
     const msg = String((err as Error)?.message || err);
     const known = /need|Unknown media|Start time|Missing owner/.test(msg);
     if (!known) console.error('[media]', err);
-    return json({ error: known ? msg : 'server' }, known ? 400 : 500);
+    return json({ error: known ? msg : /Sheets API error: 429/.test(msg) ? 'busy' : 'server' }, known ? 400 : /Sheets API error: 429/.test(msg) ? 429 : 500);
   }
 }

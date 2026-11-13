@@ -1,5 +1,5 @@
 import { linkify } from '../utils/linkify';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { normalize } from '../utils/text';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
@@ -15,6 +15,8 @@ import { useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { songTitle } from '../utils/songTitles';
 import BackLink from '../components/BackLink';
+import RelatedLinks from '../components/RelatedLinks';
+import { movedTo } from '../utils/formerIds';
 
 
 interface Props {
@@ -38,6 +40,9 @@ export default function EventDetail({ locale }: Props) {
   if (loading) return <PageLoader locale={locale} />;
 
   if (!event) {
+    // An old address (the id was changed in the admin) forwards to the page's new one
+    const moved = movedTo(events, id);
+    if (moved) return <Navigate to={`${prefix}/events/${moved}`} replace />;
     return <NotFound locale={locale} what={locale === 'ja' ? 'このライブ' : 'This show'} back={{ to: `${prefix}/events`, label: s.events.title }} />;
   }
 
@@ -261,6 +266,7 @@ export default function EventDetail({ locale }: Props) {
                 </div>
               </section>
             )}
+            <RelatedLinks owner={`event:${event.id}`} title={s.songs.links} />
         </div>
       </div>
 

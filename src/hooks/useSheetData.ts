@@ -4,7 +4,7 @@ import { subscribeAdminToken, getAdminTokenVersion } from '../services/adminToke
 /** Changes whenever the admin signs in (again), so admin data reloads with full access. */
 const useAdminTokenVersion = () => useSyncExternalStore(subscribeAdminToken, getAdminTokenVersion);
 import type { Event, Album, TracklistEntry, Song, SetlistEntry, Venue, Area, Prefecture, Country, Person, NewsPost, BlogPost, SplashPhoto } from '../types';
-import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getAllSongs, getAllAlbums, getAllTracklists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPrefectures, getCountries, getPeople } from '../services/sheetsService';
+import { getEvents, getAllEvents, getAlbums, getTracklists, getSongs, getSetlists, getAllSetlists, getAllSongs, getAllAlbums, getAllTracklists, getNews, getAllNews, getBlog, getAllBlog, getPhotos, getAllPhotos, getVenues, getAreas, getPrefectures, getCountries, getPeople, getPublicLinks, type PublicLink } from '../services/sheetsService';
 
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -290,4 +290,15 @@ export function useCountries() {
   }, []);
 
   return { countries, loading };
+}
+
+/** Public links about one show, song or release ("event:<id>", "song:<id>", "album:<id>"). */
+export function useLinks(owner: string) {
+  const [links, setLinks] = useState<PublicLink[]>([]);
+  useEffect(() => {
+    let live = true;
+    getPublicLinks().then(all => { if (live) setLinks(all.filter(l => l.owner === owner)); });
+    return () => { live = false; };
+  }, [owner]);
+  return links;
 }

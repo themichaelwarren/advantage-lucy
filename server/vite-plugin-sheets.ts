@@ -21,6 +21,10 @@ import { mayReadDoc } from '../functions/lib/lyricsAccess';
 import { handleLyricsStatus } from '../functions/lib/lyricsStatus';
 import { handleLinkCheck } from '../functions/lib/linkCheck';
 import { safePlan, recordActivity, handleAdminActivity } from '../functions/lib/activity';
+import { handleAdminLinks, fetchLinks } from '../functions/lib/links';
+import { handleAdminNotes } from '../functions/lib/notes';
+import { handleAdminRename } from '../functions/lib/rename';
+import { afterDelete } from '../functions/lib/cascade';
 
 /** Same admin check as production (functions/lib/adminAuth.ts). Returns false and responds if denied. */
 async function requireAdmin(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -137,7 +141,10 @@ export default function sheetsPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         const isMedia = req.url?.startsWith('/api/admin/media');
         const isFilters = req.url?.startsWith('/api/admin/filters');
-        if (!isMedia && !isFilters && !req.url?.startsWith('/api/admin/arrangements')) return next();
+        const isLinks = req.url?.startsWith('/api/admin/links');
+        const isNotes = req.url?.startsWith('/api/admin/notes');
+        const isRename = req.url?.startsWith('/api/admin/rename');
+        if (!isMedia && !isFilters && !isLinks && !isNotes && !isRename && !req.url?.startsWith('/api/admin/arrangements')) return next();
         if (!(await requireAdmin(req, res))) return;
         const chunks: Buffer[] = [];
         for await (const chunk of req) chunks.push(chunk as Buffer);
@@ -151,7 +158,9 @@ export default function sheetsPlugin(): Plugin {
           saEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!,
           saKey: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
         };
-        const out = isMedia ? await handleAdminMedia(request, ctx) : isFilters ? await handleAdminFilters(request, ctx) : await handleAdminArrangements(request, ctx);
+        const out = isMedia ? await handleAdminMedia(request, ctx) : isFilters ? await handleAdminFilters(request, ctx)
+          : isLinks ? await handleAdminLinks(request, ctx) : isNotes ? await handleAdminNotes(request, ctx)
+          : isRename ? await handleAdminRename(request, ctx) : await handleAdminArrangements(request, ctx);
         res.statusCode = out.status;
         res.setHeader('Content-Type', 'application/json');
         res.end(await out.text());
@@ -324,6 +333,8 @@ export default function sheetsPlugin(): Plugin {
             data = await fetchPrefectures(sheetId, email, privateKey);
           } else if (req.url.startsWith('/api/sheets/countries')) {
             data = await fetchCountries(sheetId, email, privateKey);
+          } else if (req.url.startsWith('/api/sheets/links')) {
+            data = await fetchLinks(sheetId, email, privateKey);
           } else {
             res.statusCode = 404;
             res.end(JSON.stringify({ error: 'Not found' }));
@@ -428,8 +439,10 @@ export default function sheetsPlugin(): Plugin {
               return;
             }
             await deleteRow(sheetId, tab, id, email, privateKey);
+            // Its setlist, videos, links and notes go too (same as production: functions/lib/cascade.ts)
+            const removed = await afterDelete({ sheetId, saEmail: email, saKey: privateKey }, tab, id).catch(err => { console.error('[cascade]', err); return {}; });
             res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ ok: true }));
+            res.end(JSON.stringify({ ok: true, removed }));
             return;
           }
 

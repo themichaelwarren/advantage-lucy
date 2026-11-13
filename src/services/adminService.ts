@@ -32,6 +32,12 @@ async function adminFetch(url: string, options?: RequestInit, retried = false): 
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
+    // Google limits how often the sheet can be read and written: say so, not "server"
+    if (res.status === 429 || body.error === 'busy' || /Sheets API error: 429|RESOURCE_EXHAUSTED/.test(String(body.error))) {
+      throw new Error(window.location.pathname.startsWith('/en/')
+        ? 'Google Sheets is busy right now. Wait a minute and save again.'
+        : 'Googleスプレッドシートが混み合っています。1分ほど待ってから、もう一度保存してください。');
+    }
     throw new Error(body.error || `Admin API error: ${res.status}`);
   }
   // A save: open history lists look again (components/admin/Activity.tsx)
@@ -192,6 +198,9 @@ export async function resendReservation(id: string): Promise<Reservation> {
 
 // ── Media (admin only: videos of shows and songs, see functions/lib/media.ts) ──
 
+/** Videos not linked to a show yet (date unknown): kept under this owner until they are */
+export const UNSORTED_VIDEOS = 'unsorted';
+
 export interface MediaRow {
   owner: string;   // event id, or "song:<song id>"
   kind: 'show' | 'part' | 'song';
@@ -298,4 +307,45 @@ export async function getActivity(refs: string[] = [], limit = 300): Promise<Act
   const q = new URLSearchParams({ limit: String(limit) });
   if (refs.length) q.set('for', refs.join(','));
   return ((await adminFetch(`/api/admin/activity?${q}`)) as { activity: ActivityEntry[] }).activity;
+}
+
+// ── Links and band notes on shows, songs and releases (functions/lib/links.ts, notes.ts) ──
+// owner: "event:<id>", "song:<id>" or "album:<id>"
+export interface LinkRow { owner: string; url: string; title: string; note: string; status: string; added: string }
+export interface NoteRow { owner: string; id: string; at: string; who: string; text: string }
+
+let linksCache: Promise<LinkRow[]> | null = null;
+/** Every link, public and band-only (shared by every page that asks). */
+export function getLinks(fresh = false): Promise<LinkRow[]> {
+  if (fresh || !linksCache) linksCache = adminFetch('/api/admin/links').then(r => (r as { links: LinkRow[] }).links).catch(err => { linksCache = null; throw err; });
+  return linksCache;
+}
+export async function saveLinks(owner: string, rows: Partial<LinkRow>[]): Promise<LinkRow[]> {
+  const out = await adminFetch('/api/admin/links', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner, rows }) }) as { links: LinkRow[] };
+  linksCache = null;
+  return out.links;
+}
+/** A web page's title, for a link just pasted ('' if it can't be read). */
+export async function getPageTitle(link: string): Promise<string> {
+  try { return ((await adminFetch(`/api/admin/links?title=${encodeURIComponent(link)}`)) as { title: string }).title || ''; }
+  catch { return ''; }
+}
+
+let notesCache: Promise<NoteRow[]> | null = null;
+export function getNotes(fresh = false): Promise<NoteRow[]> {
+  if (fresh || !notesCache) notesCache = adminFetch('/api/admin/notes').then(r => (r as { notes: NoteRow[] }).notes).catch(err => { notesCache = null; throw err; });
+  return notesCache;
+}
+export async function saveNotes(owner: string, rows: Partial<NoteRow>[]): Promise<NoteRow[]> {
+  const out = await adminFetch('/api/admin/notes', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner, rows }) }) as { notes: NoteRow[] };
+  notesCache = null;
+  return out.notes;
+}
+
+/** Change a show's, venue's, song's or release's id (its address); the old one keeps working. */
+export async function renameItem(kind: 'event' | 'venue' | 'song' | 'album', from: string, to: string): Promise<string> {
+  const out = await adminFetch('/api/admin/rename', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, from, to }) }) as { id: string };
+  linksCache = null; notesCache = null;
+  for (const tab of ['Events', 'Venues', 'Songs', 'Albums', 'Setlists']) invalidateCache(tab);
+  return out.id;
 }

@@ -2,8 +2,12 @@ import Icon from './Icon';
 import { useRef, useState } from 'react';
 import type { TextareaHTMLAttributes } from 'react';
 import type { AdminStrings } from '../../i18n/admin';
+import { toSitePath } from '../../utils/siteLinks';
 
-const isUrl = (t: string) => /^https?:\/\/\S+$/.test(t.trim());
+// A web address, or one of our own pages ("/songs/shiroi-asa")
+const isUrl = (t: string) => /^(https?:\/\/|\/(?!\/))\S*$/.test(t.trim());
+/** Our own pages are kept short ("/songs/shiroi-asa"), so they work in either language */
+const linkTo = (url: string) => toSitePath(url) ?? url.trim();
 
 /**
  * A textarea that makes links easy without a rich-text editor. Links are
@@ -59,7 +63,7 @@ export default function LinkTextarea({ s, value, onChange, ...rest }: {
   function insertLink() {
     if (!form || !isUrl(form.url)) return;
     const text = form.text.trim().replace(/[[\]]/g, '');
-    replace(form.start, form.end, text ? `[${text}](${form.url.trim()})` : form.url.trim());
+    replace(form.start, form.end, text ? `[${text}](${linkTo(form.url)})` : form.url.trim());
     setForm(null);
   }
 
@@ -81,7 +85,7 @@ export default function LinkTextarea({ s, value, onChange, ...rest }: {
           const selected = value.slice(el.selectionStart, el.selectionEnd);
           if (isUrl(pasted) && selected.trim() && !selected.includes('\n') && !isUrl(selected)) {
             e.preventDefault();
-            replace(el.selectionStart, el.selectionEnd, `[${selected.replace(/[[\]]/g, '')}](${pasted.trim()})`);
+            replace(el.selectionStart, el.selectionEnd, `[${selected.replace(/[[\]]/g, '')}](${linkTo(pasted)})`);
           }
         }}
       />
@@ -95,9 +99,8 @@ export default function LinkTextarea({ s, value, onChange, ...rest }: {
             autoFocus={!form.text}
           />
           <input
-            type="url"
             inputMode="url"
-            placeholder="https://"
+            placeholder="https://  /songs/…"
             aria-label={s.linkUrl}
             value={form.url}
             onChange={e => setForm({ ...form, url: e.target.value })}

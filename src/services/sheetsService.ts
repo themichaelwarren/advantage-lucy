@@ -148,6 +148,16 @@ export async function getSetlists(): Promise<SetlistEntry[]> {
   }
 }
 
+/** Links about shows, songs and releases (public ones only; functions/lib/links.ts). */
+export interface PublicLink { owner: string; url: string; title: string; note: string; added: string }
+export async function getPublicLinks(): Promise<PublicLink[]> {
+  try {
+    return await fetchWithCache('links', () => fetchJson<PublicLink[]>('/api/sheets/links'));
+  } catch {
+    return [];
+  }
+}
+
 export async function getVenues(): Promise<Venue[]> {
   try {
     return await fetchWithCache('venues', () => fetchJson<Venue[]>('/api/sheets/venues'));

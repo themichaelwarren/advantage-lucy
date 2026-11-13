@@ -2294,3 +2294,42 @@ a.lu-icon-btn { text-decoration: none; }
 .lu-videos-compact .lu-vcard-text { flex-direction: row; align-items: flex-start; gap: 0.3rem; }
 .lu-videos-compact .lu-vcard-text > .lu-vcard-title { flex: 1; min-width: 0; }
 @media (hover: none) { .lu-copy-dl { opacity: 0.6; } }
+
+/* Links on a show / song / release (ItemLinks.tsx) */
+.lu-reflist { list-style: none; margin: 0; padding: 0; display: grid; }
+.lu-reflist li { display: grid; gap: 0.15rem; padding: 0.6rem 0; border-top: 1px dashed var(--rule); min-width: 0; }
+.lu-reflist li:first-child { border-top: none; padding-top: 0.1rem; }
+.lu-ref-title { font-weight: 700; color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+.lu-ref-title:hover { text-decoration: underline; }
+.lu-ref-title svg { width: 0.85em; height: 0.85em; vertical-align: -0.05em; color: var(--text-muted); }
+.lu-ref-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.6rem; font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-main); }
+.lu-ref-note { margin: 0.1rem 0 0; font-size: 0.88rem; color: var(--text-muted); overflow-wrap: anywhere; }
+.lu-ref-rows { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.7rem; }
+.lu-ref-rows li { display: grid; gap: 0.45rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+.lu-ref-rows input { width: 100%; min-width: 0; box-sizing: border-box; }
+.lu-ref-row-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.lu-ref-row-foot .lu-switch-row { margin: 0; }
+
+/* Band notes (BandNotes.tsx) */
+.lu-section-lock { display: inline-flex; margin-left: 0.4rem; color: var(--text-muted); vertical-align: middle; }
+.lu-section-lock svg { width: 0.9rem; height: 0.9rem; }
+.lu-note-add { display: grid; gap: 0.5rem; margin: 0.4rem 0 0.2rem; }
+.lu-note-add textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 3.2rem; }
+.lu-note-add > .lu-btn, .lu-note-add > .lu-row { justify-self: end; }
+.lu-notes { list-style: none; margin: 0.6rem 0 0; padding: 0; display: grid; }
+.lu-notes > li { display: grid; gap: 0.3rem; padding: 0.7rem 0; border-top: 1px solid var(--rule); }
+.lu-note-tools { margin-left: auto; gap: 0.2rem; }
+.lu-note-tools .lu-icon-btn { opacity: 0.55; }
+.lu-notes > li:hover .lu-note-tools .lu-icon-btn, .lu-note-tools .lu-icon-btn:focus-visible { opacity: 1; }
+.lu-note-text { margin: 0; padding-left: 2.3rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.92rem; line-height: 1.55; }
+@media (max-width: 640px) { .lu-note-text { padding-left: 0; } }
+.lu-notes .lu-act-head { align-items: center; }
+.lu-note-tools .lu-icon-btn { width: 1.9rem; height: 1.9rem; }
+
+/* Page address (AddressDialog.tsx): "/songs/" + the editable part */
+.lu-addr { display: flex; align-items: stretch; border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); }
+.lu-addr-prefix { display: flex; align-items: center; padding: 0 0.2rem 0 0.75rem; color: var(--text-muted); font-family: var(--font-main); font-size: 0.9rem; white-space: nowrap; }
+.lu-addr input { flex: 1; min-width: 0; border: none !important; box-shadow: none !important; padding-left: 0.1rem; font-family: var(--font-main); }
+/* Stacked rows (a song's videos): the show picker is one line tall, not a grown flex box */
+.lu-shell .lu-song-side .lu-video-head select.lu-video-show { flex: none; width: 100%; }
+.lu-vgrid-connect { align-self: flex-start; margin-top: 0.3rem; padding: 0.35rem 0.8rem; font-size: 0.85rem; }

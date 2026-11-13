@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { normalize } from '../utils/text';
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
@@ -12,6 +12,9 @@ import NowPlaying from '../components/NowPlaying';
 import PageTitle from '../components/PageTitle';
 import { songTitle, songAltTitle, localTitle } from '../utils/songTitles';
 import BackLink from '../components/BackLink';
+import RelatedLinks from '../components/RelatedLinks';
+import { linkify } from '../utils/linkify';
+import { movedTo } from '../utils/formerIds';
 
 interface Props {
   locale: Locale;
@@ -64,6 +67,9 @@ export default function SongDetail({ locale }: Props) {
   if (songsLoading) return <PageLoader locale={locale} />;
 
   if (!song) {
+    // An old address (the id was changed in the admin) forwards to the page's new one
+    const moved = movedTo(songs, id);
+    if (moved) return <Navigate to={`${prefix}/songs/${moved}`} replace />;
     return <NotFound locale={locale} what={locale === 'ja' ? 'この曲' : 'This song'} back={{ to: `${prefix}/releases`, label: s.music.subtitle }} />;
   }
 
@@ -93,6 +99,10 @@ export default function SongDetail({ locale }: Props) {
   eventAppearances.sort((a, b) => b.event.date.localeCompare(a.event.date));
   const lastPlayed = eventAppearances[0]?.event;
   const playedCount = new Set(eventAppearances.map(x => x.event.id)).size;
+
+  // About this song, in this language if written (else the other one)
+  const about = (locale === 'ja' ? song.about_ja || song.about_en : song.about_en || song.about_ja) || '';
+  const aboutLang = (locale === 'ja' ? song.about_ja : song.about_en) ? locale : (locale === 'ja' ? 'en' : 'ja');
 
   return (
     <article className="song-detail">
@@ -190,6 +200,16 @@ export default function SongDetail({ locale }: Props) {
             )}
         </section>
       </div>
+
+      {about && (
+        <section className="mb-2 song-about">
+          <h2 className="section-label">{s.songs.about}</h2>
+          <div className="event-notes" lang={aboutLang}>
+            {about.split(/\n\s*\n/).map((para, i) => <p key={i}>{linkify(para.trim())}</p>)}
+          </div>
+        </section>
+      )}
+      <RelatedLinks owner={`song:${song.id}`} title={s.songs.links} className="mb-2" />
 
       {eventAppearances.length > 0 && (
         <section className="mb-2">

@@ -1,6 +1,6 @@
 import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { useVenues, useAreas, useAllEvents, usePrefectures, useCountries, useAllSetlists, useAllSongs } from '../../hooks/useSheetData';
 import { prefectureSuggestions } from '../../components/admin/places';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
@@ -17,6 +17,7 @@ import { VenueDupeHint, useVenueMatches } from '../../components/admin/DupeHint'
 import FormerNames from '../../components/admin/FormerNames';
 import { parseFormerNames, formatFormerNames, formerPeriods } from '../../../functions/lib/venueNames';
 import { eventToRow } from '../../utils/adminRows';
+import AddressDialog, { movedTo } from '../../components/admin/AddressDialog';
 
 interface Form { id: string; name_en: string; name_ja: string; area: string; url: string; former_names: string }
 const empty: Form = { id: '', name_en: '', name_ja: '', area: '', url: '', former_names: '' };
@@ -32,6 +33,7 @@ export default function AdminVenueForm() {
   const { s, locale, prefix } = useAdminT();
   const isNew = !id || id === 'new';
   const navigate = useNavigate();
+  const [addrOpen, setAddrOpen] = useState(false);
   const { venues, loading, refresh: refreshVenues } = useVenues();
   const { areas, refresh: refreshAreas } = useAreas();
   const areaList = useMemo(() => areaSuggestions(areas, locale), [areas, locale]);
@@ -211,6 +213,9 @@ export default function AdminVenueForm() {
     </>
   );
 
+  // An old address (before the id changed) forwards to the new one
+  const moved = movedTo(venues, isNew ? undefined : id);
+  if (moved) return <Navigate to={`${prefix}/venues/${moved}`} replace />;
   if (!isNew && loading) return <p className="lu-loading">{s.loading}</p>;
 
   // ---------- A new venue: one plain form ----------
@@ -381,6 +386,7 @@ export default function AdminVenueForm() {
         </div>
       </div>
 
+      <AddressDialog s={s} kind="venue" id={form.id} open={addrOpen} onClose={() => setAddrOpen(false)} />
       <EditDialog s={s} title={s.secDetails} open={editing} saving={saving} error={error} dirty={dirty}
         onSave={() => { save().then(ok => { if (ok) setEditing(false); }); }}
         onClose={() => {
@@ -389,6 +395,7 @@ export default function AdminVenueForm() {
           setNameError(''); setError(''); setEditing(false);
         }}
         footer={<span className="lu-row">
+          <button type="button" className="lu-btn" onClick={() => { setEditing(false); setAddrOpen(true); }}>{s.addrButton}</button>
           <button type="button" className="lu-btn" onClick={() => { if (dirty && !window.confirm(s.songDiscard)) return; setEditing(false); openMerge(); }}>{s.mergeButton}</button>
           {showsHere.length > 0
             ? <span className="lu-hint">{s.inUseCantDelete}</span>

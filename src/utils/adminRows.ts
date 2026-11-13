@@ -86,7 +86,7 @@ export function photoToRow(p: SplashPhoto): PhotoRow {
   };
 }
 
-export const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status'] as const;
+export const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status', 'about_en', 'about_ja'] as const;
 export type SongRow = Record<typeof SONG_COLUMNS[number], string>;
 
 export function songToRow(x: Song): SongRow {
@@ -94,5 +94,6 @@ export function songToRow(x: Song): SongRow {
     id: x.id, title: x.title || '', lyrics_by: x.lyrics_by || '', music_by: x.music_by || '',
     lyrics_doc_id: x.lyrics_doc_id || '', original_artist: x.original_artist || '',
     title_en: x.title_en || '', title_kana: x.title_kana || '', status: x.status || '', lyrics_status: x.lyrics_status || '',
+    about_en: x.about_en || '', about_ja: x.about_ja || '',
   };
 }

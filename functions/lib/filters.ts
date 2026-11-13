@@ -123,6 +123,6 @@ export async function handleAdminFilters(request: Request, ctx: SheetContext): P
     const msg = String((err as Error)?.message || err);
     const known = /Not an email|Unknown|Missing/.test(msg);
     if (!known) console.error('[filters]', err);
-    return json({ error: known ? msg : 'server' }, known ? 400 : 500);
+    return json({ error: known ? msg : /Sheets API error: 429/.test(msg) ? 'busy' : 'server' }, known ? 400 : /Sheets API error: 429/.test(msg) ? 429 : 500);
   }
 }

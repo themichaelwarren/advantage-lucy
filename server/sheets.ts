@@ -186,7 +186,7 @@ export async function fetchVenues(
 ): Promise<Venue[]> {
   const rows = await fetchSheet(sheetId, 'Venues', email, privateKey);
   return rowsToObjects(rows).map(row => ({
-    id: row.id,
+    id: row.id, former_ids: row.former_ids || undefined,
     name_en: row.name_en,
     name_ja: row.name_ja,
     area: row.area,
@@ -237,7 +237,7 @@ export async function fetchEvents(
       const country = pref ? countryMap.get(pref.country) : undefined;
 
       return {
-        id: row.id,
+        id: row.id, former_ids: row.former_ids || undefined,
         title_en: row.title_en,
         title_ja: row.title_ja,
         date: row.date,
@@ -282,7 +282,7 @@ export async function fetchAlbums(
 ): Promise<Album[]> {
   const rows = await fetchSheet(sheetId, 'Albums!A:Z', email, privateKey);
   return rowsToObjects(rows).map(row => ({
-    id: row.id,
+    id: row.id, former_ids: row.former_ids || undefined,
     title: row.title,
     title_en: row.title_en || undefined,
     title_kana: row.title_kana || undefined,
@@ -321,7 +321,7 @@ export async function fetchSongs(
 ): Promise<Song[]> {
   const rows = await fetchSheet(sheetId, 'Songs', email, privateKey);
   return rowsToObjects(rows).map(row => ({
-    id: row.id,
+    id: row.id, former_ids: row.former_ids || undefined,
     title: row.title,
     music_by: row.music_by || undefined,
     lyrics_by: row.lyrics_by || undefined,
@@ -331,6 +331,8 @@ export async function fetchSongs(
     title_kana: (row.title_kana || '').trim() || undefined,
     status: (row.status || '').trim() || undefined,
     lyrics_status: (row.lyrics_status || '').trim() || undefined,
+    about_en: row.about_en || undefined,
+    about_ja: row.about_ja || undefined,
   }));
 }
 
@@ -440,13 +442,13 @@ function colLetter(n: number): string {
  * known names, never arbitrary fields.
  */
 const OPTIONAL_COLUMNS: Record<string, string[]> = {
-  Songs: ['original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status'],
-  Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until', 'setlist_added', 'setlist_source'],
+  Songs: ['original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status', 'about_en', 'about_ja', 'former_ids'],
+  Events: ['setlist_at', 'reserve', 'reserve_cap', 'reserve_max', 'reserve_until', 'setlist_added', 'setlist_source', 'former_ids'],
   News: ['publish_at'],
   Blog: ['publish_at'],
   Photos: ['link', 'share_image'],
-  Albums: ['title_en', 'title_kana', ...LISTEN_COLUMNS, 'status'],
-  Venues: ['former_names'],
+  Albums: ['title_en', 'title_kana', ...LISTEN_COLUMNS, 'status', 'former_ids'],
+  Venues: ['former_names', 'former_ids'],
 };
 
 /** Make sure a tab is at least `columns` wide (new tabs are often exactly as wide as their headings). */
@@ -560,11 +562,16 @@ export async function updateRow(
   privateKey: string
 ): Promise<void> {
   if (!id?.trim()) throw new Error(`Can't update a row in ${tab} without an ID`);
-  const [rowIdx, values] = await Promise.all([
+  const [rowIdx, headers] = await Promise.all([
     findRowIndex(sheetId, tab, id, email, privateKey),
-    fieldsToRow(sheetId, tab, fields, email, privateKey),
+    ensureColumns(sheetId, tab, fields, email, privateKey),
   ]);
   if (rowIdx === -1) throw new Error(`Row with id "${id}" not found in ${tab}`);
+  // Columns the save doesn't mention keep what they have (as in production)
+  const current = headers.some(h => !(h in fields))
+    ? (await fetchSheetUncached(sheetId, `${tab}!A${rowIdx}:${colLetter(headers.length)}${rowIdx}`, email, privateKey))[0] || []
+    : [];
+  const values = headers.map((h, i) => (h in fields ? fields[h] ?? '' : String(current[i] ?? '')));
 
   const token = await getAccessToken(email, privateKey);
   const lastCol = colLetter(values.length);

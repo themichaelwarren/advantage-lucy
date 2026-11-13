@@ -9,6 +9,7 @@ import {
   type Env, getCredentials,
   fetchHeaders, appendRow, updateRow, deleteRow, replaceRows,
 } from '../../lib/sheets';
+import { afterDelete } from '../../lib/cascade';
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, params, env }) => {
   try {
@@ -65,7 +66,9 @@ export const onRequestDelete: PagesFunction<Env> = async ({ request, params, env
     const id = url.searchParams.get('id');
     if (!id) return Response.json({ error: 'Missing id parameter' }, { status: 400 });
     await deleteRow(sheetId, tab, id, email, privateKey);
-    return Response.json({ ok: true });
+    // Its setlist, videos, links and notes go too (lib/cascade.ts)
+    const removed = await afterDelete({ sheetId, saEmail: email, saKey: privateKey }, tab, id).catch(err => { console.error('[cascade]', err); return {}; });
+    return Response.json({ ok: true, removed });
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 });
   }

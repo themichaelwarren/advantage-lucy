@@ -90,6 +90,9 @@ export function publicView(tab: string, data: unknown, related?: Row[]): unknown
         const { lyrics_doc_id: _, ...rest } = x;
         return { ...rest, lyrics_hidden: true };
       });
+    case 'links':
+      // Band-only links stay in the admin
+      return rows.filter(x => x.status !== 'private').map(x => { const { status: _, ...rest } = x; return rest; });
     case 'news':
     case 'blog':
       return rows.filter(x => isLive(x, now));

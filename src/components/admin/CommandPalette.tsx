@@ -9,6 +9,7 @@ import { personName } from './PeoplePicker';
 import { Highlight, rankMatches } from './SuggestInput';
 import { songTitle, songAltTitle, songSearchText } from '../../utils/songTitles';
 import { allVenueNames } from '../../../functions/lib/venueNames';
+import { typedDate } from '../../utils/typedDate';
 
 interface Item {
   kind: string;        // group label
@@ -79,12 +80,17 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
     if (!query.trim()) return items.filter(i => i.kind === s.actions);
     const ranked = rankMatches(items, query, i => [i.title, i.sub, i.keywords]);
     const perKind = new Map<string, number>();
-    return ranked.filter(i => {
+    const found = ranked.filter(i => {
       const n = (perKind.get(i.kind) || 0) + 1;
       perKind.set(i.kind, n);
       return n <= 8;
     }).slice(0, 40);
-  }, [items, query, s.actions]);
+    // A date typed in (2008-09-21, 2008/9/21, 2008年9月21日…): offer a new show on it,
+    // after any show that's already there
+    const day = typedDate(query);
+    if (day) found.push({ kind: s.actions, title: `+ ${s.newShowOn.replace('{date}', day.replace(/-/g, '.'))}`, href: `${prefix}/events/new?date=${day}` } as Item);
+    return found;
+  }, [items, query, s.actions, s.newShowOn, prefix]);
 
   useEffect(() => { setActive(0); }, [query]);
   useEffect(() => {
