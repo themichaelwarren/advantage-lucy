@@ -404,7 +404,8 @@ export default function AdminEventForm() {
    */
   function pasteSetlist(lines: PastedSong[], link: string): string {
     if (setlist.some(r => r.song.trim()) && !window.confirm(s.pasteReplaceConfirm)) return '';
-    const items = lines.map(l => newItem('1', matchSong(l.title, songs)?.title || l.title));
+    // Sets and encores as the paste had them; notes like （新曲） go with their song
+    const items = lines.map(l => ({ ...newItem(l.set, matchSong(l.title, songs)?.title || l.title), notes: l.note }));
     setSetlist(items);
     const slots = songSlots(items);
     const timed = lines.some(l => l.start !== null);
@@ -419,6 +420,9 @@ export default function AdminEventForm() {
       });
       getVideoTitle(link).then(t => { if (t) setVideos(vs => vs.map(x => (youTubeId(x.url) === vid && !x.title ? { ...x, title: t } : x))); });
       if (!form.setlist_source) set('setlist_source', link);
+    } else if (link && !form.setlist_source) {
+      // A setlist site or a blog: that's where the setlist came from
+      set('setlist_source', link);
     }
     const unknown = items.filter(it => !songs.some(x => normalize(x.title) === normalize(it.song))).length;
     return [
@@ -435,7 +439,7 @@ export default function AdminEventForm() {
         <span>{s.setlistSource} <span className="lu-optional">· <Icon name="lock" /> {s.setlistSourcePrivate}</span></span>
         <input value={form.setlist_source} onChange={e => set('setlist_source', e.target.value)} placeholder={s.setlistSourceHint} />
       </label>
-      <TimestampPaste s={s} label={s.pasteSetlist} withLink onRead={pasteSetlist} />
+      <TimestampPaste s={s} label={s.pasteSetlist} withLink anyLink placeholder={s.pasteSetlistPlaceholder} onRead={pasteSetlist} />
       <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} songCover={songCover} />
       <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
     </>
@@ -521,6 +525,15 @@ export default function AdminEventForm() {
               {times && (<><dt>{s.showTimes}</dt><dd>{times}</dd></>)}
               {saved.performers && (<><dt>{s.performers}</dt><dd>{saved.performers}</dd></>)}
             </dl>
+            {/* The flyer, with its ✎ on the corner (or a small "+ Flyer") */}
+            {saved.poster_url ? (
+              <div className="lu-show-flyer">
+                <a href={saved.poster_url} target="_blank" rel="noopener noreferrer" aria-label={s.secPoster}><img src={saved.poster_url} alt="" loading="lazy" /></a>
+                <span className="lu-rel-art-edit">{editBtn('poster')}</span>
+              </div>
+            ) : (
+              <button type="button" className="lu-show-flyer-add" onClick={() => setDialog('poster')}><Icon name="image" /> {s.secPoster}</button>
+            )}
             {(saved.status === 'private' || saved.featured === 'TRUE') && (
               <p className="lu-row">
                 {saved.status === 'private' && <span className="lu-tag is-muted">{s.hidden}</span>}
@@ -546,15 +559,6 @@ export default function AdminEventForm() {
             )}
           </div>
 
-          <div className="lu-song-card">
-            <div className="lu-song-card-head">
-              <p className="lu-publish-label">{s.secPoster}</p>
-              {editBtn('poster')}
-            </div>
-            {saved.poster_url
-              ? <a href={saved.poster_url} target="_blank" rel="noopener noreferrer" className="lu-show-flyer"><img src={saved.poster_url} alt="" loading="lazy" /></a>
-              : <p className="lu-hint">{s.posterNone}</p>}
-          </div>
         </aside>
 
         {/* Right: setlist, videos, notes */}
@@ -620,7 +624,7 @@ export default function AdminEventForm() {
               : undefined}
           >
             {/* Watching by default; ✎ to change links and times (saved or cancelled here) */}
-            <ShowVideos s={s} knownSongs={songs} videos={videos} onChange={setVideos} setlist={setlistEditing ? setlist : setlistBase} editing={videosEditing || setlistEditing} />
+            <ShowVideos s={s} knownSongs={songs} videos={videos} onChange={setVideos} setlist={setlistEditing ? setlist : setlistBase} editing={videosEditing || setlistEditing} fileName={[saved.date, venueName]} />
             {!videosEditing && !setlistEditing && videos.length === 0 && (
               <div className="lu-vfoot">
                 <button type="button" className="lu-link-btn" onClick={() => { setVideosEditing(true); }}>+ {s.videoAdd}</button>

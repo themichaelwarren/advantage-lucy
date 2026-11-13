@@ -12,6 +12,7 @@ import { youTubeId, youTubeThumb, youTubeWatch, formatTime } from '../../utils/y
 import { songTitle, songSearchText, songQuery, hira } from '../../utils/songTitles';
 import { errorText } from '../../components/admin/ui';
 import type { Event, Song } from '../../types';
+import CopyDownload from '../../components/admin/CopyDownload';
 
 /**
  * Every video in one place (admin only): show videos with the songs marked
@@ -165,6 +166,8 @@ export default function AdminVideos() {
                   <span className="lu-vgrid-badge">{v.kind === 'song' ? `♫ ${s.vfSongs}` : v.marks.length ? `▶ ${s.videoSongsN.replace('{n}', String(v.marks.length))}` : `▶ ${s.vNoMarks}`}</span>
                 </button>
                 <div className="lu-vgrid-text">
+                  <CopyDownload url={v.url} label={s.copyDownload}
+                    parts={[v.event?.date || v.date, v.event ? pick(v.event.venue_en, v.event.venue_ja) : v.song ? songTitle(v.song, locale) : '', '–', name]} />
                   <strong className="lu-vgrid-title">{name}</strong>
                   {v.event && (
                     <Link to={`${prefix}/events/${v.event.id}`} className="lu-vgrid-show">

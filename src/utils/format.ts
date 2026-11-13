@@ -1,5 +1,6 @@
 import type { Locale } from '../i18n/translations';
 import type { Event } from '../types';
+import { showPrice } from '../../functions/lib/price';
 
 const JA_DAYS = ['日', '月', '火', '水', '木', '金', '土'];
 const EN_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -53,19 +54,15 @@ const CURRENCY: Record<string, string> = {
 
 /**
  * Format a price string for display.
- * "0" → FREE / 入場無料, otherwise add currency symbol + comma separators.
+ * "0" → FREE / 入場無料; any way of typing an amount → symbol + commas.
  */
 export function formatPrice(
   price: string,
   locale: Locale,
   country?: string,
 ): string {
-  const n = Number(price);
-  if (isNaN(n)) return price; // non-numeric, return as-is
-  if (n === 0) return locale === 'ja' ? '入場無料' : 'FREE';
-
-  const symbol = (country && CURRENCY[country]) || '¥';
-  return `${symbol}${n.toLocaleString()}`;
+  // 2000, 2,000, ¥2,000 and 2000円 all show as ¥2,000 (functions/lib/price.ts)
+  return showPrice(price, (country && CURRENCY[country]) || '¥', locale === 'ja' ? '入場無料' : 'FREE');
 }
 
 /**

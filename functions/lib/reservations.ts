@@ -53,6 +53,7 @@ type Show = Awaited<ReturnType<typeof fetchEvents>>[number] & {
 export { reserveCloses, reserveState, DEFAULT_MAX_PER_BOOKING, type ReserveState } from './visibility';
 import { reserveState } from './visibility';
 import { loadFilters, matchSender, type SenderMatch } from './filters';
+import { showPrice } from './price';
 export const ticketsOf = (r: Pick<Reservation, 'tickets'>) => Math.max(0, parseInt(r.tickets, 10) || 0);
 export const isActive = (r: Pick<Reservation, 'status'>) => r.status !== 'cancelled';
 
@@ -188,7 +189,7 @@ function showFacts(show: Show, locale: 'en' | 'ja') {
     show.doors && `${ja ? '開場' : 'Doors'} ${show.doors}`,
     show.start && `${ja ? '開演' : 'Start'} ${show.start}`,
   ].filter(Boolean).join(' / ');
-  const yen = (v?: string) => (v && /^\d+$/.test(v.replace(/,/g, '')) ? `¥${Number(v.replace(/,/g, '')).toLocaleString('en')}` : v || '');
+  const yen = (v?: string) => (v ? showPrice(v, '¥', ja ? '入場無料' : 'Free') : '');
   const price = [
     show.adv_price && `${ja ? '前売' : 'Advance'} ${yen(show.adv_price)}`,
     show.door_price && `${ja ? '当日' : 'Door'} ${yen(show.door_price)}`,

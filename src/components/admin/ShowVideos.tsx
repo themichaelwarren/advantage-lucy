@@ -10,6 +10,7 @@ import { ConfirmDialog } from './ui';
 import TimestampPaste from './TimestampPaste';
 import { looseKey, matchSong } from '../../utils/timestamps';
 import type { Song } from '../../types';
+import CopyDownload from './CopyDownload';
 
 /**
  * Videos of a show (admin only). Paste YouTube links; the open one plays
@@ -85,7 +86,7 @@ export function fromShowVideos(videos: ShowVideo[], setlist: SetlistItem[]): Par
 /** For "unsaved changes": what matters about the videos. */
 export const videosSnapshot = (videos: ShowVideo[], setlist: SetlistItem[]) => JSON.stringify(fromShowVideos(videos, setlist));
 
-export default function ShowVideos({ s, videos, onChange, setlist, editing = true, knownSongs = [] }: {
+export default function ShowVideos({ s, videos, onChange, setlist, editing = true, knownSongs = [], fileName = [] }: {
   s: AdminStrings;
   videos: ShowVideo[];
   onChange: React.Dispatch<React.SetStateAction<ShowVideo[]>>;
@@ -94,6 +95,8 @@ export default function ShowVideos({ s, videos, onChange, setlist, editing = tru
   editing?: boolean;
   /** All songs, so pasted names match by any title or reading */
   knownSongs?: Song[];
+  /** The start of a downloaded file's name: the show's date and venue */
+  fileName?: string[];
 }) {
   const [openKey, setOpenKey] = useState<string | null>(videos[0]?.key ?? null);
   const [removing, setRemoving] = useState<ShowVideo | null>(null);
@@ -155,6 +158,7 @@ export default function ShowVideos({ s, videos, onChange, setlist, editing = tru
                   </button>
                   <span className="lu-vcard-text">
                     <button type="button" className="lu-vcard-title" onClick={pick}>{label}</button>
+                    <CopyDownload url={v.url} label={s.copyDownload} parts={[...fileName, '–', v.title || label]} />
                   </span>
                 </li>
               );

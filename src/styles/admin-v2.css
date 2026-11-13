@@ -1602,7 +1602,14 @@ a.lu-show-line { font-weight: 600; }
 .lu-show-resv { display: block; text-decoration: none; color: var(--text); font-size: 0.92rem; }
 .lu-show-resv strong { font-family: var(--font-display); font-size: 1.05rem; }
 .lu-show-resv:hover .lu-hint { text-decoration: underline; }
-.lu-show-flyer img { display: block; width: 100%; height: auto; max-height: 22rem; object-fit: contain; border-radius: var(--radius-sm); background: var(--bg); }
+.lu-show-flyer { position: relative; align-self: flex-start; max-width: 100%; }
+.lu-show-flyer img { display: block; max-width: 100%; height: auto; max-height: 24rem; border-radius: var(--radius-sm); border: 1px solid var(--rule); }
+.lu-show-flyer-add {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 0.9rem;
+  border: 1.5px dashed var(--border); border-radius: var(--radius-sm); background: none; color: var(--text-muted);
+  font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+}
+.lu-show-flyer-add:hover { border-color: var(--text); color: var(--text); }
 .lu-show-setlist { display: flex; flex-direction: column; gap: 0.8rem; }
 .lu-show-setlist h3 { margin: 0 0 0.3rem; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.04em; }
 .lu-show-setlist ol { margin: 0; padding-left: 1.8rem; display: grid; gap: 0.25rem; list-style: decimal; }
@@ -2047,7 +2054,6 @@ a.lu-icon-btn { text-decoration: none; }
   .lu-show-page #setlist { order: 2; }
   .lu-show-page #videos { order: 3; }
   .lu-show-page .lu-song-side > :nth-child(2) { order: 4; }
-  .lu-show-page .lu-song-side > :nth-child(3) { order: 5; }
   /* Song: details, lyrics, live history, videos, releases */
   .lu-song-only .lu-song-main > :nth-child(1) { order: 2; }
   .lu-song-only .lu-song-main > :nth-child(2) { order: 3; }
@@ -2272,3 +2278,19 @@ a.lu-icon-btn { text-decoration: none; }
 .lu-venue-former .lu-publish-label { flex-basis: 100%; margin: 0; }
 .lu-venue-former small { color: var(--text-muted); font-size: 0.75rem; }
 .lu-former-until > span { white-space: nowrap; }
+
+/* Copy a yt-dlp command (CopyDownload.tsx): there if you look for it */
+.lu-copy-dl {
+  display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; padding: 0; flex: 0 0 auto;
+  border: none; border-radius: 6px; background: none; color: var(--text-muted); cursor: pointer;
+  opacity: 0.35; transition: opacity 120ms ease, background-color 120ms ease;
+}
+.lu-copy-dl svg { width: 0.95rem; height: 0.95rem; }
+.lu-copy-dl:hover, .lu-copy-dl:focus-visible { opacity: 1; background: var(--surface-hover); color: var(--text); }
+.lu-copy-dl.is-done { opacity: 1; color: #2f8f5b; }
+.lu-vgrid-text { position: relative; }
+.lu-vgrid-text > .lu-copy-dl { position: absolute; top: 0; right: 0; }
+.lu-vgrid-text > .lu-vgrid-title { padding-right: 1.8rem; }
+.lu-videos-compact .lu-vcard-text { flex-direction: row; align-items: flex-start; gap: 0.3rem; }
+.lu-videos-compact .lu-vcard-text > .lu-vcard-title { flex: 1; min-width: 0; }
+@media (hover: none) { .lu-copy-dl { opacity: 0.6; } }
