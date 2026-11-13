@@ -440,7 +440,7 @@ export default function AdminEventForm() {
         <input value={form.setlist_source} onChange={e => set('setlist_source', e.target.value)} placeholder={s.setlistSourceHint} />
       </label>
       <TimestampPaste s={s} label={s.pasteSetlist} withLink anyLink placeholder={s.pasteSetlistPlaceholder} onRead={pasteSetlist} />
-      <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songHref={songHref} songCover={songCover} />
+      <SetlistEditor s={s} items={setlist} onChange={setSetlist} songTitles={songTitles} songs={songs} songHref={songHref} songCover={songCover} />
       <AddedSongs s={s} songs={addedSongs} prefix={prefix} onClose={() => setAddedSongs([])} />
     </>
   );

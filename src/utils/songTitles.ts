@@ -1,5 +1,6 @@
 import type { Song } from '../types';
 import { normalize } from './text';
+import { kanaToRomaji } from './romaji';
 
 /**
  * Song titles in two languages. `title` is the song's name as written (and
@@ -32,8 +33,11 @@ export const compareSongs = (locale: Lang) => (a: Titled, b: Titled) => collator
 /** Katakana → hiragana, so しとらす finds シトラス */
 export const hira = (t: string) => t.replace(/[\u30a1-\u30f6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
 
-/** Every way to find a song: シトラス, しとらす, citrus. */
-export const songSearchText = (s: Titled & { original_artist?: string }) =>
-  hira(normalize([s.title, s.title_en, s.title_kana, s.original_artist].filter(Boolean).join(' ')));
+/** Every way to find a song: シトラス, しとらす, citrus, shitorasu (白い朝 by "shiro", from its reading). */
+export const songSearchText = (s: Titled & { original_artist?: string }) => {
+  // Rōmaji from the reading, or from a title written all in kana
+  const kana = s.title_kana || (/^[\u3041-\u30ff\sー・!?！？]+$/.test(s.title || '') ? s.title : '');
+  return hira(normalize([s.title, s.title_en, s.title_kana, s.original_artist, kana ? kanaToRomaji(kana) : ''].filter(Boolean).join(' ')));
+};
 /** A search box's text, made comparable with songSearchText. */
 export const songQuery = (q: string) => hira(normalize(q));

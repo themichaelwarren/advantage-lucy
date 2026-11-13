@@ -3,6 +3,8 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SuggestInput from './SuggestInput';
 import type { AdminStrings } from '../../i18n/admin';
+import type { Song } from '../../types';
+import { songSearchText } from '../../utils/songTitles';
 
 export interface SetlistItem {
   key: string;     // local only, for React and drag
@@ -21,11 +23,13 @@ export const newItem = (set: string, song = ''): SetlistItem =>
  * handle (or use the arrows) to move songs, including between sets. No
  * order numbers to type.
  */
-export default function SetlistEditor({ s, items, onChange, songTitles, songHref, songCover }: {
+export default function SetlistEditor({ s, items, onChange, songTitles, songs = [], songHref, songCover }: {
   s: AdminStrings;
   items: SetlistItem[];
   onChange: (items: SetlistItem[]) => void;
   songTitles: string[];
+  /** The songs themselves, so typing "shiro", "しろい" or an English title finds 白い朝 */
+  songs?: Song[];
   /** Link to a song's page, if the title matches one in Songs. */
   songHref?: (title: string) => string | undefined;
   /** Original artist, if the song is a cover. */
@@ -33,10 +37,14 @@ export default function SetlistEditor({ s, items, onChange, songTitles, songHref
 }) {
   const [dragKey, setDragKey] = useState<string | null>(null);
   const lastAdded = useRef<string | null>(null);
-  const suggestions = useMemo(
-    () => [...new Set(songTitles)].sort((a, b) => a.localeCompare(b, 'ja')).map(value => ({ value })),
-    [songTitles],
-  );
+  const suggestions = useMemo(() => {
+    const byTitle = new Map(songs.filter(x => x.title).map(x => [x.title, x]));
+    return [...new Set(songTitles)].sort((a, b) => a.localeCompare(b, 'ja')).map(value => {
+      const song = byTitle.get(value);
+      // The other title underneath (Citrus under シトラス); found by any title, reading or rōmaji
+      return song ? { value, hint: song.title_en && song.title_en !== value ? song.title_en : undefined, keywords: songSearchText(song) } : { value };
+    });
+  }, [songTitles, songs]);
 
   const sets = Array.from(new Set(items.map(i => i.set)));
   if (sets.length === 0) sets.push('1');
