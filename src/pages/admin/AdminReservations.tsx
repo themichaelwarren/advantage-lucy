@@ -311,7 +311,7 @@ export function AdminShowReservations() {
     <div className={[door ? 'lu-door' : '', selected ? 'has-pane' : ''].filter(Boolean).join(' ') || undefined}>
       <div className="lu-page-head lu-resv-head">
         <div>
-          <p className="lu-eyebrow"><Icon name="ticket" /> {s.reservations} · {event.date}</p>
+          <p className="lu-eyebrow"><Link to={`${prefix}/reservations`}><Icon name="ticket" /> {s.reservations}</Link> · {event.date}</p>
           <h1>{showName(event, locale)}<PageHelp /></h1>
           <p className="lu-resv-totals">
             <strong>{cap > 0 ? s.resvTicketsOf.replace('{n}', String(taken)).replace('{cap}', String(cap)) : s.resvTickets.replace('{n}', String(taken))}</strong>
@@ -319,6 +319,11 @@ export function AdminShowReservations() {
             {event.reserve && <StateTag e={event} taken={taken} s={s} locale={locale} />}
           </p>
           {cap > 0 && <div className="lu-resv-meter" aria-hidden="true"><span style={{ width: `${Math.min(100, (taken / cap) * 100)}%` }} /></div>}
+          {/* Back to the show itself: its admin page (details, 予約枠) and the page fans see */}
+          <p className="lu-resv-showlinks">
+            <Link to={`${prefix}/events/${event.id}`} className="lu-btn lu-btn-sm"><Icon name="shows" /> {s.resvShowPage}</Link>
+            <a href={`/${locale}/events/${event.id}`} target="_blank" rel="noopener" className="lu-btn lu-btn-sm lu-btn-quiet"><Icon name="external" /> {s.viewOnSite}</a>
+          </p>
         </div>
       </div>
 
@@ -337,7 +342,6 @@ export function AdminShowReservations() {
               <button type="button" className="lu-btn" onClick={() => { setDoor(true); if (resv) navigate(showUrl); }} disabled={!booked.length}><Icon name="door" /> {s.resvDoor}</button>
               <button type="button" className="lu-btn" onClick={() => setAdding(a => !a)}>+ {s.resvAdd}</button>
               <button type="button" className="lu-btn lu-btn-quiet lu-hide-phone" onClick={csv} disabled={!mine.length}>⤓ {s.resvCsv}</button>
-              <Link to={`${prefix}/events/${event.id}`} className="lu-btn lu-btn-quiet">{s.resvEditShow}</Link>
             </div>
           )}
 

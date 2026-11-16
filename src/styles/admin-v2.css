@@ -2596,3 +2596,6 @@ a.lu-icon-btn { text-decoration: none; }
   .lu-resv-split.has-pane .lu-resv-pane-show { display: none; }
   .lu-resv-split.has-pane .lu-resv-pane-head { padding-right: 7.5rem; padding-top: 0.3rem; }
 }
+
+.lu-resv-showlinks { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.8rem 0 0; }
+.lu-resv-showlinks .lu-btn svg { width: 0.95rem; height: 0.95rem; }
