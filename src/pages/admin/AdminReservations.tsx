@@ -1,10 +1,10 @@
 import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllEvents } from '../../hooks/useSheetData';
 import { useAdminT, type AdminLocale, type AdminStrings } from '../../i18n/admin';
 import {
-  getReservations, updateReservation, addReservation, resendReservation, checkReservations, previewReservationEmail, type Reservation,
+  getReservations, updateReservation, addReservation, resendReservation, checkReservations, previewReservationEmail, getSentReservationMail, type Reservation, type SentReservationMail,
 } from '../../services/adminService';
 import { errorText, ConfirmDialog } from '../../components/admin/ui';
 import { reserveState, todayInJapan } from '../../utils/showDates';
@@ -23,10 +23,10 @@ const langOf = (r: Reservation): 'ja' | 'en' => (r.locale === 'en' ? 'en' : 'ja'
  * A booking's history, oldest first. Bookings from before the log started (and Google Form
  * imports) begin with when they came in.
  */
-function BookingLog({ r, s, locale }: { r: Reservation; s: AdminStrings; locale: AdminLocale }) {
-  const lines = (r.log || '').split('\n').filter(Boolean).map(l => { const [at, what, detail, who] = l.split('\t'); return { at, what, detail: detail || '', who: who || '' }; });
+function BookingLog({ r, s, locale, onOpenMail }: { r: Reservation; s: AdminStrings; locale: AdminLocale; onOpenMail?: (mailId: string) => void }) {
+  const lines = (r.log || '').split('\n').filter(Boolean).map(l => { const [at, what, detail, who, mail] = l.split('\t'); return { at, what, detail: detail || '', who: who || '', mail: mail || '' }; });
   if (!lines.some(l => ['booked', 'added'].includes(l.what))) {
-    lines.unshift({ at: r.received_at, what: r.source === 'form' ? 'form' : r.source === 'admin' ? 'added' : 'booked', detail: r.tickets, who: '' });
+    lines.unshift({ at: r.received_at, what: r.source === 'form' ? 'form' : r.source === 'admin' ? 'added' : 'booked', detail: r.tickets, who: '', mail: '' });
   }
   const label = (what: string, detail: string) => {
     const t = (s.resvLog as Record<string, string>)[what] || what;
@@ -37,7 +37,11 @@ function BookingLog({ r, s, locale }: { r: Reservation; s: AdminStrings; locale:
       {lines.map((l, i) => (
         <li key={i} className={`is-${l.what}`}>
           <time dateTime={l.at}>{when(l.at, locale)}</time>
-          <span>{label(l.what, l.detail)}</span>
+          <span>
+            {label(l.what, l.detail)}
+            {/* Emails since copies were kept can be opened again */}
+            {l.mail && onOpenMail && <> <button type="button" className="lu-link-btn" onClick={() => onOpenMail(l.mail)}>{s.resvViewMail}</button></>}
+          </span>
           <span className="lu-resv-log-who">{l.who ? whoName(l.who) : l.what === 'form' ? '' : ['booked', 'rebooked'].includes(l.what) ? s.resvLogFan : ''}</span>
         </li>
       ))}
@@ -155,7 +159,7 @@ export default function AdminReservations() {
               const fresh = needsCheck(r);
               return (
                 <li key={r.id} className={`lu-resv-latest-item${fresh ? ' is-fresh' : ''}`}>
-                  <Link to={`${prefix}/reservations/${r.event}`} className="lu-list-row">
+                  <Link to={`${prefix}/reservations/${r.event}/${r.id}`} className="lu-list-row">
                     <span className="lu-resv-count">{ticketsOf(r)}</span>
                     <span className="lu-list-main">
                       <strong>{r.name}{r.kana && <small className="lu-resv-kana">{r.kana}</small>}</strong>
@@ -189,10 +193,11 @@ export default function AdminReservations() {
   );
 }
 
-/** /admin/reservations/:id: one show's bookings, the venue list, and door mode. */
+/** /admin/reservations/:id(/:resv): one show's bookings, the venue list, and door mode. A booking opens beside the list. */
 export function AdminShowReservations() {
-  const { id } = useParams<{ id: string }>();
+  const { id, resv } = useParams<{ id: string; resv?: string }>();
   const { s, locale, prefix } = useAdminT();
+  const navigate = useNavigate();
   const { events, loading } = useAllEvents();
   const { list, setList, error, setError } = useReservations();
   const [door, setDoor] = useState(false);
@@ -208,10 +213,12 @@ export function AdminShowReservations() {
   const { view, order } = prefs;
   const setView = (v: typeof view) => setPrefs(p => ({ ...p, view: v }));
   const setOrder = (o: typeof order) => setPrefs(p => ({ ...p, order: o }));
-  const [openRow, setOpenRow] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [copied, setCopied] = useState(false);
   const event = events.find(e => e.id === id);
+  const showUrl = `${prefix}/reservations/${id}`;
+  // On a phone (or a narrow window) the booking takes the whole page: start it at the top
+  useEffect(() => { if (resv && !window.matchMedia('(min-width: 1180px)').matches) window.scrollTo(0, 0); }, [resv]);
 
   const mine = useMemo(() => (list || []).filter(r => r.event === id), [list, id]);
   const booked = mine.filter(active);
@@ -273,10 +280,15 @@ export function AdminShowReservations() {
     setList(l => (l || []).map(r => (ids.includes(r.id) ? { ...r, checked: 'TRUE' } : r)));
     try { await checkReservations(ids); } catch (err) { setError(errorText(err)); }
   }
+  const selected = !door && resv ? mine.find(r => r.id === resv) : undefined;
+  // Previous / next follow the list as it's shown (filter and order); a booking filtered out still opens
+  const at = selected ? shown.findIndex(r => r.id === selected.id) : -1;
+  const prev = at > 0 ? shown[at - 1] : undefined;
+  const next = at >= 0 && at < shown.length - 1 ? shown[at + 1] : undefined;
 
   return (
-    <div className={door ? 'lu-door' : ''}>
-      <div className="lu-page-head">
+    <div className={[door ? 'lu-door' : '', selected ? 'has-pane' : ''].filter(Boolean).join(' ') || undefined}>
+      <div className="lu-page-head lu-resv-head">
         <div>
           <p className="lu-eyebrow"><Icon name="ticket" /> {s.reservations} · {event.date}</p>
           <h1>{showName(event, locale)}<PageHelp /></h1>
@@ -291,195 +303,347 @@ export function AdminShowReservations() {
 
       {error && <div className="lu-alert">{error}</div>}
 
-      {door ? (
-        <div className="lu-door-bar">
-          <p><strong>{s.resvArrivedCount.replace('{n}', String(arrived)).replace('{total}', String(taken))}</strong> <span className="lu-hint">{s.resvDoorHint}</span></p>
-          <button type="button" className="lu-btn" onClick={() => setDoor(false)}>{s.resvDoorExit}</button>
-        </div>
-      ) : (
-        <div className="lu-resv-actions">
-          <button type="button" className="lu-btn lu-btn-primary" onClick={copy} disabled={!booked.length}>{copied ? s.resvCopied : <><Icon name="paste" /> {s.resvCopy}</>}</button>
-          <button type="button" className="lu-btn" onClick={() => setDoor(true)} disabled={!booked.length}><Icon name="door" /> {s.resvDoor}</button>
-          <button type="button" className="lu-btn" onClick={() => setAdding(a => !a)}>+ {s.resvAdd}</button>
-          <button type="button" className="lu-btn lu-btn-quiet" onClick={csv} disabled={!mine.length}>⤓ {s.resvCsv}</button>
-          <Link to={`${prefix}/events/${event.id}`} className="lu-btn lu-btn-quiet">{s.resvEditShow}</Link>
-        </div>
-      )}
-
-      {adding && !door && (
-        <AddForm s={s} eventId={event.id} onCancel={() => setAdding(false)}
-          onAdded={r => { setList(l => [...(l || []), r]); setAdding(false); }} onError={setError} />
-      )}
-
-      {mine.length > 0 && (
-        <div className="lu-resv-filter">
-          <input type="search" className="lu-search" placeholder={s.search} value={query} onChange={e => setQuery(e.target.value)} />
-          {!door && cancelledCount > 0 && (
-            <div className="lu-chips" role="group" aria-label={s.resvViewLabel}>
-              {([['active', s.resvViewActive, mine.length - cancelledCount], ['cancelled', s.resvCancelled, cancelledCount], ['all', s.filterAll, mine.length]] as const).map(([v, label, n]) => (
-                <button key={v} type="button" className={`lu-pill${view === v ? ' is-on' : ''}`} aria-pressed={view === v} onClick={() => setView(v)}>{label} · {n}</button>
-              ))}
+      <div className={`lu-resv-split${selected ? ' has-pane' : ''}`}>
+        <div className="lu-resv-listcol">
+          {door ? (
+            <div className="lu-door-bar">
+              <p><strong>{s.resvArrivedCount.replace('{n}', String(arrived)).replace('{total}', String(taken))}</strong> <span className="lu-hint">{s.resvDoorHint}</span></p>
+              <button type="button" className="lu-btn" onClick={() => setDoor(false)}>{s.resvDoorExit}</button>
+            </div>
+          ) : (
+            <div className="lu-resv-actions">
+              <button type="button" className="lu-btn lu-btn-primary" onClick={copy} disabled={!booked.length}>{copied ? s.resvCopied : <><Icon name="paste" /> {s.resvCopy}</>}</button>
+              <button type="button" className="lu-btn" onClick={() => { setDoor(true); if (resv) navigate(showUrl); }} disabled={!booked.length}><Icon name="door" /> {s.resvDoor}</button>
+              <button type="button" className="lu-btn" onClick={() => setAdding(a => !a)}>+ {s.resvAdd}</button>
+              <button type="button" className="lu-btn lu-btn-quiet" onClick={csv} disabled={!mine.length}>⤓ {s.resvCsv}</button>
+              <Link to={`${prefix}/events/${event.id}`} className="lu-btn lu-btn-quiet">{s.resvEditShow}</Link>
             </div>
           )}
-          {!door && mine.length > 1 && (
-            <label className="lu-sort">
-              <span className="lu-visually-hidden">{s.sortBy}</span>
-              <select value={order} onChange={e => setOrder(e.target.value as typeof order)} aria-label={s.sortBy}>
-                <option value="newest">↕ {s.resvSortNewest}</option>
-                <option value="oldest">↕ {s.resvSortOldest}</option>
-                <option value="name">↕ {s.resvSortName}</option>
-              </select>
-            </label>
+
+          {adding && !door && (
+            <AddForm s={s} eventId={event.id} onCancel={() => setAdding(false)}
+              onAdded={r => { setList(l => [...(l || []), r]); setAdding(false); navigate(`${showUrl}/${r.id}`); }} onError={setError} />
           )}
+
+          {mine.length > 0 && (
+            <div className="lu-resv-filter">
+              <input type="search" className="lu-search" placeholder={s.search} value={query} onChange={e => setQuery(e.target.value)} />
+              {!door && cancelledCount > 0 && (
+                <div className="lu-chips" role="group" aria-label={s.resvViewLabel}>
+                  {([['active', s.resvViewActive, mine.length - cancelledCount], ['cancelled', s.resvCancelled, cancelledCount], ['all', s.filterAll, mine.length]] as const).map(([v, label, n]) => (
+                    <button key={v} type="button" className={`lu-pill${view === v ? ' is-on' : ''}`} aria-pressed={view === v} onClick={() => setView(v)}>{label} · {n}</button>
+                  ))}
+                </div>
+              )}
+              {!door && mine.length > 1 && (
+                <label className="lu-sort">
+                  <span className="lu-visually-hidden">{s.sortBy}</span>
+                  <select value={order} onChange={e => setOrder(e.target.value as typeof order)} aria-label={s.sortBy}>
+                    <option value="newest">↕ {s.resvSortNewest}</option>
+                    <option value="oldest">↕ {s.resvSortOldest}</option>
+                    <option value="name">↕ {s.resvSortName}</option>
+                  </select>
+                </label>
+              )}
+            </div>
+          )}
+
+          {!door && toCheck.length > 0 && (
+            <p className="lu-resv-tocheck">
+              <span className="lu-tag is-new">{s.resvNew} · {toCheck.length}</span>
+              <span className="lu-hint">{s.resvCheckHint}</span>
+              {toCheck.length > 1 && <button type="button" className="lu-btn lu-btn-sm" onClick={checkAll}>✓ {s.resvCheckAll}</button>}
+            </p>
+          )}
+          {mine.length === 0 && <p className="lu-empty">{s.resvNone}</p>}
+
+          <ul className={`lu-list lu-resv-list${door ? ' is-door' : ''}`}>
+            {shown.map(r => door ? (
+              <li key={r.id}>
+                <button type="button" className={`lu-door-row${r.arrived === 'TRUE' ? ' is-in' : ''}`} aria-pressed={r.arrived === 'TRUE'}
+                  onClick={() => change(r, { arrived: r.arrived === 'TRUE' ? '' : 'TRUE' })}>
+                  <span className="lu-door-check" aria-hidden="true">{r.arrived === 'TRUE' ? '✓' : ''}</span>
+                  <span className="lu-door-name">{match(r.email) && <span className="lu-door-flag" title={s.resvFlagTip}><Icon name="warn" /> </span>}{r.name}{r.kana && <small className="lu-door-kana">{r.kana}</small>}</span>
+                  <span className="lu-door-count">{ticketsOf(r)}</span>
+                  {r.note && <span className="lu-door-note">{r.note}</span>}
+                </button>
+              </li>
+            ) : (
+              <BookingRow key={r.id} r={r} s={s} locale={locale} to={`${showUrl}/${r.id}`} current={r.id === selected?.id} flag={match(r.email)} isNew={needsCheck(r)} />
+            ))}
+          </ul>
         </div>
-      )}
 
-      {!door && toCheck.length > 0 && (
-        <p className="lu-resv-tocheck">
-          <span className="lu-tag is-new">{s.resvNew} · {toCheck.length}</span>
-          <span className="lu-hint">{s.resvCheckHint}</span>
-          {toCheck.length > 1 && <button type="button" className="lu-btn lu-btn-sm" onClick={checkAll}>✓ {s.resvCheckAll}</button>}
-        </p>
-      )}
-      {mine.length === 0 && <p className="lu-empty">{s.resvNone}</p>}
-
-      <ul className={`lu-list lu-resv-list${door ? ' is-door' : ''}`}>
-        {shown.map(r => door ? (
-          <li key={r.id}>
-            <button type="button" className={`lu-door-row${r.arrived === 'TRUE' ? ' is-in' : ''}`} aria-pressed={r.arrived === 'TRUE'}
-              onClick={() => change(r, { arrived: r.arrived === 'TRUE' ? '' : 'TRUE' })}>
-              <span className="lu-door-check" aria-hidden="true">{r.arrived === 'TRUE' ? '✓' : ''}</span>
-              <span className="lu-door-name">{match(r.email) && <span className="lu-door-flag" title={s.resvFlagTip}><Icon name="warn" /> </span>}{r.name}{r.kana && <small className="lu-door-kana">{r.kana}</small>}</span>
-              <span className="lu-door-count">{ticketsOf(r)}</span>
-              {r.note && <span className="lu-door-note">{r.note}</span>}
-            </button>
-          </li>
-        ) : (
-          <ReservationRow key={r.id} r={r} s={s} locale={locale} open={openRow === r.id} flag={match(r.email)} isNew={needsCheck(r)}
-            onToggle={() => setOpenRow(o => (o === r.id ? null : r.id))}
-            onChange={fields => change(r, fields)}
-            onResend={async () => {
-              setError('');
-              try { replace(await resendReservation(r.id)); } catch (err) { setError(errorText(err)); }
-            }} />
-        ))}
-      </ul>
+        {selected && (
+          <BookingPane key={selected.id} r={selected} s={s} locale={locale} flag={match(selected.email)} isNew={needsCheck(selected)}
+            showTitle={`${event.date} · ${showName(event, locale)}`} closeTo={showUrl}
+            prevTo={prev && `${showUrl}/${prev.id}`} nextTo={next && `${showUrl}/${next.id}`}
+            onChange={fields => change(selected, fields)} onReplace={replace} onError={setError} />
+        )}
+      </div>
+      {!door && resv && !selected && <p className="lu-empty">{s.noResults}</p>}
     </div>
   );
 }
 
-function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag, isNew }: {
-  r: Reservation; s: AdminStrings; locale: AdminLocale; open: boolean; flag?: SenderMatch; isNew?: boolean;
-  onToggle: () => void; onChange: (f: Partial<Reservation>) => Promise<void>; onResend: () => Promise<void>;
+/** Tags that say where a booking stands (new, flagged, cancelled, arrived, not emailed, how it came in). */
+function BookingTags({ r, s, flag, isNew }: { r: Reservation; s: AdminStrings; flag?: SenderMatch; isNew?: boolean }) {
+  const cancelled = r.status === 'cancelled';
+  return (
+    <>
+      {isNew && <span className="lu-tag is-new">{s.resvNew}</span>}
+      {flag && <span className="lu-tag is-warn" title={s.resvFlagTip}><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFiltered : s.filterLookalike}</span>}
+      {cancelled && <span className="lu-tag is-muted">{s.resvCancelled}</span>}
+      {r.arrived === 'TRUE' && <span className="lu-tag is-ok">✓ {s.resvArrived}</span>}
+      {/* Has an address but no confirmation went out (failed, or added by hand without it); filtered senders are flagged above */}
+      {!cancelled && r.email && r.emailed !== 'yes' && r.emailed !== 'held' && <span className="lu-tag is-new" title={r.emailed === 'no' ? s.resvEmailFailedTip : undefined}><Icon name="mail" /> {s.resvNotEmailed}</span>}
+      {r.source === 'admin' && <span className="lu-tag is-muted">{s.resvByHand}</span>}
+      {r.source === 'form' && <span className="lu-tag is-muted" title={s.resvFromFormTip}>{s.resvFromForm}</span>}
+    </>
+  );
+}
+
+function BookingRow({ r, s, locale, to, current, flag, isNew }: {
+  r: Reservation; s: AdminStrings; locale: AdminLocale; to: string; current: boolean; flag?: SenderMatch; isNew?: boolean;
+}) {
+  const cancelled = r.status === 'cancelled';
+  return (
+    <li className={[cancelled ? 'is-done' : '', isNew ? 'is-fresh' : '', current ? 'is-current' : ''].filter(Boolean).join(' ') || undefined}>
+      <Link to={to} className="lu-list-row lu-resv-row" aria-current={current ? 'true' : undefined}>
+        <span className="lu-resv-count">{ticketsOf(r)}</span>
+        <span className="lu-list-main">
+          <strong>{r.name}{r.kana && <small className="lu-resv-kana">{r.kana}</small>}</strong>
+          <span className="lu-snippet">{r.note ? <><span className="lu-resv-hasnote" aria-label={s.resvTheirNote}>💬</span> {r.note}</> : r.email}</span>
+        </span>
+        <span className="lu-list-tags">
+          <BookingTags r={r} s={s} flag={flag} isNew={isNew} />
+          <time dateTime={r.received_at} title={s.resvBookedAt} className="lu-resv-when">{when(r.received_at, locale)}</time>
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+/** One booking, beside the list (or on its own page on a phone): their note, an email to them, its history, its details. */
+function BookingPane({ r, s, locale, flag, isNew, showTitle, closeTo, prevTo, nextTo, onChange, onReplace, onError }: {
+  r: Reservation; s: AdminStrings; locale: AdminLocale; flag?: SenderMatch; isNew?: boolean;
+  showTitle: string; closeTo: string; prevTo?: string; nextTo?: string;
+  onChange: (f: Partial<Reservation>) => Promise<void>; onReplace: (r: Reservation) => void; onError: (msg: string) => void;
 }) {
   const [draft, setDraft] = useState({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note, locale: langOf(r) });
   const [busy, setBusy] = useState(false);
-  // Emailing a fan always asks first: who it goes to, and in which language
-  const [askSend, setAskSend] = useState(false);
-  const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
-  const [previewError, setPreviewError] = useState('');
-  // The language to send in: starts as the booking's; switching it only redraws the preview.
-  // It's saved to the booking only when the email is actually sent.
-  const [sendLang, setSendLang] = useState<'ja' | 'en'>(langOf(r));
-  useEffect(() => {
-    if (!askSend) { setPreview(null); setPreviewError(''); return; }
-    setPreview(null); setPreviewError('');
-    previewReservationEmail(r.id, sendLang).then(setPreview).catch(err => setPreviewError(errorText(err)));
-  }, [askSend, r.id, sendLang]);
-  const openSend = () => { setSendLang(langOf(r)); setAskSend(true); };
-  async function send() {
-    setAskSend(false);
-    await run(async () => {
-      if (sendLang !== langOf(r)) await onChange({ locale: sendLang });
-      await onResend();
-    });
-  }
-  useEffect(() => { if (open) setDraft({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note, locale: langOf(r) }); }, [open, r]);
+  const [viewing, setViewing] = useState<string | null>(null);
+  useEffect(() => { setDraft({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note, locale: langOf(r) }); }, [r]);
   const cancelled = r.status === 'cancelled';
   const dirty = draft.name !== r.name || draft.kana !== (r.kana || '') || draft.email !== r.email || draft.tickets !== r.tickets || draft.note !== r.note || draft.locale !== langOf(r);
   const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } finally { setBusy(false); } };
 
   return (
-    <li className={[cancelled ? 'is-done' : '', isNew ? 'is-fresh' : ''].filter(Boolean).join(' ') || undefined}>
-      <button type="button" className="lu-list-row lu-resv-row" aria-expanded={open} onClick={onToggle}>
-        <span className="lu-resv-count">{ticketsOf(r)}</span>
-        <span className="lu-list-main">
-          <strong>{r.name}{r.kana && <small className="lu-resv-kana">{r.kana}</small>}</strong>
-          <span className="lu-snippet">{[r.email, r.note].filter(Boolean).join(' · ')}</span>
+    <section className="lu-resv-pane" aria-label={r.name}>
+      <div className="lu-resv-pane-nav">
+        <Link to={closeTo} className="lu-btn lu-btn-sm lu-btn-quiet lu-resv-back">← <span>{s.resvBack}</span></Link>
+        <span className="lu-resv-pane-show">{showTitle}</span>
+        <span className="lu-resv-pane-step">
+          {prevTo ? <Link to={prevTo} className="lu-btn lu-btn-sm lu-btn-quiet" title={s.resvPrev} aria-label={s.resvPrev}>↑</Link> : <span className="lu-btn lu-btn-sm lu-btn-quiet is-off" aria-hidden="true">↑</span>}
+          {nextTo ? <Link to={nextTo} className="lu-btn lu-btn-sm lu-btn-quiet" title={s.resvNext} aria-label={s.resvNext}>↓</Link> : <span className="lu-btn lu-btn-sm lu-btn-quiet is-off" aria-hidden="true">↓</span>}
+          <Link to={closeTo} className="lu-btn lu-btn-sm lu-btn-quiet lu-resv-close" title={s.close} aria-label={s.close}>✕</Link>
         </span>
-        <span className="lu-list-tags">
-          {isNew && <span className="lu-tag is-new">{s.resvNew}</span>}
-          {flag && <span className="lu-tag is-warn" title={s.resvFlagTip}><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFiltered : s.filterLookalike}</span>}
-          {cancelled && <span className="lu-tag is-muted">{s.resvCancelled}</span>}
-          {r.arrived === 'TRUE' && <span className="lu-tag is-ok">✓ {s.resvArrived}</span>}
-          {/* Has an address but no confirmation went out (failed, or added by hand without it); filtered senders are flagged above */}
-          {!cancelled && r.email && r.emailed !== 'yes' && r.emailed !== 'held' && <span className="lu-tag is-new" title={r.emailed === 'no' ? s.resvEmailFailedTip : undefined}><Icon name="mail" /> {s.resvNotEmailed}</span>}
-          {r.source === 'admin' && <span className="lu-tag is-muted">{s.resvByHand}</span>}
-          {r.source === 'form' && <span className="lu-tag is-muted" title={s.resvFromFormTip}>{s.resvFromForm}</span>}
-          <time dateTime={r.received_at} title={s.resvBookedAt} className="lu-resv-when">{when(r.received_at, locale)}</time>
-        </span>
-      </button>
-      {open && (
-        <div className="lu-resv-edit">
-          <div className="lu-resv-edit-grid">
-            <label className="lu-field"><span>{s.resvName}</span><input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} /></label>
-            <label className="lu-field"><span>{s.resvKana}</span><input lang="ja" value={draft.kana} placeholder={s.resvKanaHint} onChange={e => setDraft(d => ({ ...d, kana: e.target.value }))} onBlur={() => setDraft(d => ({ ...d, kana: toKatakana(d.kana) }))} /></label>
-            <label className="lu-field"><span>{s.resvCount}</span><input type="number" min={1} inputMode="numeric" value={draft.tickets} onChange={e => setDraft(d => ({ ...d, tickets: e.target.value }))} /></label>
-            <label className="lu-field"><span>{s.resvEmail}</span><input type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} /></label>
-            <label className="lu-field"><span>{s.resvNote}</span><input value={draft.note} onChange={e => setDraft(d => ({ ...d, note: e.target.value }))} /></label>
-            <label className="lu-field"><span>{s.resvMailLang}</span>
-              <select value={draft.locale} onChange={e => setDraft(d => ({ ...d, locale: e.target.value as 'ja' | 'en' }))}>
-                <option value="ja">日本語</option><option value="en">English</option>
-              </select>
-            </label>
-          </div>
-          <p className="lu-hint">{s.resvMailLangHint}</p>
-          {flag && <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFilteredBody : s.resvFlagLookalikeBody.replace('{email}', flag.listed)}</p>}
-          <BookingLog r={r} s={s} locale={locale} />
-          <p className="lu-hint">
-            {r.source === 'form' ? s.resvFromFormTip : r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
-          </p>
-          <div className="lu-resv-edit-actions">
-            <button type="button" className="lu-btn lu-btn-primary" disabled={!dirty || busy} onClick={() => run(() => onChange(draft))}>{s.save}</button>
-            {r.source === 'web' && !cancelled && (
-              <button type="button" className={`lu-btn${isNew ? ' lu-btn-ok' : ''}`} disabled={busy} onClick={() => run(() => onChange({ checked: isNew ? 'TRUE' : '' }))}>
-                {isNew ? `✓ ${s.resvCheck}` : s.resvUncheck}
-              </button>
-            )}
-            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={openSend}><Icon name="mail" /> {r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}</button>}
-            <button type="button" className={`lu-btn ${cancelled ? '' : 'lu-btn-danger-quiet'}`} disabled={busy}
-              onClick={() => run(() => onChange({ status: cancelled ? '' : 'cancelled' }))}>
-              {cancelled ? s.resvRestore : s.resvCancel}
-            </button>
-          </div>
-          <ConfirmDialog s={s} open={askSend}
-            title={(r.emailed === 'yes' ? s.resvSendAgainTitle : s.resvSendTitle).replace('{name}', r.name)}
-            body={s.resvSendBody.replace('{email}', r.email).replace('{lang}', sendLang === 'en' ? 'English' : '日本語')}
-            confirmLabel={r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}
-            onCancel={() => setAskSend(false)}
-            onConfirm={send}
-            wide tone="primary">
-            {/* Exactly what they'll get: built by the same code that sends it */}
-            <div className="lu-mail-preview">
-              <div className="lu-chips" role="group" aria-label={s.resvMailLang}>
-                <span className="lu-hint">{s.resvMailLang}</span>
-                {(['ja', 'en'] as const).map(l => (
-                  <button key={l} type="button" className={`lu-pill${sendLang === l ? ' is-on' : ''}`} aria-pressed={sendLang === l} onClick={() => setSendLang(l)}>
-                    {l === 'ja' ? '日本語' : 'English'}
-                  </button>
-                ))}
-              </div>
-              {preview ? (
-                <>
-                  <p className="lu-mail-subject"><span>{s.resvMailSubject}</span> {preview.subject}</p>
-                  <iframe title={preview.subject} sandbox="" srcDoc={preview.html} />
-                </>
-              ) : previewError ? <p className="lu-field-error">{previewError}</p> : <p className="lu-loading">{s.loading}</p>}
-            </div>
-          </ConfirmDialog>
+      </div>
+
+      <header className="lu-resv-pane-head">
+        <span className="lu-resv-count is-big">{ticketsOf(r)}</span>
+        <div>
+          <h2>{r.name}{r.kana && <small className="lu-resv-kana">{r.kana}</small>}</h2>
+          <p className="lu-hint">{[r.email, when(r.received_at, locale)].filter(Boolean).join(' · ')}</p>
+          <p className="lu-list-tags"><BookingTags r={r} s={s} flag={flag} isNew={isNew} /></p>
         </div>
+      </header>
+
+      {r.note && (
+        <blockquote className="lu-resv-note">
+          <span className="lu-resv-note-label">💬 {s.resvTheirNote}</span>
+          <p>{r.note}</p>
+        </blockquote>
       )}
-    </li>
+      {flag && <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFilteredBody : s.resvFlagLookalikeBody.replace('{email}', flag.listed)}</p>}
+
+      <div className="lu-resv-pane-actions">
+        {r.source === 'web' && !cancelled && (
+          <button type="button" className={`lu-btn${isNew ? ' lu-btn-ok' : ''}`} disabled={busy} onClick={() => run(() => onChange({ checked: isNew ? 'TRUE' : '' }))}>
+            {isNew ? `✓ ${s.resvCheck}` : s.resvUncheck}
+          </button>
+        )}
+        <button type="button" className={`lu-btn ${cancelled ? '' : 'lu-btn-danger-quiet'}`} disabled={busy}
+          onClick={() => run(() => onChange({ status: cancelled ? '' : 'cancelled' }))}>
+          {cancelled ? s.resvRestore : s.resvCancel}
+        </button>
+      </div>
+
+      {r.email && flag?.kind !== 'filtered' && !cancelled && (
+        <MailComposer r={r} s={s} onSent={onReplace} onError={onError} />
+      )}
+
+      <div className="lu-resv-pane-section">
+        <h3>{s.resvLogTitle}</h3>
+        <BookingLog r={r} s={s} locale={locale} onOpenMail={setViewing} />
+        <p className="lu-hint">
+          {r.source === 'form' ? s.resvFromFormTip : r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
+        </p>
+      </div>
+
+      <div className="lu-resv-pane-section">
+        <h3>{s.resvDetails}</h3>
+        <div className="lu-resv-edit-grid">
+          <label className="lu-field"><span>{s.resvName}</span><input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} /></label>
+          <label className="lu-field"><span>{s.resvKana}</span><input lang="ja" value={draft.kana} placeholder={s.resvKanaHint} onChange={e => setDraft(d => ({ ...d, kana: e.target.value }))} onBlur={() => setDraft(d => ({ ...d, kana: toKatakana(d.kana) }))} /></label>
+          <label className="lu-field"><span>{s.resvCount}</span><input type="number" min={1} inputMode="numeric" value={draft.tickets} onChange={e => setDraft(d => ({ ...d, tickets: e.target.value }))} /></label>
+          <label className="lu-field"><span>{s.resvEmail}</span><input type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} /></label>
+          <label className="lu-field lu-resv-edit-wide"><span>{s.resvNote}</span><textarea rows={2} value={draft.note} onChange={e => setDraft(d => ({ ...d, note: e.target.value }))} /></label>
+          <label className="lu-field"><span>{s.resvMailLang}</span>
+            <select value={draft.locale} onChange={e => setDraft(d => ({ ...d, locale: e.target.value as 'ja' | 'en' }))}>
+              <option value="ja">日本語</option><option value="en">English</option>
+            </select>
+          </label>
+        </div>
+        <p className="lu-hint">{s.resvMailLangHint}</p>
+        <div className="lu-resv-edit-actions">
+          <button type="button" className="lu-btn lu-btn-primary" disabled={!dirty || busy} onClick={() => run(() => onChange(draft))}>{s.save}</button>
+        </div>
+      </div>
+      {viewing && <SentMailViewer mailId={viewing} s={s} locale={locale} onClose={() => setViewing(null)} />}
+    </section>
+  );
+}
+
+const DRAFT_KEY = (id: string) => `admin-resv-draft:${id}`;
+
+/**
+ * Writing to a fan: the confirmation email (their booking and the show), with a message of your own at the top
+ * (a reply to their note, say) and the subject changed if you like. The preview is the real email, redrawn as you type.
+ * An unsent draft is kept on this device until it's sent or cleared.
+ */
+function MailComposer({ r, s, onSent, onError }: { r: Reservation; s: AdminStrings; onSent: (r: Reservation) => void; onError: (msg: string) => void }) {
+  const saved = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem(DRAFT_KEY(r.id)) || 'null') as { lang: 'ja' | 'en'; subject: string; message: string } | null; }
+    catch { return null; }
+  }, [r.id]);
+  const [open, setOpen] = useState(!!saved);
+  const [lang, setLang] = useState<'ja' | 'en'>(saved?.lang || langOf(r));
+  const [subject, setSubject] = useState(saved?.subject || '');   // '' = the template's
+  const [message, setMessage] = useState(saved?.message || '');
+  const [preview, setPreview] = useState<{ subject: string; html: string; defaultSubject: string } | null>(null);
+  const [previewError, setPreviewError] = useState('');
+  const [asking, setAsking] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  // Keep the draft (only once something's been written)
+  useEffect(() => {
+    try {
+      if (open && (subject || message.trim() || lang !== langOf(r))) localStorage.setItem(DRAFT_KEY(r.id), JSON.stringify({ lang, subject, message }));
+      else localStorage.removeItem(DRAFT_KEY(r.id));
+    } catch { /* private mode */ }
+  }, [open, lang, subject, message, r]);
+
+  // Redraw the preview a moment after typing stops
+  useEffect(() => {
+    if (!open) return;
+    let stale = false;
+    const t = setTimeout(() => {
+      setPreviewError('');
+      previewReservationEmail(r.id, { lang, subject, message })
+        .then(p => { if (!stale) setPreview(p); })
+        .catch(err => { if (!stale) setPreviewError(errorText(err)); });
+    }, preview ? 450 : 0);
+    return () => { stale = true; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, r.id, lang, subject, message]);
+
+  function clear() { setSubject(''); setMessage(''); setLang(langOf(r)); }
+  async function send() {
+    setAsking(false); setSending(true); onError('');
+    try {
+      onSent(await resendReservation(r.id, { lang, subject, message }));
+      try { localStorage.removeItem(DRAFT_KEY(r.id)); } catch { /* private mode */ }
+      setSubject(''); setMessage(''); setOpen(false); setPreview(null);
+    } catch (err) { onError(errorText(err)); }
+    finally { setSending(false); }
+  }
+
+  const sendLabel = message.trim() ? s.resvSendMail : r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm;
+  if (!open) {
+    return (
+      <div className="lu-resv-pane-section lu-resv-compose is-closed">
+        <button type="button" className="lu-btn lu-btn-primary" onClick={() => setOpen(true)}><Icon name="mail" /> {s.resvWrite}</button>
+        <span className="lu-hint">{r.note ? s.resvWriteHintNote : s.resvWriteHint}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="lu-resv-pane-section lu-resv-compose">
+      <h3><Icon name="mail" /> {s.resvWrite}</h3>
+      <p className="lu-hint">{s.resvWriteHint}</p>
+      <div className="lu-chips" role="group" aria-label={s.resvMailLang}>
+        <span className="lu-hint">{s.resvMailLang}</span>
+        {(['ja', 'en'] as const).map(l => (
+          <button key={l} type="button" className={`lu-pill${lang === l ? ' is-on' : ''}`} aria-pressed={lang === l} onClick={() => setLang(l)}>
+            {l === 'ja' ? '日本語' : 'English'}
+          </button>
+        ))}
+      </div>
+      <label className="lu-field">
+        <span>{s.resvMessage}</span>
+        <textarea rows={5} value={message} placeholder={lang === 'ja' ? s.resvMessagePhJa : s.resvMessagePhEn} onChange={e => setMessage(e.target.value)} autoFocus={!saved} />
+      </label>
+      <label className="lu-field">
+        <span>{s.resvMailSubject}</span>
+        <input value={subject || preview?.defaultSubject || ''} onChange={e => setSubject(e.target.value === preview?.defaultSubject ? '' : e.target.value)} />
+      </label>
+      <div className="lu-mail-preview">
+        <p className="lu-hint">{s.resvPreviewLabel.replace('{email}', r.email)}</p>
+        {preview ? <iframe title={preview.subject} sandbox="" srcDoc={preview.html} />
+          : previewError ? <p className="lu-field-error">{previewError}</p> : <p className="lu-loading">{s.loading}</p>}
+      </div>
+      <div className="lu-resv-edit-actions">
+        <button type="button" className="lu-btn lu-btn-primary" disabled={sending || !preview} onClick={() => setAsking(true)}><Icon name="mail" /> {sending ? s.resvSending : sendLabel}</button>
+        {(subject || message || lang !== langOf(r)) && <button type="button" className="lu-btn lu-btn-quiet" disabled={sending} onClick={clear}>{s.resvMailReset}</button>}
+        <button type="button" className="lu-btn lu-btn-quiet" disabled={sending} onClick={() => { clear(); setOpen(false); }}>{s.cancel}</button>
+      </div>
+      <ConfirmDialog s={s} open={asking}
+        title={(message.trim() ? s.resvSendMailTitle : r.emailed === 'yes' ? s.resvSendAgainTitle : s.resvSendTitle).replace('{name}', r.name)}
+        body={s.resvSendBody.replace('{email}', r.email).replace('{lang}', lang === 'en' ? 'English' : '日本語')}
+        confirmLabel={sendLabel} tone="primary"
+        onCancel={() => setAsking(false)} onConfirm={send} />
+    </div>
+  );
+}
+
+/** A copy of an email that went out, opened from the booking's history. */
+function SentMailViewer({ mailId, s, locale, onClose }: { mailId: string; s: AdminStrings; locale: AdminLocale; onClose: () => void }) {
+  const [mail, setMail] = useState<SentReservationMail | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => { getSentReservationMail(mailId).then(setMail).catch(e => setErr(errorText(e))); }, [mailId]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="lu-modal-overlay" onClick={onClose}>
+      <div className="lu-modal lu-modal-wide" role="dialog" aria-modal="true" aria-label={mail?.subject || s.resvViewMail} onClick={e => e.stopPropagation()}>
+        {mail ? (
+          <div className="lu-mail-preview">
+            <h3>{mail.subject}</h3>
+            <p className="lu-hint">
+              {s.resvMailTo} {mail.to} · {when(mail.sent_at, locale)}{mail.who ? ` · ${whoName(mail.who)}` : ''} · {mail.lang === 'en' ? 'English' : '日本語'}
+            </p>
+            <iframe title={mail.subject} sandbox="" srcDoc={mail.html} />
+          </div>
+        ) : err ? <p className="lu-field-error">{err}</p> : <p className="lu-loading">{s.loading}</p>}
+        <div className="lu-modal-actions">
+          <button type="button" className="lu-btn" onClick={onClose} autoFocus>{s.close}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -2531,3 +2531,54 @@ a.lu-icon-btn { text-decoration: none; }
 .lu-resv-log time { font-family: var(--font-main); color: var(--text-muted); white-space: nowrap; }
 .lu-resv-log-who { color: var(--text-muted); }
 @media (max-width: 640px) { .lu-resv-log li { grid-template-columns: 1fr auto; } .lu-resv-log time { grid-column: 1 / -1; } }
+
+/* ---------- One show's bookings: list, and the open booking beside it ---------- */
+.lu-resv-split { display: block; }
+.lu-resv-list li.is-current > .lu-resv-row { background: color-mix(in srgb, var(--pop, #f5d547) 22%, var(--surface)); box-shadow: inset 4px 0 0 var(--text); }
+.lu-resv-hasnote { font-size: 0.85em; }
+.lu-resv-pane { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.lu-resv-pane-nav { display: flex; align-items: center; gap: 0.5rem; }
+.lu-resv-pane-show { flex: 1; min-width: 0; font-size: 0.82rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lu-resv-pane-step { display: flex; gap: 0.25rem; }
+.lu-resv-pane-step .is-off { opacity: 0.35; pointer-events: none; }
+.lu-resv-pane-head { display: flex; gap: 0.9rem; align-items: flex-start; }
+.lu-resv-pane-head h2 { margin: 0; font-size: 1.5rem; line-height: 1.25; word-break: auto-phrase; }
+.lu-resv-pane-head h2 .lu-resv-kana { display: block; font-size: 0.8rem; font-weight: 500; margin: 0.15rem 0 0; }
+.lu-resv-pane-head p { margin: 0.25rem 0 0; }
+.lu-resv-pane-head .lu-list-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-start; margin-top: 0.5rem; }
+.lu-resv-count.is-big { width: 3rem; height: 3rem; font-size: 1.3rem; }
+.lu-resv-note { margin: 0; padding: 0.8rem 1rem; border: 1.5px solid var(--text); border-radius: var(--radius); background: color-mix(in srgb, var(--pop, #f5d547) 14%, var(--surface)); }
+.lu-resv-note-label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.25rem; }
+.lu-resv-note p { margin: 0; white-space: pre-wrap; font-size: 1rem; line-height: 1.6; }
+.lu-resv-pane-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.lu-resv-pane-section { display: flex; flex-direction: column; gap: 0.7rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+.lu-resv-pane-section > h3 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 0.4rem; }
+.lu-resv-pane-section > .lu-hint { margin: 0; }
+.lu-resv-compose.is-closed { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; }
+.lu-resv-compose .lu-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.lu-resv-compose .lu-field > span { font-weight: 600; font-size: 0.88rem; }
+.lu-shell .lu-resv-compose textarea, .lu-shell .lu-resv-compose input, .lu-shell .lu-resv-edit-grid textarea {
+  width: 100%; padding: 0.6rem 0.8rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); font: inherit; font-size: 1rem; line-height: 1.6;
+}
+.lu-resv-compose textarea { min-height: 7.5rem; resize: vertical; }
+.lu-resv-compose .lu-mail-preview iframe { height: min(60vh, 36rem); }
+.lu-resv-edit-grid .lu-resv-edit-wide { grid-column: 1 / -1; }
+
+/* Phones and narrow windows: the open booking takes the page */
+@media (max-width: 1179px) {
+  .lu-resv-split.has-pane .lu-resv-listcol { display: none; }
+  .has-pane > .lu-resv-head { display: none; }
+  .lu-resv-close { display: none; }
+}
+/* Wide: list on the left, the booking on the right, staying in view while the list scrolls */
+@media (min-width: 1180px) {
+  .lu-resv-back { display: none; }
+  .lu-resv-split.has-pane { display: grid; grid-template-columns: minmax(19rem, 0.85fr) minmax(0, 1.15fr); gap: 1.5rem; align-items: start; }
+  .lu-resv-split.has-pane .lu-resv-pane {
+    position: sticky; top: 1rem; max-height: calc(100dvh - 2rem); overflow-y: auto;
+    padding: 1rem 1.2rem 1.4rem; border: 1.5px solid var(--text); border-radius: var(--radius); background: var(--surface); box-shadow: 4px 4px 0 var(--pop);
+  }
+  /* The list gets narrow: keep the name, count and "new"; the rest is in the booking */
+  .lu-resv-split.has-pane .lu-resv-row .lu-list-tags > :not(.is-new):not(.is-warn) { display: none; }
+  .lu-resv-split.has-pane .lu-resv-actions .lu-btn-quiet { display: none; }
+}

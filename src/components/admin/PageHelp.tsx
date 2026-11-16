@@ -31,8 +31,8 @@ const TIPS: Record<string, Tips> = {
     ja: ['ライブの追加は日付と会場だけでOK。普通のライブならタイトルは空欄で。', 'セトリは公演の翌日に公開されるので、当日の夜に入れても大丈夫です。', 'ネットや動画の説明欄でセトリを見つけたら、セトリ編集の「セットリストを貼り付け」へ。'],
   },
   reservations: {
-    en: ['Turn bookings on in a show’s Tickets section. Fans get a confirmation email by themselves.', 'Tap a booking to edit or cancel it. “Add a reservation” is for bookings by DM or phone.', 'Door mode on the night: open it on a phone and tap names as people arrive.'],
-    ja: ['ライブの「チケット」欄でオンにします。確認メールは自動で届きます。', '予約をタップで編集・キャンセル。DMや電話の予約は「予約を追加」から。', '当日は受付モードで。スマホで開いて、来た人の名前をタップします。'],
+    en: ['Turn bookings on in a show’s Tickets section. Fans get a confirmation email by themselves.', 'Open a booking to see their note, write back (your message goes at the top of their confirmation email), edit or cancel it.', 'Door mode on the night: open it on a phone and tap names as people arrive.'],
+    ja: ['ライブの「チケット」欄でオンにします。確認メールは自動で届きます。', '予約を開くと、メモの確認、返事のメール（確認メールの最初に入ります）、編集やキャンセルができます。', '当日は受付モードで。スマホで開いて、来た人の名前をタップします。'],
   },
   messages: {
     en: ['Messages from the site’s contact form, also emailed to the band.', 'Reply opens your email app. Then “Mark as done” so it leaves the New count.', '“Filter this sender” keeps someone’s messages out of the inbox and the band’s email.'],

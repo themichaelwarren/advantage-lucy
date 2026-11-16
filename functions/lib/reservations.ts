@@ -38,9 +38,10 @@ export const RESERVATION_COLUMNS = [
 ] as const;
 export type Reservation = Record<typeof RESERVATION_COLUMNS[number], string>;
 
-/** One line of a booking's log. what: booked, rebooked, added, emailed, email_failed, email_held, resent,
- *  cancelled, restored, tickets, checked, unchecked, arrived, not_arrived, lang, edited. who: an admin's email, or '' (the fan). */
-export const logLine = (what: string, detail = '', who = '') => [new Date().toISOString(), what, detail, who].join('\t');
+/** One line of a booking's log. what: booked, rebooked, added, emailed, email_failed, email_held, resent, wrote,
+ *  cancelled, restored, tickets, checked, unchecked, arrived, not_arrived, lang, edited. who: an admin's email, or '' (the fan).
+ *  mail: the id of the email that went out (kept in the "Reservation emails" tab), so it can be opened again. */
+export const logLine = (what: string, detail = '', who = '', mail = '') => [new Date().toISOString(), what, detail, who, mail].join('\t').replace(/\t+$/, '');
 const addLog = (log: string | undefined, lines: string[]) => [log || '', ...lines].filter(Boolean).join('\n');
 
 /** The signed-in admin's email, from their Google sign-in token (already checked by the admin middleware). */
@@ -250,8 +251,14 @@ ${rows.filter(([, v]) => v).map(([k, v]) => `<tr><td style="padding:4px 16px 4px
 </table>`;
 const button = (href: string, label: string) => `<a href="${esc(href)}" style="display:inline-block;margin:0 8px 8px 0;padding:9px 16px;border:1.5px solid #1d1b16;border-radius:999px;background:#ffd43b;color:#1d1b16;font-weight:700;text-decoration:none">${esc(label)}</a>`;
 
-/** The confirmation the fan gets: their booking and the show details. */
-export function confirmationEmail(r: Reservation, show: Show, siteUrl: string) {
+/** What an admin can add when sending by hand: their own subject, and a message (a reply to the fan's note, say). */
+export interface MailExtra { subject?: string; message?: string }
+/** A message typed in admin, as email paragraphs: blank lines split paragraphs, single line breaks stay. */
+const messageHtml = (m: string) => m.trim().split(/\n\s*\n/).map(p => `<p style="margin:0 0 16px">${esc(p.trim()).replace(/\n/g, '<br>')}</p>`).join('\n');
+
+/** The confirmation the fan gets: their booking and the show details (and, sent from admin, a message). */
+export function confirmationEmail(r: Reservation, show: Show, siteUrl: string, extra: MailExtra = {}) {
+  const message = (extra.message || '').trim();
   const ja = r.locale === 'ja';
   const f = showFacts(show, ja ? 'ja' : 'en');
   const page = `${siteUrl.replace(/\/$/, '')}/${ja ? 'ja' : 'en'}/events/${encodeURIComponent(show.id)}`;
@@ -259,12 +266,13 @@ export function confirmationEmail(r: Reservation, show: Show, siteUrl: string) {
   const rows: [string, string][] = ja
     ? [['ライブ', f.title], ['日時', f.date], ['時間', f.times], ['会場', f.venue], ['料金', f.price], ['お名前', r.name], ['枚数', `${n}枚`]]
     : [['Show', f.title], ['Date', f.date], ['Time', f.times], ['Venue', f.venue], ['Price', f.price], ['Name', r.name], ['Tickets', String(n)]];
-  const subject = ja
+  const subject = extra.subject?.trim() || (ja
     ? `【ご予約ありがとうございます】${f.shortDate} ${f.venueName} — advantage Lucy`
-    : `Your reservation: advantage Lucy, ${f.date} at ${f.venueName}`;
+    : `Your reservation: advantage Lucy, ${f.date} at ${f.venueName}`);
   const lines = ja ? [
     `${r.name} 様`,
     '',
+    ...(message ? [message, ''] : []),
     'advantage Lucy のライブのご予約ありがとうございます。以下の内容で承りました。',
     '',
     ...rows.filter(([, v]) => v).map(([k, v]) => `${k}：${v}`),
@@ -279,6 +287,7 @@ export function confirmationEmail(r: Reservation, show: Show, siteUrl: string) {
   ] : [
     `Hi ${r.name},`,
     '',
+    ...(message ? [message, ''] : []),
     'Thanks for reserving tickets for advantage Lucy. You’re all set:',
     '',
     ...rows.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`),
@@ -294,6 +303,7 @@ export function confirmationEmail(r: Reservation, show: Show, siteUrl: string) {
   const text = lines.join('\n');
   const html = wrap(ja ? `
 <p style="margin:0 0 12px">${esc(r.name)} 様</p>
+${message ? messageHtml(message) : ''}
 <p style="margin:0 0 16px">advantage Lucy のライブのご予約ありがとうございます。以下の内容で承りました。</p>
 ${table(rows)}
 <p style="margin:0 0 8px">当日は受付で「advantage Lucy の予約」とお名前をお伝えください。お支払いは当日、受付でお願いします。</p>
@@ -301,6 +311,7 @@ ${table(rows)}
 <p style="margin:0 0 16px">${button(page, 'ライブの詳細を見る')}</p>
 <p style="margin:0">当日お会いできるのを楽しみにしています！<br>advantage Lucy</p>` : `
 <p style="margin:0 0 12px">Hi ${esc(r.name)},</p>
+${message ? messageHtml(message) : ''}
 <p style="margin:0 0 16px">Thanks for reserving tickets for advantage Lucy. You’re all set:</p>
 ${table(rows)}
 <p style="margin:0 0 8px">At the door, say you have a reservation for advantage Lucy and give your name. You pay at the door on the night.</p>
@@ -342,16 +353,58 @@ async function senderMatch(ctx: ReserveContext, email: string): Promise<SenderMa
  * The confirmation email. Never to a filtered address, whoever asks; a
  * lookalike only when an admin sends it on purpose (after checking).
  */
-async function sendConfirmation(ctx: ReserveContext, r: Reservation, show: Show, opts: { lookalikeOk?: boolean; match?: SenderMatch } = {}): Promise<boolean> {
+async function sendConfirmation(ctx: ReserveContext, r: Reservation, show: Show, opts: { lookalikeOk?: boolean; match?: SenderMatch; extra?: MailExtra; who?: string } = {}): Promise<{ sent: boolean; mailId: string }> {
   const match = opts.match !== undefined ? opts.match : await senderMatch(ctx, r.email);
-  if (match?.kind === 'filtered' || (match?.kind === 'lookalike' && !opts.lookalikeOk)) return false;
-  const mail = confirmationEmail(r, show, ctx.siteUrl);
+  if (match?.kind === 'filtered' || (match?.kind === 'lookalike' && !opts.lookalikeOk)) return { sent: false, mailId: '' };
+  const mail = confirmationEmail(r, show, ctx.siteUrl, opts.extra);
   const bandTo = (ctx.env.CONTACT_NOTIFY_TO || '').split(',')[0]?.trim();
+  let sent = false;
   try {
-    return await sendEmail(ctx.env, { to: [r.email], ...mail, replyTo: bandTo || undefined });
+    sent = await sendEmail(ctx.env, { to: [r.email], ...mail, replyTo: bandTo || undefined });
   } catch (err) {
     console.error('[reserve] confirmation failed', err);
-    return false;
+  }
+  if (!sent) return { sent, mailId: '' };
+  // Keep a copy, so the band can open exactly what went out from the booking's history
+  const mailId = await saveMail(ctx, {
+    reservation: r.id, who: opts.who || '', to: r.email, lang: r.locale === 'en' ? 'en' : 'ja',
+    subject: mail.subject, message: opts.extra?.message || '', html: mail.html,
+  }).catch(err => { console.error('[reserve] keeping a copy failed', err); return ''; });
+  return { sent, mailId };
+}
+
+// ── Sent emails (a copy of each, for the booking's history) ──────────────
+
+export const MAIL_TAB = 'Reservation emails';
+const MAIL_COLUMNS = ['id', 'reservation', 'sent_at', 'who', 'to', 'lang', 'subject', 'message', 'html'] as const;
+export type SentMail = Record<typeof MAIL_COLUMNS[number], string>;
+const mailLastCol = String.fromCharCode(64 + MAIL_COLUMNS.length);
+let mailTabChecked = false;
+
+async function saveMail(ctx: ReserveContext, m: Omit<SentMail, 'id' | 'sent_at'>): Promise<string> {
+  const token = await getAccessToken(ctx.saEmail, ctx.saKey, SCOPE);
+  const base = `https://sheets.googleapis.com/v4/spreadsheets/${ctx.sheetId}`;
+  if (!mailTabChecked) {
+    const meta = await sheetsFetch(token, `${base}?fields=sheets.properties.title`);
+    if (!meta.sheets?.some((s: any) => s.properties?.title === MAIL_TAB)) {
+      await sheetsFetch(token, `${base}:batchUpdate`, { method: 'POST', body: JSON.stringify({ requests: [{ addSheet: { properties: { title: MAIL_TAB } } }] }) });
+      await sheetsFetch(token, `${base}/values/${encodeURIComponent(`${MAIL_TAB}!A1`)}?valueInputOption=RAW`, { method: 'PUT', body: JSON.stringify({ values: [[...MAIL_COLUMNS]] }) });
+    }
+    mailTabChecked = true;
+  }
+  const row: SentMail = { id: `m${newId().slice(1)}`, sent_at: new Date().toISOString(), ...m };
+  await sheetsFetch(token, `${base}/values/${encodeURIComponent(`${MAIL_TAB}!A:A`)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
+    { method: 'POST', body: JSON.stringify({ values: [MAIL_COLUMNS.map(c => row[c])] }) });
+  return row.id;
+}
+
+async function getMail(ctx: ReserveContext, id: string): Promise<SentMail | undefined> {
+  try {
+    const rows = await fetchSheet(ctx.sheetId, `${MAIL_TAB}!A:${mailLastCol}`, ctx.saEmail, ctx.saKey);
+    return (rowsToObjects(rows) as SentMail[]).find(m => m.id === id);
+  } catch (err) {
+    if (String(err).includes('Unable to parse range')) return undefined;
+    throw err;
   }
 }
 
@@ -443,9 +496,9 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
     // A filtered (or lookalike) address: kept and flagged ⚠ for the band, but no
     // confirmation goes to it. The page looks the same to them as to anyone.
     const match = await senderMatch(ctx, r.email);
-    const sent = await sendConfirmation(ctx, r, show, { match });
+    const { sent, mailId } = await sendConfirmation(ctx, r, show, { match });
     await updateReservation(ctx.sheetId, ctx.saEmail, ctx.saKey, r.id, { emailed: match ? 'held' : sent ? 'yes' : 'no' },
-      [logLine(match ? 'email_held' : sent ? 'emailed' : 'email_failed', r.email)]).catch(() => {});
+      [logLine(match ? 'email_held' : sent ? 'emailed' : 'email_failed', r.email, '', mailId)]).catch(() => {});
     const cap = left === null ? null : taken + left;
     try {
       const note = bandEmail(r, show, { taken: taken + v.tickets, cap }, ctx.siteUrl, !!earlier);
@@ -463,9 +516,10 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
 /**
  * /api/admin/reservations (signed-in admins only)
  *   GET                         every booking
- *   GET   ?preview=<id>         the confirmation email that booking would get (nothing is sent)
+ *   GET   ?mail=<id>            a copy of an email that went out (from a booking's history)
+ *   POST  {preview: id, lang?, subject?, message?}  the email that booking would get (nothing is sent)
  *   POST  {fields, send_email}  add one by hand (e.g. a booking by DM)
- *   POST  {resend: id}          send the confirmation email again
+ *   POST  {resend: id, lang?, subject?, message?}   send the confirmation email again, with a message if there is one
  *   PATCH {id, fields}          change name, email, tickets, note, status, arrived or checked
  *   PATCH {ids, fields}         the same change to several (e.g. "mark all checked")
  */
@@ -473,17 +527,10 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
   const { sheetId, saEmail, saKey } = ctx;
   try {
     if (request.method === 'GET') {
-      const q = new URL(request.url).searchParams;
-      const previewId = q.get('preview');
-      const lang = q.get('lang');
-      if (previewId) {
-        const r = (await listReservations(sheetId, saEmail, saKey)).find(x => x.id === previewId);
-        if (!r) return json({ error: 'Not found' }, 404);
-        const show = await findShow(ctx, r.event);
-        if (!show) return json({ error: 'Show not found' }, 404);
-        // ?lang= shows it in the other language without changing the booking
-        const mail = confirmationEmail(lang === 'ja' || lang === 'en' ? { ...r, locale: lang } : r, show, ctx.siteUrl);
-        return json({ to: r.email, subject: mail.subject, html: mail.html });
+      const mailId = new URL(request.url).searchParams.get('mail');
+      if (mailId) {
+        const m = await getMail(ctx, mailId);
+        return m ? json({ mail: m }) : json({ error: 'Not found' }, 404);
       }
       return json({ reservations: await listReservations(sheetId, saEmail, saKey) });
     }
@@ -497,7 +544,24 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
       f.locale !== undefined && logLine('lang', f.locale, who),
       (['name', 'kana', 'email', 'note'] as const).some(c => f[c] !== undefined) && logLine('edited', '', who),
     ].filter((x): x is string => !!x);
-    const body = await request.json() as { id?: string; ids?: string[]; resend?: string; fields?: Partial<Reservation>; send_email?: boolean };
+    const body = await request.json() as {
+      id?: string; ids?: string[]; resend?: string; preview?: string; fields?: Partial<Reservation>; send_email?: boolean;
+      lang?: string; subject?: string; message?: string;
+    };
+    // An email sent from admin: in the language picked (the booking's, unless changed), with their own subject and message
+    const extra: MailExtra = { subject: String(body.subject || '').slice(0, 200), message: String(body.message || '').slice(0, 4000) };
+    const inLang = (r: Reservation): Reservation => (body.lang === 'ja' || body.lang === 'en' ? { ...r, locale: body.lang } : r);
+
+    if (request.method === 'POST' && body.preview) {
+      const r = (await listReservations(sheetId, saEmail, saKey)).find(x => x.id === body.preview);
+      if (!r) return json({ error: 'Not found' }, 404);
+      const show = await findShow(ctx, r.event);
+      if (!show) return json({ error: 'Show not found' }, 404);
+      const mail = confirmationEmail(inLang(r), show, ctx.siteUrl, extra);
+      // The template's own subject too, so the editor can start from it
+      const plain = confirmationEmail(inLang(r), show, ctx.siteUrl);
+      return json({ to: r.email, subject: mail.subject, html: mail.html, defaultSubject: plain.subject });
+    }
     const allowed = (f: Partial<Reservation> = {}) => {
       const out: Partial<Reservation> = {};
       for (const c of ['name', 'kana', 'email', 'tickets', 'note', 'status', 'arrived', 'locale', 'checked'] as const) {
@@ -537,8 +601,14 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
       if (!show) return json({ error: 'Show not found' }, 404);
       const match = await senderMatch(ctx, r.email);
       if (match?.kind === 'filtered') return json({ error: 'This address is on the filtered list, so no email is sent to it.' }, 400);
-      const sent = await sendConfirmation(ctx, r, show, { match, lookalikeOk: true });
-      const next = await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: sent ? 'yes' : 'no' }, [logLine(sent ? 'resent' : 'email_failed', r.email, who)]);
+      const to = inLang(r);
+      const { sent, mailId } = await sendConfirmation(ctx, to, show, { match, lookalikeOk: true, extra, who });
+      // A new language sticks only once an email has actually gone out in it
+      const langChanged = sent && to.locale !== r.locale;
+      const next = await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: sent ? 'yes' : 'no', ...(langChanged ? { locale: to.locale } : {}) }, [
+        ...(langChanged ? [logLine('lang', to.locale, who)] : []),
+        logLine(!sent ? 'email_failed' : extra.message?.trim() ? 'wrote' : r.emailed === 'yes' ? 'resent' : 'emailed', r.email, who, mailId),
+      ]);
       if (!sent) return json({ error: 'The email couldn’t be sent. Is email set up (RESEND_API_KEY)?' }, 502);
       return json({ ok: true, reservation: next });
     }
@@ -559,8 +629,9 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
       await appendReservation(sheetId, saEmail, saKey, r);
       await forgetState(event);
       if (body.send_email && r.email) {
-        r.emailed = (await sendConfirmation(ctx, r, show, { lookalikeOk: true })) ? 'yes' : 'no';
-        await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: r.emailed }, [logLine(r.emailed === 'yes' ? 'emailed' : 'email_failed', r.email, who)]).catch(() => {});
+        const { sent, mailId } = await sendConfirmation(ctx, r, show, { lookalikeOk: true, who });
+        r.emailed = sent ? 'yes' : 'no';
+        await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: r.emailed }, [logLine(sent ? 'emailed' : 'email_failed', r.email, who, mailId)]).catch(() => {});
       }
       return json({ ok: true, reservation: r });
     }

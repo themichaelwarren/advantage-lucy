@@ -2034,11 +2034,12 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 .reserve-form, .reserve-confirm { display: flex; flex-direction: column; gap: 1rem; }
 .reserve-field { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.88rem; font-weight: 600; }
 .reserve-field em { font-style: normal; font-weight: 400; color: var(--text-muted); font-size: 0.8rem; }
-.reserve-field input {
+.reserve-field input, .reserve-field textarea {
   width: 100%; font: inherit; font-size: 1rem; font-weight: 400; color: var(--text);
   background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 0.9rem;
 }
-.reserve-field input:focus { outline: none; border-color: var(--text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pop) 55%, transparent); }
+.reserve-field textarea { resize: vertical; min-height: 5.2rem; line-height: 1.6; }
+.reserve-field input:focus, .reserve-field textarea:focus { outline: none; border-color: var(--text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pop) 55%, transparent); }
 .reserve-tickets { display: flex; flex-direction: column; gap: 0.4rem; }
 .reserve-label { font-size: 0.88rem; font-weight: 600; }
 .reserve-counts { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -2060,7 +2061,7 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 
 .reserve-review { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem 1.2rem; margin: 0; align-items: baseline; }
 .reserve-review dt { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
-.reserve-review dd { margin: 0; font-size: 1.05rem; overflow-wrap: anywhere; }
+.reserve-review dd { margin: 0; font-size: 1.05rem; overflow-wrap: anywhere; white-space: pre-line; }
 .reserve-review-big { font-size: 1.3rem !important; font-weight: 700; }
 .reserve-review-email { padding: 0.15rem 0.5rem; margin-left: -0.5rem !important; border-radius: 6px; background: color-mix(in srgb, var(--pop) 30%, transparent); justify-self: start; }
 .reserve-pay { font-size: 0.9rem; padding: 0.7rem 0.9rem; border-left: 3px solid var(--pop); background: var(--surface); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }

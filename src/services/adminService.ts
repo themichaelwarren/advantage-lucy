@@ -41,7 +41,8 @@ async function adminFetch(url: string, options?: RequestInit, retried = false): 
     throw new Error(body.error || `Admin API error: ${res.status}`);
   }
   // A save: open history lists look again (components/admin/Activity.tsx)
-  if (options?.method && options.method !== 'GET' && typeof window !== 'undefined') window.dispatchEvent(new Event('lu-admin-saved'));
+  // (X-Lu-Quiet: a POST that only looks, like an email preview)
+  if (options?.method && options.method !== 'GET' && !new Headers(options.headers).has('X-Lu-Quiet') && typeof window !== 'undefined') window.dispatchEvent(new Event('lu-admin-saved'));
   return res.json();
 }
 
@@ -202,19 +203,33 @@ export async function checkReservations(ids: string[], checked = true): Promise<
   return data.reservations || [];
 }
 
+/** What an admin chooses when emailing a fan: language, subject (blank = the template's) and a message of their own. */
+export type ReservationMailOptions = { lang?: 'ja' | 'en'; subject?: string; message?: string };
+
 /** The confirmation email a booking would get, exactly as it would be sent (nothing is sent). */
-export async function previewReservationEmail(id: string, lang?: 'ja' | 'en'): Promise<{ to: string; subject: string; html: string }> {
-  return adminFetch(`/api/admin/reservations?preview=${encodeURIComponent(id)}${lang ? `&lang=${lang}` : ''}`);
+export async function previewReservationEmail(id: string, opts: ReservationMailOptions = {}): Promise<{ to: string; subject: string; html: string; defaultSubject: string }> {
+  return adminFetch('/api/admin/reservations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Lu-Quiet': '1' },
+    body: JSON.stringify({ preview: id, ...opts }),
+  });
 }
 
-/** Send the confirmation email again. */
-export async function resendReservation(id: string): Promise<Reservation> {
+/** Email the confirmation (again), with a message if there is one. */
+export async function resendReservation(id: string, opts: ReservationMailOptions = {}): Promise<Reservation> {
   const data = await adminFetch('/api/admin/reservations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ resend: id }),
+    body: JSON.stringify({ resend: id, ...opts }),
   });
   return data.reservation;
+}
+
+/** A copy of an email that went out to a fan (from the booking's history). */
+export type SentReservationMail = { id: string; reservation: string; sent_at: string; who: string; to: string; lang: string; subject: string; message: string; html: string };
+export async function getSentReservationMail(mailId: string): Promise<SentReservationMail> {
+  const data = await adminFetch(`/api/admin/reservations?mail=${encodeURIComponent(mailId)}`);
+  return data.mail;
 }
 
 // ── Media (admin only: videos of shows and songs, see functions/lib/media.ts) ──

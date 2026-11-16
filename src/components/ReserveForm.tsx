@@ -311,7 +311,7 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
                 </div>
                 <label className="reserve-field">
                   <span>{s.note} <em>· {s.optional}</em></span>
-                  <input value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+                  <textarea rows={3} maxLength={1000} value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
                 </label>
                 {/* Honeypot: hidden from people, irresistible to bots */}
                 <input className="contact-hp" tabIndex={-1} aria-hidden="true" autoComplete="off" value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} />

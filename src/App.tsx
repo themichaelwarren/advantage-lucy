@@ -199,6 +199,7 @@ export default function App() {
           <Route path="messages/:id" element={<Fresh><AdminMessage /></Fresh>} />
           <Route path="reservations" element={<AdminReservations />} />
           <Route path="reservations/:id" element={<Fresh><AdminShowReservations /></Fresh>} />
+          <Route path="reservations/:id/:resv" element={<Fresh><AdminShowReservations /></Fresh>} />
           <Route path="activity" element={<AdminActivity />} />
           <Route path="data" element={<AdminData />} />
           <Route path="help" element={<AdminHelp />} />
