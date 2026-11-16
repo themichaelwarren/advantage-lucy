@@ -298,12 +298,14 @@ export function LockHint({ text }: { text: string }) {
 /**
  * "Are you sure?" before removing something. Esc or Cancel keeps it.
  */
-export function ConfirmDialog({ s, open, title, body, confirmLabel, onConfirm, onCancel, children, wide, tone = 'danger', confirmDisabled }: {
+export function ConfirmDialog({ s, open, title, body, confirmLabel, cancelLabel, onConfirm, onCancel, children, wide, tone = 'danger', confirmDisabled }: {
   s: AdminStrings;
   open: boolean;
   title: string;
   body?: string;
   confirmLabel: string;
+  /** When “Cancel” would be confusing (e.g. cancelling a booking) */
+  cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
   /** Anything more to show before deciding (e.g. a preview of an email) */
@@ -329,7 +331,7 @@ export function ConfirmDialog({ s, open, title, body, confirmLabel, onConfirm, o
         {body && <p>{body}</p>}
         {children}
         <div className="lu-modal-actions">
-          <button ref={cancelRef} type="button" className="lu-btn" onClick={onCancel}>{s.cancel}</button>
+          <button ref={cancelRef} type="button" className="lu-btn" onClick={onCancel}>{cancelLabel || s.cancel}</button>
           <button type="button" className={`lu-btn ${tone === 'primary' ? 'lu-btn-primary' : 'lu-btn-danger'}`} onClick={onConfirm} disabled={confirmDisabled}>{confirmLabel}</button>
         </div>
       </div>

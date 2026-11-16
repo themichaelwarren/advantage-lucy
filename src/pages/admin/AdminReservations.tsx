@@ -1,5 +1,5 @@
 import Icon from '../../components/admin/Icon';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAllEvents } from '../../hooks/useSheetData';
 import { useAdminT, type AdminLocale, type AdminStrings } from '../../i18n/admin';
@@ -218,7 +218,24 @@ export function AdminShowReservations() {
   const event = events.find(e => e.id === id);
   const showUrl = `${prefix}/reservations/${id}`;
   // On a phone (or a narrow window) the booking takes the whole page: start it at the top
-  useEffect(() => { if (resv && !window.matchMedia('(min-width: 1180px)').matches) window.scrollTo(0, 0); }, [resv]);
+  useEffect(() => {
+    if (!resv) return;
+    if (!window.matchMedia('(min-width: 1180px)').matches) window.scrollTo(0, 0);
+    // Beside the list: keep the open booking's row in view (after ↑/↓, or a link straight to it)
+    else document.querySelector('.lu-resv-list li.is-current')?.scrollIntoView({ block: 'nearest' });
+  }, [resv]);
+  // ↑/↓ (or k/j) for the previous/next booking, Esc to close it: not while typing or with a window open
+  const steps = useRef<{ prev?: string; next?: string; close?: string }>({});
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.metaKey || e.ctrlKey || e.altKey || t.closest('input, textarea, select, [contenteditable="true"]') || document.querySelector('.lu-modal-overlay')) return;
+      const to = e.key === 'ArrowUp' || e.key === 'k' ? steps.current.prev : e.key === 'ArrowDown' || e.key === 'j' ? steps.current.next : e.key === 'Escape' ? steps.current.close : undefined;
+      if (to && steps.current.close) { e.preventDefault(); navigate(to); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [navigate]);
 
   const mine = useMemo(() => (list || []).filter(r => r.event === id), [list, id]);
   const booked = mine.filter(active);
@@ -285,6 +302,10 @@ export function AdminShowReservations() {
   const at = selected ? shown.findIndex(r => r.id === selected.id) : -1;
   const prev = at > 0 ? shown[at - 1] : undefined;
   const next = at >= 0 && at < shown.length - 1 ? shown[at + 1] : undefined;
+  // The next booking nobody has checked, after this one in the list (or from the top)
+  const unseen = shown.filter(r => needsCheck(r) && r.id !== selected?.id);
+  const nextNew = unseen.find(r => shown.indexOf(r) > at) || unseen[0];
+  steps.current = { prev: prev && `${showUrl}/${prev.id}`, next: next && `${showUrl}/${next.id}`, close: selected ? showUrl : undefined };
 
   return (
     <div className={[door ? 'lu-door' : '', selected ? 'has-pane' : ''].filter(Boolean).join(' ') || undefined}>
@@ -315,7 +336,7 @@ export function AdminShowReservations() {
               <button type="button" className="lu-btn lu-btn-primary" onClick={copy} disabled={!booked.length}>{copied ? s.resvCopied : <><Icon name="paste" /> {s.resvCopy}</>}</button>
               <button type="button" className="lu-btn" onClick={() => { setDoor(true); if (resv) navigate(showUrl); }} disabled={!booked.length}><Icon name="door" /> {s.resvDoor}</button>
               <button type="button" className="lu-btn" onClick={() => setAdding(a => !a)}>+ {s.resvAdd}</button>
-              <button type="button" className="lu-btn lu-btn-quiet" onClick={csv} disabled={!mine.length}>⤓ {s.resvCsv}</button>
+              <button type="button" className="lu-btn lu-btn-quiet lu-hide-phone" onClick={csv} disabled={!mine.length}>⤓ {s.resvCsv}</button>
               <Link to={`${prefix}/events/${event.id}`} className="lu-btn lu-btn-quiet">{s.resvEditShow}</Link>
             </div>
           )}
@@ -377,7 +398,7 @@ export function AdminShowReservations() {
         {selected && (
           <BookingPane key={selected.id} r={selected} s={s} locale={locale} flag={match(selected.email)} isNew={needsCheck(selected)}
             showTitle={`${event.date} · ${showName(event, locale)}`} closeTo={showUrl}
-            prevTo={prev && `${showUrl}/${prev.id}`} nextTo={next && `${showUrl}/${next.id}`}
+            prevTo={prev && `${showUrl}/${prev.id}`} nextTo={next && `${showUrl}/${next.id}`} nextNewTo={nextNew && `${showUrl}/${nextNew.id}`}
             onChange={fields => change(selected, fields)} onReplace={replace} onError={setError} />
         )}
       </div>
@@ -425,14 +446,15 @@ function BookingRow({ r, s, locale, to, current, flag, isNew }: {
 }
 
 /** One booking, beside the list (or on its own page on a phone): their note, an email to them, its history, its details. */
-function BookingPane({ r, s, locale, flag, isNew, showTitle, closeTo, prevTo, nextTo, onChange, onReplace, onError }: {
+function BookingPane({ r, s, locale, flag, isNew, showTitle, closeTo, prevTo, nextTo, nextNewTo, onChange, onReplace, onError }: {
   r: Reservation; s: AdminStrings; locale: AdminLocale; flag?: SenderMatch; isNew?: boolean;
-  showTitle: string; closeTo: string; prevTo?: string; nextTo?: string;
+  showTitle: string; closeTo: string; prevTo?: string; nextTo?: string; nextNewTo?: string;
   onChange: (f: Partial<Reservation>) => Promise<void>; onReplace: (r: Reservation) => void; onError: (msg: string) => void;
 }) {
   const [draft, setDraft] = useState({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note, locale: langOf(r) });
   const [busy, setBusy] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
+  const [askCancel, setAskCancel] = useState(false);
   useEffect(() => { setDraft({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note, locale: langOf(r) }); }, [r]);
   const cancelled = r.status === 'cancelled';
   const dirty = draft.name !== r.name || draft.kana !== (r.kana || '') || draft.email !== r.email || draft.tickets !== r.tickets || draft.note !== r.note || draft.locale !== langOf(r);
@@ -444,8 +466,8 @@ function BookingPane({ r, s, locale, flag, isNew, showTitle, closeTo, prevTo, ne
         <Link to={closeTo} className="lu-btn lu-btn-sm lu-btn-quiet lu-resv-back">← <span>{s.resvBack}</span></Link>
         <span className="lu-resv-pane-show">{showTitle}</span>
         <span className="lu-resv-pane-step">
-          {prevTo ? <Link to={prevTo} className="lu-btn lu-btn-sm lu-btn-quiet" title={s.resvPrev} aria-label={s.resvPrev}>↑</Link> : <span className="lu-btn lu-btn-sm lu-btn-quiet is-off" aria-hidden="true">↑</span>}
-          {nextTo ? <Link to={nextTo} className="lu-btn lu-btn-sm lu-btn-quiet" title={s.resvNext} aria-label={s.resvNext}>↓</Link> : <span className="lu-btn lu-btn-sm lu-btn-quiet is-off" aria-hidden="true">↓</span>}
+          {prevTo ? <Link to={prevTo} className="lu-btn lu-btn-sm lu-btn-quiet" title={`${s.resvPrev} (↑)`} aria-label={s.resvPrev}>↑</Link> : <span className="lu-btn lu-btn-sm lu-btn-quiet is-off" aria-hidden="true">↑</span>}
+          {nextTo ? <Link to={nextTo} className="lu-btn lu-btn-sm lu-btn-quiet" title={`${s.resvNext} (↓)`} aria-label={s.resvNext}>↓</Link> : <span className="lu-btn lu-btn-sm lu-btn-quiet is-off" aria-hidden="true">↓</span>}
           <Link to={closeTo} className="lu-btn lu-btn-sm lu-btn-quiet lu-resv-close" title={s.close} aria-label={s.close}>✕</Link>
         </span>
       </div>
@@ -467,17 +489,20 @@ function BookingPane({ r, s, locale, flag, isNew, showTitle, closeTo, prevTo, ne
       )}
       {flag && <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFilteredBody : s.resvFlagLookalikeBody.replace('{email}', flag.listed)}</p>}
 
-      <div className="lu-resv-pane-actions">
-        {r.source === 'web' && !cancelled && (
-          <button type="button" className={`lu-btn${isNew ? ' lu-btn-ok' : ''}`} disabled={busy} onClick={() => run(() => onChange({ checked: isNew ? 'TRUE' : '' }))}>
-            {isNew ? `✓ ${s.resvCheck}` : s.resvUncheck}
-          </button>
-        )}
-        <button type="button" className={`lu-btn ${cancelled ? '' : 'lu-btn-danger-quiet'}`} disabled={busy}
-          onClick={() => run(() => onChange({ status: cancelled ? '' : 'cancelled' }))}>
-          {cancelled ? s.resvRestore : s.resvCancel}
-        </button>
-      </div>
+      {((r.source === 'web' && !cancelled) || cancelled) && (
+        <div className="lu-resv-pane-actions">
+          {r.source === 'web' && !cancelled && (isNew ? (
+            <button type="button" className="lu-btn lu-btn-ok" disabled={busy} onClick={() => run(() => onChange({ checked: 'TRUE' }))}>✓ {s.resvCheck}</button>
+          ) : (
+            <>
+              {/* Checked: straight on to the next one nobody has looked at */}
+              {nextNewTo && <Link to={nextNewTo} className="lu-btn lu-btn-ok">{s.resvNextNew} →</Link>}
+              <button type="button" className="lu-btn lu-btn-quiet" disabled={busy} onClick={() => run(() => onChange({ checked: '' }))}>{s.resvUncheck}</button>
+            </>
+          ))}
+          {cancelled && <button type="button" className="lu-btn" disabled={busy} onClick={() => run(() => onChange({ status: '' }))}>{s.resvRestore}</button>}
+        </div>
+      )}
 
       {r.email && flag?.kind !== 'filtered' && !cancelled && (
         <MailComposer r={r} s={s} onSent={onReplace} onError={onError} />
@@ -487,7 +512,7 @@ function BookingPane({ r, s, locale, flag, isNew, showTitle, closeTo, prevTo, ne
         <h3>{s.resvLogTitle}</h3>
         <BookingLog r={r} s={s} locale={locale} onOpenMail={setViewing} />
         <p className="lu-hint">
-          {r.source === 'form' ? s.resvFromFormTip : r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
+          {r.source === 'form' ? s.resvFromFormTip : r.emailed === 'yes' ? '' : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
         </p>
       </div>
 
@@ -508,7 +533,12 @@ function BookingPane({ r, s, locale, flag, isNew, showTitle, closeTo, prevTo, ne
         <p className="lu-hint">{s.resvMailLangHint}</p>
         <div className="lu-resv-edit-actions">
           <button type="button" className="lu-btn lu-btn-primary" disabled={!dirty || busy} onClick={() => run(() => onChange(draft))}>{s.save}</button>
+          {/* Kept away from the everyday buttons up top, so it's never hit by mistake */}
+          {!cancelled && <button type="button" className="lu-btn lu-btn-danger-quiet lu-resv-cancel" disabled={busy} onClick={() => setAskCancel(true)}>{s.resvCancel}</button>}
         </div>
+        <ConfirmDialog s={s} open={askCancel} title={s.resvCancelTitle.replace('{name}', r.name)} body={s.resvCancelBody}
+          confirmLabel={s.resvCancel} cancelLabel={s.resvKeep} onCancel={() => setAskCancel(false)}
+          onConfirm={() => { setAskCancel(false); run(() => onChange({ status: 'cancelled' })); }} />
       </div>
       {viewing && <SentMailViewer mailId={viewing} s={s} locale={locale} onClose={() => setViewing(null)} />}
     </section>
@@ -573,7 +603,7 @@ function MailComposer({ r, s, onSent, onError }: { r: Reservation; s: AdminStrin
   if (!open) {
     return (
       <div className="lu-resv-pane-section lu-resv-compose is-closed">
-        <button type="button" className="lu-btn lu-btn-primary" onClick={() => setOpen(true)}><Icon name="mail" /> {s.resvWrite}</button>
+        <button type="button" className={`lu-btn${r.note ? ' lu-btn-primary' : ''}`} onClick={() => setOpen(true)}><Icon name="mail" /> {s.resvWrite}</button>
         <span className="lu-hint">{r.note ? s.resvWriteHintNote : s.resvWriteHint}</span>
       </div>
     );
@@ -598,15 +628,15 @@ function MailComposer({ r, s, onSent, onError }: { r: Reservation; s: AdminStrin
         <span>{s.resvMailSubject}</span>
         <input value={subject || preview?.defaultSubject || ''} onChange={e => setSubject(e.target.value === preview?.defaultSubject ? '' : e.target.value)} />
       </label>
-      <div className="lu-mail-preview">
-        <p className="lu-hint">{s.resvPreviewLabel.replace('{email}', r.email)}</p>
-        {preview ? <iframe title={preview.subject} sandbox="" srcDoc={preview.html} />
-          : previewError ? <p className="lu-field-error">{previewError}</p> : <p className="lu-loading">{s.loading}</p>}
-      </div>
       <div className="lu-resv-edit-actions">
         <button type="button" className="lu-btn lu-btn-primary" disabled={sending || !preview} onClick={() => setAsking(true)}><Icon name="mail" /> {sending ? s.resvSending : sendLabel}</button>
         {(subject || message || lang !== langOf(r)) && <button type="button" className="lu-btn lu-btn-quiet" disabled={sending} onClick={clear}>{s.resvMailReset}</button>}
         <button type="button" className="lu-btn lu-btn-quiet" disabled={sending} onClick={() => { clear(); setOpen(false); }}>{s.cancel}</button>
+      </div>
+      <div className="lu-mail-preview">
+        <p className="lu-hint">{s.resvPreviewLabel.replace('{email}', r.email)}</p>
+        {preview ? <iframe title={preview.subject} sandbox="" srcDoc={preview.html} />
+          : previewError ? <p className="lu-field-error">{previewError}</p> : <p className="lu-loading">{s.loading}</p>}
       </div>
       <ConfirmDialog s={s} open={asking}
         title={(message.trim() ? s.resvSendMailTitle : r.emailed === 'yes' ? s.resvSendAgainTitle : s.resvSendTitle).replace('{name}', r.name)}

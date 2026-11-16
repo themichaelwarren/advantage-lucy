@@ -2582,3 +2582,6 @@ a.lu-icon-btn { text-decoration: none; }
   .lu-resv-split.has-pane .lu-resv-row .lu-list-tags > :not(.is-new):not(.is-warn) { display: none; }
   .lu-resv-split.has-pane .lu-resv-actions .lu-btn-quiet { display: none; }
 }
+
+.lu-resv-edit-actions .lu-resv-cancel { margin-left: auto; }
+@media (min-width: 1180px) { .lu-resv-pane-show { visibility: hidden; } }
