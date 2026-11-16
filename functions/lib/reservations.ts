@@ -473,13 +473,16 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
   const { sheetId, saEmail, saKey } = ctx;
   try {
     if (request.method === 'GET') {
-      const previewId = new URL(request.url).searchParams.get('preview');
+      const q = new URL(request.url).searchParams;
+      const previewId = q.get('preview');
+      const lang = q.get('lang');
       if (previewId) {
         const r = (await listReservations(sheetId, saEmail, saKey)).find(x => x.id === previewId);
         if (!r) return json({ error: 'Not found' }, 404);
         const show = await findShow(ctx, r.event);
         if (!show) return json({ error: 'Show not found' }, 404);
-        const mail = confirmationEmail(r, show, ctx.siteUrl);
+        // ?lang= shows it in the other language without changing the booking
+        const mail = confirmationEmail(lang === 'ja' || lang === 'en' ? { ...r, locale: lang } : r, show, ctx.siteUrl);
         return json({ to: r.email, subject: mail.subject, html: mail.html });
       }
       return json({ reservations: await listReservations(sheetId, saEmail, saKey) });

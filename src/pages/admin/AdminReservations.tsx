@@ -378,17 +378,21 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
   const [askSend, setAskSend] = useState(false);
   const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
   const [previewError, setPreviewError] = useState('');
-  const loadPreview = () => { setPreview(null); setPreviewError(''); previewReservationEmail(r.id).then(setPreview).catch(err => setPreviewError(errorText(err))); };
+  // The language to send in: starts as the booking's; switching it only redraws the preview.
+  // It's saved to the booking only when the email is actually sent.
+  const [sendLang, setSendLang] = useState<'ja' | 'en'>(langOf(r));
   useEffect(() => {
     if (!askSend) { setPreview(null); setPreviewError(''); return; }
-    loadPreview();
-  }, [askSend, r.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  // The email's language, switched right in the send window: saved first, then the preview redrawn
-  async function switchLang(l: 'ja' | 'en') {
-    if (l === langOf(r)) return;
-    setPreview(null);
-    await onChange({ locale: l });
-    loadPreview();
+    setPreview(null); setPreviewError('');
+    previewReservationEmail(r.id, sendLang).then(setPreview).catch(err => setPreviewError(errorText(err)));
+  }, [askSend, r.id, sendLang]);
+  const openSend = () => { setSendLang(langOf(r)); setAskSend(true); };
+  async function send() {
+    setAskSend(false);
+    await run(async () => {
+      if (sendLang !== langOf(r)) await onChange({ locale: sendLang });
+      await onResend();
+    });
   }
   useEffect(() => { if (open) setDraft({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note, locale: langOf(r) }); }, [open, r]);
   const cancelled = r.status === 'cancelled';
@@ -442,7 +446,7 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
                 {isNew ? `✓ ${s.resvCheck}` : s.resvUncheck}
               </button>
             )}
-            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={() => setAskSend(true)}><Icon name="mail" /> {r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}</button>}
+            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={openSend}><Icon name="mail" /> {r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}</button>}
             <button type="button" className={`lu-btn ${cancelled ? '' : 'lu-btn-danger-quiet'}`} disabled={busy}
               onClick={() => run(() => onChange({ status: cancelled ? '' : 'cancelled' }))}>
               {cancelled ? s.resvRestore : s.resvCancel}
@@ -450,17 +454,17 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
           </div>
           <ConfirmDialog s={s} open={askSend}
             title={(r.emailed === 'yes' ? s.resvSendAgainTitle : s.resvSendTitle).replace('{name}', r.name)}
-            body={s.resvSendBody.replace('{email}', r.email).replace('{lang}', langOf(r) === 'en' ? 'English' : '日本語')}
+            body={s.resvSendBody.replace('{email}', r.email).replace('{lang}', sendLang === 'en' ? 'English' : '日本語')}
             confirmLabel={r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}
             onCancel={() => setAskSend(false)}
-            onConfirm={() => { setAskSend(false); run(onResend); }}
+            onConfirm={send}
             wide tone="primary">
             {/* Exactly what they'll get: built by the same code that sends it */}
             <div className="lu-mail-preview">
               <div className="lu-chips" role="group" aria-label={s.resvMailLang}>
                 <span className="lu-hint">{s.resvMailLang}</span>
                 {(['ja', 'en'] as const).map(l => (
-                  <button key={l} type="button" className={`lu-pill${langOf(r) === l ? ' is-on' : ''}`} aria-pressed={langOf(r) === l} onClick={() => switchLang(l)}>
+                  <button key={l} type="button" className={`lu-pill${sendLang === l ? ' is-on' : ''}`} aria-pressed={sendLang === l} onClick={() => setSendLang(l)}>
                     {l === 'ja' ? '日本語' : 'English'}
                   </button>
                 ))}

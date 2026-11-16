@@ -177,7 +177,8 @@ export default function sheetsPlugin(): Plugin {
         const url = new URL(req.url!, `http://${req.headers.host}`);
         const request = new Request(url, {
           method: req.method,
-          headers: { 'content-type': String(req.headers['content-type'] || 'application/json') },
+          // The sign-in goes along too, so the booking's history can say who did what
+          headers: { 'content-type': String(req.headers['content-type'] || 'application/json'), authorization: String(req.headers.authorization || '') },
           body: req.method === 'GET' || req.method === 'HEAD' ? undefined : Buffer.concat(chunks),
         });
         const ctx = {

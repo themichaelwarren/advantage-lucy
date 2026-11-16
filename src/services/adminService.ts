@@ -203,8 +203,8 @@ export async function checkReservations(ids: string[], checked = true): Promise<
 }
 
 /** The confirmation email a booking would get, exactly as it would be sent (nothing is sent). */
-export async function previewReservationEmail(id: string): Promise<{ to: string; subject: string; html: string }> {
-  return adminFetch(`/api/admin/reservations?preview=${encodeURIComponent(id)}`);
+export async function previewReservationEmail(id: string, lang?: 'ja' | 'en'): Promise<{ to: string; subject: string; html: string }> {
+  return adminFetch(`/api/admin/reservations?preview=${encodeURIComponent(id)}${lang ? `&lang=${lang}` : ''}`);
 }
 
 /** Send the confirmation email again. */
