@@ -16,6 +16,8 @@ import PageHelp from '../../components/admin/PageHelp';
 import { isFanBooking, needsCheck } from '../../utils/resvSeen';
 
 const RESV_PREFS = 'admin-resv-list';
+/** The language a booking's emails go out in: the page they booked from (Google Form imports: guessed from the name) */
+const langOf = (r: Reservation): 'ja' | 'en' => (r.locale === 'en' ? 'en' : 'ja');
 const ticketsOf = (r: Reservation) => Math.max(0, parseInt(r.tickets, 10) || 0);
 /** By reading where there is one (フリガナ), else by name: kanji names sort right only with their reading */
 const byReading = (a: Reservation, b: Reservation) => sortKey(a).localeCompare(sortKey(b), 'ja');
@@ -343,19 +345,27 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
   r: Reservation; s: AdminStrings; locale: AdminLocale; open: boolean; flag?: SenderMatch; isNew?: boolean;
   onToggle: () => void; onChange: (f: Partial<Reservation>) => Promise<void>; onResend: () => Promise<void>;
 }) {
-  const [draft, setDraft] = useState({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note });
+  const [draft, setDraft] = useState({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note, locale: langOf(r) });
   const [busy, setBusy] = useState(false);
   // Emailing a fan always asks first: who it goes to, and in which language
   const [askSend, setAskSend] = useState(false);
   const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
   const [previewError, setPreviewError] = useState('');
+  const loadPreview = () => { setPreview(null); setPreviewError(''); previewReservationEmail(r.id).then(setPreview).catch(err => setPreviewError(errorText(err))); };
   useEffect(() => {
     if (!askSend) { setPreview(null); setPreviewError(''); return; }
-    previewReservationEmail(r.id).then(setPreview).catch(err => setPreviewError(errorText(err)));
-  }, [askSend, r.id]);
-  useEffect(() => { if (open) setDraft({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note }); }, [open, r]);
+    loadPreview();
+  }, [askSend, r.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The email's language, switched right in the send window: saved first, then the preview redrawn
+  async function switchLang(l: 'ja' | 'en') {
+    if (l === langOf(r)) return;
+    setPreview(null);
+    await onChange({ locale: l });
+    loadPreview();
+  }
+  useEffect(() => { if (open) setDraft({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note, locale: langOf(r) }); }, [open, r]);
   const cancelled = r.status === 'cancelled';
-  const dirty = draft.name !== r.name || draft.kana !== (r.kana || '') || draft.email !== r.email || draft.tickets !== r.tickets || draft.note !== r.note;
+  const dirty = draft.name !== r.name || draft.kana !== (r.kana || '') || draft.email !== r.email || draft.tickets !== r.tickets || draft.note !== r.note || draft.locale !== langOf(r);
   const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } finally { setBusy(false); } };
 
   return (
@@ -386,7 +396,13 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
             <label className="lu-field"><span>{s.resvCount}</span><input type="number" min={1} inputMode="numeric" value={draft.tickets} onChange={e => setDraft(d => ({ ...d, tickets: e.target.value }))} /></label>
             <label className="lu-field"><span>{s.resvEmail}</span><input type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} /></label>
             <label className="lu-field"><span>{s.resvNote}</span><input value={draft.note} onChange={e => setDraft(d => ({ ...d, note: e.target.value }))} /></label>
+            <label className="lu-field"><span>{s.resvMailLang}</span>
+              <select value={draft.locale} onChange={e => setDraft(d => ({ ...d, locale: e.target.value as 'ja' | 'en' }))}>
+                <option value="ja">日本語</option><option value="en">English</option>
+              </select>
+            </label>
           </div>
+          <p className="lu-hint">{s.resvMailLangHint}</p>
           {flag && <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFilteredBody : s.resvFlagLookalikeBody.replace('{email}', flag.listed)}</p>}
           <p className="lu-hint">
             {r.source === 'form' ? s.resvFromFormTip : r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
@@ -406,13 +422,21 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
           </div>
           <ConfirmDialog s={s} open={askSend}
             title={(r.emailed === 'yes' ? s.resvSendAgainTitle : s.resvSendTitle).replace('{name}', r.name)}
-            body={s.resvSendBody.replace('{email}', r.email).replace('{lang}', r.locale === 'en' ? 'English' : '日本語')}
+            body={s.resvSendBody.replace('{email}', r.email).replace('{lang}', langOf(r) === 'en' ? 'English' : '日本語')}
             confirmLabel={r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}
             onCancel={() => setAskSend(false)}
             onConfirm={() => { setAskSend(false); run(onResend); }}
             wide tone="primary">
             {/* Exactly what they'll get: built by the same code that sends it */}
             <div className="lu-mail-preview">
+              <div className="lu-chips" role="group" aria-label={s.resvMailLang}>
+                <span className="lu-hint">{s.resvMailLang}</span>
+                {(['ja', 'en'] as const).map(l => (
+                  <button key={l} type="button" className={`lu-pill${langOf(r) === l ? ' is-on' : ''}`} aria-pressed={langOf(r) === l} onClick={() => switchLang(l)}>
+                    {l === 'ja' ? '日本語' : 'English'}
+                  </button>
+                ))}
+              </div>
               {preview ? (
                 <>
                   <p className="lu-mail-subject"><span>{s.resvMailSubject}</span> {preview.subject}</p>
@@ -431,7 +455,7 @@ function AddForm({ s, eventId, onAdded, onCancel, onError }: {
   s: AdminStrings; eventId: string;
   onAdded: (r: Reservation) => void; onCancel: () => void; onError: (msg: string) => void;
 }) {
-  const [f, setF] = useState({ name: '', kana: '', email: '', tickets: '1', note: '' });
+  const [f, setF] = useState({ name: '', kana: '', email: '', tickets: '1', note: '', locale: 'ja' });
   const [send, setSend] = useState(false);
   const [busy, setBusy] = useState(false);
   return (
@@ -451,6 +475,11 @@ function AddForm({ s, eventId, onAdded, onCancel, onError }: {
         <label className="lu-field"><span>{s.resvCount}</span><input type="number" min={1} inputMode="numeric" value={f.tickets} onChange={e => setF(x => ({ ...x, tickets: e.target.value }))} /></label>
         <label className="lu-field"><span>{s.resvEmail} <span className="lu-optional">· {s.optional}</span></span><input type="email" value={f.email} onChange={e => setF(x => ({ ...x, email: e.target.value }))} /></label>
         <label className="lu-field"><span>{s.resvNote} <span className="lu-optional">· {s.optional}</span></span><input value={f.note} onChange={e => setF(x => ({ ...x, note: e.target.value }))} /></label>
+        <label className="lu-field"><span>{s.resvMailLang}</span>
+          <select value={f.locale} onChange={e => setF(x => ({ ...x, locale: e.target.value }))}>
+            <option value="ja">日本語</option><option value="en">English</option>
+          </select>
+        </label>
       </div>
       {f.email.trim() && (
         <label className="lu-check"><input type="checkbox" checked={send} onChange={e => setSend(e.target.checked)} /> {s.resvSendEmail}</label>

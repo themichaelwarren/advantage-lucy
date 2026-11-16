@@ -473,6 +473,7 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
       if (out.kana !== undefined) { out.kana = toKatakana(out.kana); if (out.kana && !isKatakana(out.kana)) throw new Error('フリガナ should be in katakana (カタカナ)'); }
       if (out.status !== undefined && !['', 'cancelled'].includes(out.status)) throw new Error(`Unknown status "${out.status}"`);
       if (out.checked !== undefined && !['', 'TRUE'].includes(out.checked)) throw new Error('checked is TRUE or empty');
+      if (out.locale !== undefined && !['ja', 'en'].includes(out.locale)) throw new Error('Email language is ja or en');
       if (out.tickets !== undefined && !(parseInt(out.tickets, 10) >= 1)) throw new Error('Tickets must be 1 or more');
       if (out.email && !EMAIL_RE.test(out.email)) throw new Error('That email address doesn’t look right');
       return out;
