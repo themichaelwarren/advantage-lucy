@@ -162,6 +162,8 @@ export type Reservation = {
   kana?: string;
   /** 'TRUE' once someone in the band has seen it (fans' new or changed bookings start unchecked) */
   checked?: string;
+  /** What happened, one line each: "<ISO>\t<what>\t<detail>\t<who>" (functions/lib/reservations.ts) */
+  log?: string;
 };
 
 /** Every ticket reservation, oldest first (admin only). */

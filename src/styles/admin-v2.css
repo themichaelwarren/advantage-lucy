@@ -2521,3 +2521,13 @@ a.lu-icon-btn { text-decoration: none; }
 .lu-mail-subject { margin: 0; font-size: 0.9rem; color: var(--text) !important; font-weight: 600; }
 .lu-mail-subject span { color: var(--text-muted); font-weight: 500; margin-right: 0.4rem; }
 .lu-mail-preview iframe { width: 100%; height: min(52vh, 34rem); border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }
+
+/* A booking's history, inside its accordion */
+.lu-resv-log { list-style: none; margin: 0.4rem 0 0.2rem; padding: 0 0 0 0.9rem; border-left: 2px solid var(--rule); display: grid; gap: 0.3rem; font-size: 0.82rem; }
+.lu-resv-log li { display: grid; grid-template-columns: 9.5rem 1fr auto; gap: 0.6rem; align-items: baseline; position: relative; }
+.lu-resv-log li::before { content: ''; position: absolute; left: calc(-0.9rem - 5px); top: 0.45em; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+.lu-resv-log li.is-emailed::before, .lu-resv-log li.is-resent::before, .lu-resv-log li.is-checked::before { background: #1f9d63; }
+.lu-resv-log li.is-cancelled::before, .lu-resv-log li.is-email_failed::before { background: #d23c42; }
+.lu-resv-log time { font-family: var(--font-main); color: var(--text-muted); white-space: nowrap; }
+.lu-resv-log-who { color: var(--text-muted); }
+@media (max-width: 640px) { .lu-resv-log li { grid-template-columns: 1fr auto; } .lu-resv-log time { grid-column: 1 / -1; } }

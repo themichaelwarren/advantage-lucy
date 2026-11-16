@@ -14,10 +14,37 @@ import type { SenderMatch } from '../../../functions/lib/filters';
 import { toKatakana, sortKey } from '../../../functions/lib/kana';
 import PageHelp from '../../components/admin/PageHelp';
 import { isFanBooking, needsCheck } from '../../utils/resvSeen';
+import { whoName } from '../../components/admin/Activity';
 
 const RESV_PREFS = 'admin-resv-list';
 /** The language a booking's emails go out in: the page they booked from (Google Form imports: guessed from the name) */
 const langOf = (r: Reservation): 'ja' | 'en' => (r.locale === 'en' ? 'en' : 'ja');
+/**
+ * A booking's history, oldest first. Bookings from before the log started (and Google Form
+ * imports) begin with when they came in.
+ */
+function BookingLog({ r, s, locale }: { r: Reservation; s: AdminStrings; locale: AdminLocale }) {
+  const lines = (r.log || '').split('\n').filter(Boolean).map(l => { const [at, what, detail, who] = l.split('\t'); return { at, what, detail: detail || '', who: who || '' }; });
+  if (!lines.some(l => ['booked', 'added'].includes(l.what))) {
+    lines.unshift({ at: r.received_at, what: r.source === 'form' ? 'form' : r.source === 'admin' ? 'added' : 'booked', detail: r.tickets, who: '' });
+  }
+  const label = (what: string, detail: string) => {
+    const t = (s.resvLog as Record<string, string>)[what] || what;
+    return t.replace('{n}', detail).replace('{email}', detail).replace('{lang}', detail === 'en' ? 'English' : '日本語');
+  };
+  return (
+    <ol className="lu-resv-log" aria-label={s.resvLogTitle}>
+      {lines.map((l, i) => (
+        <li key={i} className={`is-${l.what}`}>
+          <time dateTime={l.at}>{when(l.at, locale)}</time>
+          <span>{label(l.what, l.detail)}</span>
+          <span className="lu-resv-log-who">{l.who ? whoName(l.who) : l.what === 'form' ? '' : ['booked', 'rebooked'].includes(l.what) ? s.resvLogFan : ''}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 const ticketsOf = (r: Reservation) => Math.max(0, parseInt(r.tickets, 10) || 0);
 /** By reading where there is one (フリガナ), else by name: kanji names sort right only with their reading */
 const byReading = (a: Reservation, b: Reservation) => sortKey(a).localeCompare(sortKey(b), 'ja');
@@ -404,6 +431,7 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
           </div>
           <p className="lu-hint">{s.resvMailLangHint}</p>
           {flag && <p className="lu-alert lu-filter-banner is-warn"><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFilteredBody : s.resvFlagLookalikeBody.replace('{email}', flag.listed)}</p>}
+          <BookingLog r={r} s={s} locale={locale} />
           <p className="lu-hint">
             {r.source === 'form' ? s.resvFromFormTip : r.emailed === 'yes' ? `✓ ${s.resvEmailed}` : r.emailed === 'held' ? s.resvEmailHeld : r.emailed === 'no' ? s.resvNotEmailed : r.source === 'admin' ? s.resvByHand : ''}
           </p>

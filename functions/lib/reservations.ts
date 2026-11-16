@@ -34,8 +34,24 @@ export const RESERVATION_COLUMNS = [
   'source',   // 'web', 'admin' or 'form' (imported from the old Google Form)
   'kana',     // フリガナ of a Japanese name (katakana), for sorting and the door list
   'checked',  // 'TRUE' once someone in the band has seen it (a fan's new or changed booking starts unchecked)
+  'log',      // what happened, one line each: "<ISO time>\t<what>\t<detail>\t<who>" (booked, emailed, resent, cancelled…)
 ] as const;
 export type Reservation = Record<typeof RESERVATION_COLUMNS[number], string>;
+
+/** One line of a booking's log. what: booked, rebooked, added, emailed, email_failed, email_held, resent,
+ *  cancelled, restored, tickets, checked, unchecked, arrived, not_arrived, lang, edited. who: an admin's email, or '' (the fan). */
+export const logLine = (what: string, detail = '', who = '') => [new Date().toISOString(), what, detail, who].join('\t');
+const addLog = (log: string | undefined, lines: string[]) => [log || '', ...lines].filter(Boolean).join('\n');
+
+/** The signed-in admin's email, from their Google sign-in token (already checked by the admin middleware). */
+export function whoFrom(request: Request): string {
+  try {
+    const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+    const part = token.split('.')[1] || '';
+    const json = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+    return String(json.email || '');
+  } catch { return ''; }
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -162,7 +178,7 @@ async function appendReservation(sheetId: string, saEmail: string, saKey: string
 }
 
 /** Change some fields of one booking (found by id); the rest of its row is kept. */
-export async function updateReservation(sheetId: string, saEmail: string, saKey: string, id: string, fields: Partial<Reservation>): Promise<Reservation> {
+export async function updateReservation(sheetId: string, saEmail: string, saKey: string, id: string, fields: Partial<Reservation>, log: string[] = []): Promise<Reservation> {
   if (!id?.trim()) throw new Error('Missing reservation id');
   const token = await getAccessToken(saEmail, saKey, SCOPE);
   await ensureTab(sheetId, token); // newer columns (kana) get their heading
@@ -176,6 +192,7 @@ export async function updateReservation(sheetId: string, saEmail: string, saKey:
   for (const c of RESERVATION_COLUMNS) {
     if (c !== 'id' && fields[c] !== undefined) next[c] = String(fields[c]);
   }
+  if (log.length) next.log = addLog(next.log, log);
   const range = encodeURIComponent(`${RESERVATIONS_TAB}!A${index + 1}:${lastCol}${index + 1}`);
   await sheetsFetch(token, `${base}/values/${range}?valueInputOption=RAW`, {
     method: 'PUT',
@@ -415,6 +432,8 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
       arrived: '',
       source: 'web',
       checked: '',   // new or changed: the band hasn't seen it yet
+      // Keep what happened before (a rebooking with the same email), then say what happened now
+      log: addLog(earlier?.log, [logLine(earlier ? 'rebooked' : 'booked', String(v.tickets))]),
     };
     // Save first: a fan must never get a confirmation for a booking that isn't in the sheet
     if (earlier) await updateReservation(ctx.sheetId, ctx.saEmail, ctx.saKey, earlier.id, { ...r, arrived: earlier.arrived });
@@ -425,7 +444,8 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
     // confirmation goes to it. The page looks the same to them as to anyone.
     const match = await senderMatch(ctx, r.email);
     const sent = await sendConfirmation(ctx, r, show, { match });
-    await updateReservation(ctx.sheetId, ctx.saEmail, ctx.saKey, r.id, { emailed: match ? 'held' : sent ? 'yes' : 'no' }).catch(() => {});
+    await updateReservation(ctx.sheetId, ctx.saEmail, ctx.saKey, r.id, { emailed: match ? 'held' : sent ? 'yes' : 'no' },
+      [logLine(match ? 'email_held' : sent ? 'emailed' : 'email_failed', r.email)]).catch(() => {});
     const cap = left === null ? null : taken + left;
     try {
       const note = bandEmail(r, show, { taken: taken + v.tickets, cap }, ctx.siteUrl, !!earlier);
@@ -464,6 +484,16 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
       }
       return json({ reservations: await listReservations(sheetId, saEmail, saKey) });
     }
+    const who = whoFrom(request);
+    // What an admin change did, in the log's words
+    const describe = (f: Partial<Reservation>) => [
+      f.status !== undefined && logLine(f.status === 'cancelled' ? 'cancelled' : 'restored', '', who),
+      f.checked !== undefined && logLine(f.checked === 'TRUE' ? 'checked' : 'unchecked', '', who),
+      f.arrived !== undefined && logLine(f.arrived === 'TRUE' ? 'arrived' : 'not_arrived', '', who),
+      f.tickets !== undefined && logLine('tickets', f.tickets, who),
+      f.locale !== undefined && logLine('lang', f.locale, who),
+      (['name', 'kana', 'email', 'note'] as const).some(c => f[c] !== undefined) && logLine('edited', '', who),
+    ].filter((x): x is string => !!x);
     const body = await request.json() as { id?: string; ids?: string[]; resend?: string; fields?: Partial<Reservation>; send_email?: boolean };
     const allowed = (f: Partial<Reservation> = {}) => {
       const out: Partial<Reservation> = {};
@@ -482,14 +512,15 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
     if (request.method === 'PATCH' && Array.isArray(body.ids)) {
       const fields = allowed(body.fields);
       const out: Reservation[] = [];
-      for (const id of body.ids.slice(0, 200)) out.push(await updateReservation(sheetId, saEmail, saKey, String(id), fields));
+      for (const id of body.ids.slice(0, 200)) out.push(await updateReservation(sheetId, saEmail, saKey, String(id), fields, describe(fields)));
       for (const ev of new Set(out.map(r => r.event))) await forgetState(ev);
       return json({ ok: true, reservations: out });
     }
 
     if (request.method === 'PATCH') {
       if (!body.id) return json({ error: 'Missing id' }, 400);
-      const r = await updateReservation(sheetId, saEmail, saKey, body.id, allowed(body.fields));
+      const fields = allowed(body.fields);
+      const r = await updateReservation(sheetId, saEmail, saKey, body.id, fields, describe(fields));
       await forgetState(r.event);
       return json({ ok: true, reservation: r });
     }
@@ -504,7 +535,7 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
       const match = await senderMatch(ctx, r.email);
       if (match?.kind === 'filtered') return json({ error: 'This address is on the filtered list, so no email is sent to it.' }, 400);
       const sent = await sendConfirmation(ctx, r, show, { match, lookalikeOk: true });
-      const next = await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: sent ? 'yes' : 'no' });
+      const next = await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: sent ? 'yes' : 'no' }, [logLine(sent ? 'resent' : 'email_failed', r.email, who)]);
       if (!sent) return json({ error: 'The email couldn’t be sent. Is email set up (RESEND_API_KEY)?' }, 502);
       return json({ ok: true, reservation: next });
     }
@@ -520,12 +551,13 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
         locale: f.locale === 'en' ? 'en' : 'ja',
         name: f.name.trim(), kana: f.kana || '', email: f.email || '', tickets: f.tickets || '1', note: f.note || '',
         status: '', emailed: '', arrived: '', source: 'admin', checked: 'TRUE',
+        log: logLine('added', f.tickets || '1', who),
       };
       await appendReservation(sheetId, saEmail, saKey, r);
       await forgetState(event);
       if (body.send_email && r.email) {
         r.emailed = (await sendConfirmation(ctx, r, show, { lookalikeOk: true })) ? 'yes' : 'no';
-        await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: r.emailed }).catch(() => {});
+        await updateReservation(sheetId, saEmail, saKey, r.id, { emailed: r.emailed }, [logLine(r.emailed === 'yes' ? 'emailed' : 'email_failed', r.email, who)]).catch(() => {});
       }
       return json({ ok: true, reservation: r });
     }
