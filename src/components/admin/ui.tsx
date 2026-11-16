@@ -298,7 +298,7 @@ export function LockHint({ text }: { text: string }) {
 /**
  * "Are you sure?" before removing something. Esc or Cancel keeps it.
  */
-export function ConfirmDialog({ s, open, title, body, confirmLabel, onConfirm, onCancel }: {
+export function ConfirmDialog({ s, open, title, body, confirmLabel, onConfirm, onCancel, children, wide, tone = 'danger', confirmDisabled }: {
   s: AdminStrings;
   open: boolean;
   title: string;
@@ -306,6 +306,12 @@ export function ConfirmDialog({ s, open, title, body, confirmLabel, onConfirm, o
   confirmLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Anything more to show before deciding (e.g. a preview of an email) */
+  children?: ReactNode;
+  wide?: boolean;
+  /** 'danger' for deleting, 'primary' for something like sending */
+  tone?: 'danger' | 'primary';
+  confirmDisabled?: boolean;
 }) {
   const cancelRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -318,12 +324,13 @@ export function ConfirmDialog({ s, open, title, body, confirmLabel, onConfirm, o
   if (!open) return null;
   return (
     <div className="lu-modal-overlay" onClick={onCancel}>
-      <div className="lu-modal" role="alertdialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
+      <div className={`lu-modal${wide ? ' lu-modal-wide' : ''}`} role="alertdialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
         <h3>{title}</h3>
         {body && <p>{body}</p>}
+        {children}
         <div className="lu-modal-actions">
           <button ref={cancelRef} type="button" className="lu-btn" onClick={onCancel}>{s.cancel}</button>
-          <button type="button" className="lu-btn lu-btn-danger" onClick={onConfirm}>{confirmLabel}</button>
+          <button type="button" className={`lu-btn ${tone === 'primary' ? 'lu-btn-primary' : 'lu-btn-danger'}`} onClick={onConfirm} disabled={confirmDisabled}>{confirmLabel}</button>
         </div>
       </div>
     </div>

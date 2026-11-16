@@ -2514,3 +2514,10 @@ a.lu-icon-btn { text-decoration: none; }
 .lu-resv-checkbtn:hover:not(:disabled) { background: #1f9d63; color: #fff; }
 .lu-resv-tocheck { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin: 0 0 0.8rem; }
 .lu-resv-list li.is-fresh > .lu-resv-row { background: color-mix(in srgb, var(--pop, #f5d547) 10%, var(--surface)); }
+
+/* A confirm window with more to look at (e.g. the email that's about to go out) */
+.lu-modal.lu-modal-wide { width: min(44rem, 100%); max-height: calc(100dvh - 2rem); overflow-y: auto; }
+.lu-mail-preview { display: flex; flex-direction: column; gap: 0.5rem; }
+.lu-mail-subject { margin: 0; font-size: 0.9rem; color: var(--text) !important; font-weight: 600; }
+.lu-mail-subject span { color: var(--text-muted); font-weight: 500; margin-right: 0.4rem; }
+.lu-mail-preview iframe { width: 100%; height: min(52vh, 34rem); border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }

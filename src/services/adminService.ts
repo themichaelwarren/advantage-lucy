@@ -200,6 +200,11 @@ export async function checkReservations(ids: string[], checked = true): Promise<
   return data.reservations || [];
 }
 
+/** The confirmation email a booking would get, exactly as it would be sent (nothing is sent). */
+export async function previewReservationEmail(id: string): Promise<{ to: string; subject: string; html: string }> {
+  return adminFetch(`/api/admin/reservations?preview=${encodeURIComponent(id)}`);
+}
+
 /** Send the confirmation email again. */
 export async function resendReservation(id: string): Promise<Reservation> {
   const data = await adminFetch('/api/admin/reservations', {

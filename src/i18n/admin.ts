@@ -815,6 +815,8 @@ const en = {
   resvCheckHint: 'Fans’ bookings nobody has checked yet. Open one to check it.',
   resvSendConfirm: 'Send confirmation email',
   resvSendTitle: 'Email {name} their confirmation?',
+  resvMailSubject: 'Subject',
+  resvEmailFailedTip: 'Sending failed. Open it and send the confirmation again.',
   resvSendAgainTitle: 'Email {name} their confirmation again?',
   resvSendBody: 'It goes to {email}, in {lang}, with their tickets and the show details. It can’t be unsent.',
 
@@ -1737,6 +1739,8 @@ const ja: AdminStrings = {
   resvCheckHint: 'まだ誰も確認していない予約です。開いて確認済みにできます。',
   resvSendConfirm: '確認メールを送る',
   resvSendTitle: '{name}さんに確認メールを送りますか？',
+  resvMailSubject: '件名',
+  resvEmailFailedTip: '送信できませんでした。開いてもう一度送ってください。',
   resvSendAgainTitle: '{name}さんに確認メールをもう一度送りますか？',
   resvSendBody: '{email} に、{lang}で、枚数とライブの詳細を送ります。送信後に取り消すことはできません。',
 

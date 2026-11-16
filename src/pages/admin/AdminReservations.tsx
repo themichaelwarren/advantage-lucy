@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useAllEvents } from '../../hooks/useSheetData';
 import { useAdminT, type AdminLocale, type AdminStrings } from '../../i18n/admin';
 import {
-  getReservations, updateReservation, addReservation, resendReservation, checkReservations, type Reservation,
+  getReservations, updateReservation, addReservation, resendReservation, checkReservations, previewReservationEmail, type Reservation,
 } from '../../services/adminService';
 import { errorText, ConfirmDialog } from '../../components/admin/ui';
 import { reserveState, todayInJapan } from '../../utils/showDates';
@@ -347,6 +347,12 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
   const [busy, setBusy] = useState(false);
   // Emailing a fan always asks first: who it goes to, and in which language
   const [askSend, setAskSend] = useState(false);
+  const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
+  const [previewError, setPreviewError] = useState('');
+  useEffect(() => {
+    if (!askSend) { setPreview(null); setPreviewError(''); return; }
+    previewReservationEmail(r.id).then(setPreview).catch(err => setPreviewError(errorText(err)));
+  }, [askSend, r.id]);
   useEffect(() => { if (open) setDraft({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note }); }, [open, r]);
   const cancelled = r.status === 'cancelled';
   const dirty = draft.name !== r.name || draft.kana !== (r.kana || '') || draft.email !== r.email || draft.tickets !== r.tickets || draft.note !== r.note;
@@ -365,7 +371,8 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
           {flag && <span className="lu-tag is-warn" title={s.resvFlagTip}><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFiltered : s.filterLookalike}</span>}
           {cancelled && <span className="lu-tag is-muted">{s.resvCancelled}</span>}
           {r.arrived === 'TRUE' && <span className="lu-tag is-ok">✓ {s.resvArrived}</span>}
-          {r.emailed === 'no' && <span className="lu-tag is-new">{s.resvNotEmailed}</span>}
+          {/* Has an address but no confirmation went out (failed, or added by hand without it); filtered senders are flagged above */}
+          {!cancelled && r.email && r.emailed !== 'yes' && r.emailed !== 'held' && <span className="lu-tag is-new" title={r.emailed === 'no' ? s.resvEmailFailedTip : undefined}><Icon name="mail" /> {s.resvNotEmailed}</span>}
           {r.source === 'admin' && <span className="lu-tag is-muted">{s.resvByHand}</span>}
           {r.source === 'form' && <span className="lu-tag is-muted" title={s.resvFromFormTip}>{s.resvFromForm}</span>}
           <time dateTime={r.received_at} title={s.resvBookedAt} className="lu-resv-when">{when(r.received_at, locale)}</time>
@@ -402,7 +409,18 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
             body={s.resvSendBody.replace('{email}', r.email).replace('{lang}', r.locale === 'en' ? 'English' : '日本語')}
             confirmLabel={r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}
             onCancel={() => setAskSend(false)}
-            onConfirm={() => { setAskSend(false); run(onResend); }} />
+            onConfirm={() => { setAskSend(false); run(onResend); }}
+            wide tone="primary">
+            {/* Exactly what they'll get: built by the same code that sends it */}
+            <div className="lu-mail-preview">
+              {preview ? (
+                <>
+                  <p className="lu-mail-subject"><span>{s.resvMailSubject}</span> {preview.subject}</p>
+                  <iframe title={preview.subject} sandbox="" srcDoc={preview.html} />
+                </>
+              ) : previewError ? <p className="lu-field-error">{previewError}</p> : <p className="lu-loading">{s.loading}</p>}
+            </div>
+          </ConfirmDialog>
         </div>
       )}
     </li>

@@ -443,6 +443,7 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
 /**
  * /api/admin/reservations (signed-in admins only)
  *   GET                         every booking
+ *   GET   ?preview=<id>         the confirmation email that booking would get (nothing is sent)
  *   POST  {fields, send_email}  add one by hand (e.g. a booking by DM)
  *   POST  {resend: id}          send the confirmation email again
  *   PATCH {id, fields}          change name, email, tickets, note, status, arrived or checked
@@ -451,7 +452,18 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
 export async function handleAdminReservations(request: Request, ctx: ReserveContext): Promise<Response> {
   const { sheetId, saEmail, saKey } = ctx;
   try {
-    if (request.method === 'GET') return json({ reservations: await listReservations(sheetId, saEmail, saKey) });
+    if (request.method === 'GET') {
+      const previewId = new URL(request.url).searchParams.get('preview');
+      if (previewId) {
+        const r = (await listReservations(sheetId, saEmail, saKey)).find(x => x.id === previewId);
+        if (!r) return json({ error: 'Not found' }, 404);
+        const show = await findShow(ctx, r.event);
+        if (!show) return json({ error: 'Show not found' }, 404);
+        const mail = confirmationEmail(r, show, ctx.siteUrl);
+        return json({ to: r.email, subject: mail.subject, html: mail.html });
+      }
+      return json({ reservations: await listReservations(sheetId, saEmail, saKey) });
+    }
     const body = await request.json() as { id?: string; ids?: string[]; resend?: string; fields?: Partial<Reservation>; send_email?: boolean };
     const allowed = (f: Partial<Reservation> = {}) => {
       const out: Partial<Reservation> = {};
