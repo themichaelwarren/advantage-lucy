@@ -52,8 +52,15 @@ export default function ContactForm({ locale }: { locale: Locale }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (data.field) setErrors({ [data.field]: data.error === 'email' ? s.badEmail : s.required });
-        setFormError(data.error === 'verify' ? s.verifyFailed : data.field ? '' : s.failed);
+        if (data.field) {
+          setErrors({ [data.field]: data.error === 'email' ? s.badEmail : s.required });
+          setTimeout(() => {
+            const bad = document.getElementById(`contact-${data.field}`);
+            bad?.focus({ preventScroll: true });
+            bad?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 50);
+        }
+        setFormError(data.error === 'verify' ? s.verifyFailed : data.error === 'slow_down' ? s.slowDown : data.field ? '' : s.failed);
         setStatus('error');
         turnstile.current?.reset();
         return;

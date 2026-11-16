@@ -13,6 +13,7 @@ import { songTitle, songSearchText, songQuery, hira } from '../../utils/songTitl
 import { errorText } from '../../components/admin/ui';
 import type { Event, Song } from '../../types';
 import CopyDownload from '../../components/admin/CopyDownload';
+import PageHelp from '../../components/admin/PageHelp';
 
 /**
  * Every video in one place (admin only): show videos with the songs marked
@@ -124,7 +125,7 @@ export default function AdminVideos() {
     <div className="lu-videos-page">
       <div className="lu-page-head">
         <div>
-          <h1>{s.videosTitle} <span className="lu-count">{videos.length}</span></h1>
+          <h1>{s.videosTitle} <span className="lu-count">{videos.length}</span><PageHelp /></h1>
           <p className="lu-hint lu-videos-intro"><Icon name="lock" /> <span className="is-long">{s.videosIndexHint}</span><span className="is-short">{s.videosIndexHintShort}</span></p>
         </div>
         <button type="button" className="lu-btn lu-btn-primary lu-btn-lg" onClick={() => setAdding({})}>+ {s.videoAdd}</button>

@@ -6,6 +6,7 @@ import ListToolbar, { useListPrefs, SwitchCell, SaveStateCell } from './ListTool
 import { useQuickEdit } from './useQuickEdit';
 import { liveState } from '../../utils/showDates';
 import { showDateTime } from './PublishControl';
+import PageHelp from './PageHelp';
 
 type Filter = 'all' | 'onsite' | 'hidden';
 type Sort = 'newest' | 'oldest' | 'title';
@@ -47,7 +48,7 @@ export default function PostList<T extends { id: string; date: string; status?: 
   return (
     <>
       <div className="lu-page-head">
-        <h1>{title} <span className="lu-count">{items.length}</span></h1>
+        <h1>{title} <span className="lu-count">{items.length}</span><PageHelp /></h1>
         <Link to={`${base}/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {addLabel}</Link>
       </div>
       <ListToolbar

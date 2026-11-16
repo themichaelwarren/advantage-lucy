@@ -1171,9 +1171,13 @@ main {
   border-color: var(--text);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--pop) 55%, transparent);
 }
-.contact-field.has-error :is(input, textarea) { border-color: #d23c42; }
-.contact-error { color: #d23c42; font-size: 0.85rem; font-weight: 600; font-family: var(--font-display); }
-:root[data-theme="dark"] .contact-error { color: #ff7a6b; }
+/* Same strong red ring as the booking form, so a problem field can't be missed */
+.contact-field.has-error :is(input, textarea), .contact-field.has-error :is(input, textarea):focus {
+  border-color: #c2412d; box-shadow: 0 0 0 3px color-mix(in srgb, #c2412d 22%, transparent);
+}
+.contact-error { color: #c2412d; font-size: 0.88rem; font-weight: 600; font-family: var(--font-display); margin: 0.1rem 0 0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .contact-error { color: #ff8a73; } }
+:root[data-theme="dark"] .contact-error { color: #ff8a73; }
 
 /* The greeting dropdown: a little pill that picks up the page accent */
 .contact-greeting { align-items: flex-start; }

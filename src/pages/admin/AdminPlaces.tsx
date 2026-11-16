@@ -6,6 +6,7 @@ import { useAdminT } from '../../i18n/admin';
 import type { AdminLocale } from '../../i18n/admin';
 import { Section, Field, BilingualRow, SaveBar, DeleteButton, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
+import PageHelp from '../../components/admin/PageHelp';
 
 /**
  * Places: Areas | Prefectures | Countries, as tabs on one admin page.
@@ -58,7 +59,7 @@ function PlaceList<T extends Named>({ kind, items, loading, count, countLabel, s
     <>
       <div className="lu-page-head">
         <div>
-          <h1>{isPref ? s.prefectures : s.countries} <span className="lu-count">{items.length}</span></h1>
+          <h1>{isPref ? s.prefectures : s.countries} <span className="lu-count">{items.length}</span><PageHelp /></h1>
           <p className="lu-hint">{s.placesHint}</p>
         </div>
         <Link to={`${prefix}/${kind}/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {isPref ? s.addPrefecture : s.addCountry}</Link>
@@ -208,7 +209,7 @@ function PlaceForm({ kind }: { kind: 'prefectures' | 'countries' }) {
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? (isPref ? s.prefectures : s.countries) : (isPref ? s.editPrefecture : s.editCountry)}</p>
-          <h1>{heading}</h1>
+          <h1>{heading}<PageHelp /></h1>
         </div>
       </div>
 

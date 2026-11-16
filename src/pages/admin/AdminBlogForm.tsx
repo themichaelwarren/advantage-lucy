@@ -14,6 +14,7 @@ import Icon from '../../components/admin/Icon';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { nowInJapan, normDateTime } from '../../utils/showDates';
 import { ActivityHistory } from '../../components/admin/Activity';
+import PageHelp from '../../components/admin/PageHelp';
 
 type BlogField = typeof BLOG_COLUMNS[number];
 type Form = Record<BlogField, string>;
@@ -125,7 +126,7 @@ export default function AdminBlogForm() {
     return (
       <form className="lu-form" onSubmit={e => { e.preventDefault(); save(); }} noValidate>
         {leaveGuard}
-        <div className="lu-page-head"><div><p className="lu-eyebrow">{s.blogTitle}</p><h1>{s.newBlog}</h1></div></div>
+        <div className="lu-page-head"><div><p className="lu-eyebrow">{s.blogTitle}</p><h1>{s.newBlog}<PageHelp /></h1></div></div>
         <Section title={s.secDetails}>{fields}</Section>
         {code && (
           <Section title={s.preview}>
@@ -162,7 +163,7 @@ export default function AdminBlogForm() {
             </div>
             <p className="lu-show-date"><strong>{saved.date.replace(/-/g, '.')}</strong></p>
             <div>
-              <h1>{main}</h1>
+              <h1>{main}<PageHelp /></h1>
               {other && other !== main && <p className="lu-song-alt lu-rel-alt" lang={locale === 'ja' ? 'en' : 'ja'}>{other}</p>}
             </div>
             {scheduled && <p className="lu-song-draft"><span className="lu-tag is-scheduled"><Icon name="clock" /> {s.scheduledTag.replace('{at}', showDateTime(at))}</span></p>}

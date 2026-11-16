@@ -8,6 +8,7 @@ import { personName } from '../../components/admin/PeoplePicker';
 import Icon from '../../components/admin/Icon';
 import { songTitle, compareSongs } from '../../utils/songTitles';
 import { ActivityHistory } from '../../components/admin/Activity';
+import PageHelp from '../../components/admin/PageHelp';
 
 // The server rewrites whole rows, so every column is always sent
 interface Form { id: string; name_family_en: string; name_given_en: string; name_family_ja: string; name_given_ja: string }
@@ -114,7 +115,7 @@ export default function AdminPersonForm() {
     return (
       <form className="lu-form" onSubmit={e => { e.preventDefault(); save(); }} noValidate>
         {leaveGuard}
-        <div className="lu-page-head"><div><p className="lu-eyebrow">{s.people}</p><h1>{s.newPerson}</h1></div></div>
+        <div className="lu-page-head"><div><p className="lu-eyebrow">{s.people}</p><h1>{s.newPerson}<PageHelp /></h1></div></div>
         <Section title={s.secDetails}>{fields}</Section>
         <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} backHref={`${prefix}/people`} />
       </form>
@@ -143,7 +144,7 @@ export default function AdminPersonForm() {
               <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setEditing(true)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
             </div>
             <div>
-              <h1>{main}</h1>
+              <h1>{main}<PageHelp /></h1>
               {other && other !== main && <p className="lu-song-alt lu-rel-alt" lang={locale === 'ja' ? 'en' : 'ja'}>{other}</p>}
             </div>
             <ul className="lu-song-stats" aria-label={s.songStats}>

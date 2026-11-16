@@ -8,6 +8,7 @@ import { useAdminT } from '../../i18n/admin';
 import NeedsLook from '../../components/admin/NeedsLook';
 import NewMessages from '../../components/admin/NewMessages';
 import UpcomingReservations from '../../components/admin/UpcomingReservations';
+import PageHelp from '../../components/admin/PageHelp';
 
 /** Admin home: the four everyday jobs as big buttons, plus what needs doing. */
 export default function AdminDashboard() {
@@ -41,7 +42,7 @@ export default function AdminDashboard() {
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{s.hello}{firstName ? `${locale === 'ja' ? '、' : ', '}${firstName}` : ''} 👋</p>
-          <h1>{s.whatToDo}</h1>
+          <h1>{s.whatToDo}<PageHelp /></h1>
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import type { Album } from '../../types';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
 import { normalize } from '../../components/admin/SuggestInput';
 import { localTitle, altTitle, songSortKey, songSearchText, songQuery } from '../../utils/songTitles';
+import PageHelp from '../../components/admin/PageHelp';
 
 /**
  * Releases: a cover list, or a table to sort and check what's missing.
@@ -143,7 +144,7 @@ export default function AdminMusic() {
   return (
     <>
       <div className="lu-page-head">
-        <h1>{s.releasesTitle} <span className="lu-count">{albums.length}</span></h1>
+        <h1>{s.releasesTitle} <span className="lu-count">{albums.length}</span><PageHelp /></h1>
         <Link to={`${prefix}/releases/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addRelease}</Link>
       </div>
       <ListToolbar

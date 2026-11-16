@@ -34,6 +34,7 @@ import ItemLinks from '../../components/admin/ItemLinks';
 import BandNotes from '../../components/admin/BandNotes';
 import { typedDate } from '../../utils/typedDate';
 import AddressDialog, { movedTo } from '../../components/admin/AddressDialog';
+import PageHelp from '../../components/admin/PageHelp';
 
 type EventField = typeof EVENT_COLUMNS[number];
 type Form = Record<EventField, string>;
@@ -465,7 +466,7 @@ export default function AdminEventForm() {
         <div className="lu-page-head">
           <div>
             <p className="lu-eyebrow">{s.shows}</p>
-            <h1>{s.newShow}</h1>
+            <h1>{s.newShow}<PageHelp /></h1>
           </div>
         </div>
         <Section title={s.secWhenWhere}>{whenWhereFields}</Section>
@@ -530,7 +531,7 @@ export default function AdminEventForm() {
               {weekday && <span className="lu-tag">{weekday}</span>}
               {saved.end_date && saved.end_date !== saved.date && <span className="lu-hint">〜 {saved.end_date.replace(/-/g, '.')}</span>}
             </p>
-            <h1>{title || venueName}</h1>
+            <h1>{title || venueName}<PageHelp /></h1>
             <dl className="lu-song-credits">
               <dt>{s.venue}</dt>
               <dd>{venue ? <Link to={`${prefix}/venues/${venue.id}`}>{venueName}</Link> : venueName}{venueNow && <span className="lu-hint">（{s.venueNowShort.replace('{name}', venueNow)}）</span>}{areaName && <span className="lu-hint"> · {areaName}</span>}</dd>

@@ -11,6 +11,7 @@ import type { SplashPhoto } from '../../types';
 import { photoToRow } from '../../utils/adminRows';
 import ListToolbar, { useListPrefs, SwitchCell, SaveStateCell } from '../../components/admin/ListToolbar';
 import { useQuickEdit } from '../../components/admin/useQuickEdit';
+import PageHelp from '../../components/admin/PageHelp';
 
 type Filter = 'all' | 'onsite' | 'hidden';
 type View = 'grid' | 'table';
@@ -156,7 +157,7 @@ export default function AdminPhotos() {
     <>
       <div className="lu-page-head">
         <div>
-          <h1>{s.photosTitle} <span className="lu-count">{photos.length}</span></h1>
+          <h1>{s.photosTitle} <span className="lu-count">{photos.length}</span><PageHelp /></h1>
           <p className="lu-hint">{s.photosHint}</p>
         </div>
         <Link to={`${prefix}/photos/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addPhoto}</Link>

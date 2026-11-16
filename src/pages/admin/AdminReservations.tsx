@@ -12,6 +12,7 @@ import type { Event } from '../../types';
 import { useFilters } from '../../hooks/useFilters';
 import type { SenderMatch } from '../../../functions/lib/filters';
 import { toKatakana, sortKey } from '../../../functions/lib/kana';
+import PageHelp from '../../components/admin/PageHelp';
 
 const ticketsOf = (r: Reservation) => Math.max(0, parseInt(r.tickets, 10) || 0);
 /** By reading where there is one (フリガナ), else by name: kanji names sort right only with their reading */
@@ -87,7 +88,7 @@ export default function AdminReservations() {
     <>
       <div className="lu-page-head">
         <div>
-          <h1>{s.reservations}</h1>
+          <h1>{s.reservations}<PageHelp /></h1>
           <p className="lu-hint">{s.reservationsHint}</p>
         </div>
       </div>
@@ -188,7 +189,7 @@ export function AdminShowReservations() {
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow"><Icon name="ticket" /> {s.reservations} · {event.date}</p>
-          <h1>{showName(event, locale)}</h1>
+          <h1>{showName(event, locale)}<PageHelp /></h1>
           <p className="lu-resv-totals">
             <strong>{cap > 0 ? s.resvTicketsOf.replace('{n}', String(taken)).replace('{cap}', String(cap)) : s.resvTickets.replace('{n}', String(taken))}</strong>
             <span>{s.resvBookings.replace('{n}', String(booked.length))}</span>

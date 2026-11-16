@@ -12,6 +12,7 @@ import { PHOTO_COLUMNS, photoToRow } from '../../utils/adminRows';
 import { showLinkId } from '../../utils/photoLinks';
 import { todayInJapan } from '../../utils/showDates';
 import { ActivityHistory } from '../../components/admin/Activity';
+import PageHelp from '../../components/admin/PageHelp';
 
 // The server rewrites whole rows, so every column is always sent
 type PhotoField = typeof PHOTO_COLUMNS[number];
@@ -124,7 +125,7 @@ export default function AdminPhotoForm() {
       <div className="lu-page-head">
         <div>
           <p className="lu-eyebrow">{isNew ? s.photosTitle : s.editPhoto}</p>
-          <h1>{isNew ? s.newPhoto : caption || s.editPhoto}</h1>
+          <h1>{isNew ? s.newPhoto : caption || s.editPhoto}<PageHelp /></h1>
         </div>
       </div>
 

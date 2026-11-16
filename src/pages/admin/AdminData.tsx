@@ -9,6 +9,7 @@ import { normalize } from '../../utils/text';
 import { songTitle, compareSongs } from '../../utils/songTitles';
 import { todayInJapan } from '../../utils/showDates';
 import { pickAccent } from '../../utils/palette';
+import PageHelp from '../../components/admin/PageHelp';
 
 /**
  * データ: the archive in numbers, for the band (admin only). Everything is
@@ -288,7 +289,7 @@ export default function AdminData() {
       <div className="lu-page-head">
         <div>
           {/* Tap the title for another colour */}
-          <h1 className="lu-data-h1" onClick={() => setAccent(a => pickAccent(a))}>{s.dataTitle}</h1>
+          <h1 className="lu-data-h1" onClick={() => setAccent(a => pickAccent(a))}>{s.dataTitle}<PageHelp /></h1>
           <p className="lu-hint"><Icon name="lock" /> {s.dataLead}</p>
         </div>
       </div>

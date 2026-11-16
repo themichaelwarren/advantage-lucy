@@ -7,6 +7,7 @@ import Icon from '../../components/admin/Icon';
 import { useActivity, groupActivity, ActivityGroupView, thingLink, whoName, dayOf, type ActivityGroup } from '../../components/admin/Activity';
 import { songTitle } from '../../utils/songTitles';
 import { getEventTitle } from '../../utils/format';
+import PageHelp from '../../components/admin/PageHelp';
 
 const PAGE = 300;
 
@@ -82,7 +83,7 @@ export default function AdminActivity() {
     <div className="lu-activity-page">
       <div className="lu-page-head">
         <div>
-          <h1>{s.actTitle}</h1>
+          <h1>{s.actTitle}<PageHelp /></h1>
           <p className="lu-hint"><Icon name="lock" /> {s.actLead}</p>
         </div>
       </div>

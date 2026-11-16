@@ -22,6 +22,7 @@ import { ActivityHistory } from '../../components/admin/Activity';
 import ItemLinks from '../../components/admin/ItemLinks';
 import BandNotes from '../../components/admin/BandNotes';
 import AddressDialog, { movedTo } from '../../components/admin/AddressDialog';
+import PageHelp from '../../components/admin/PageHelp';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
 const ALBUM_COLUMNS = [
@@ -320,7 +321,7 @@ export default function AdminAlbumForm() {
         <div className="lu-page-head">
           <div>
             <p className="lu-eyebrow">{s.releasesTitle}</p>
-            <h1>{s.newRelease}</h1>
+            <h1>{s.newRelease}<PageHelp /></h1>
           </div>
         </div>
         <Section title={s.secDetails}>{detailsFields}</Section>
@@ -374,7 +375,7 @@ export default function AdminAlbumForm() {
               {sf.artwork_url && <span className="lu-rel-art-edit">{editBtn('cover', s.relCoverChange)}</span>}
             </div>
             <div>
-              <h1>{sf.title}</h1>
+              <h1>{sf.title}<PageHelp /></h1>
               {sf.status === 'private' && <p className="lu-song-draft"><span className="lu-tag is-muted"><Icon name="lock" /> {s.songDraft}</span><span className="lu-hint">{s.visReleaseOff}</span></p>}
               {(sf.title_en && sf.title_en !== sf.title || sf.title_kana) && (
                 <p className="lu-song-alt lu-rel-alt">

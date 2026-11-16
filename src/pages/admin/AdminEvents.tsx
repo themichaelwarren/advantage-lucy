@@ -9,6 +9,7 @@ import { eventToRow } from '../../utils/adminRows';
 import ListToolbar, { useListPrefs, SwitchCell, SaveStateCell } from '../../components/admin/ListToolbar';
 import { useQuickEdit } from '../../components/admin/useQuickEdit';
 import { showDupes } from '../../utils/duplicates';
+import PageHelp from '../../components/admin/PageHelp';
 
 type Filter = 'all' | 'upcoming' | 'past' | 'nosetlist' | 'hidden' | 'nosource' | 'dupes';
 type Sort = 'newest' | 'oldest' | 'added';
@@ -86,7 +87,7 @@ export default function AdminEvents() {
   return (
     <>
       <div className="lu-page-head">
-        <h1>{s.showsTitle} <span className="lu-count">{events.length}</span></h1>
+        <h1>{s.showsTitle} <span className="lu-count">{events.length}</span><PageHelp /></h1>
         <Link to={`${prefix}/events/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addShow}</Link>
       </div>
 

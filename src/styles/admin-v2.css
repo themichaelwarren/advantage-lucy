@@ -1416,6 +1416,39 @@ body:has(tr.is-dragging) { cursor: grabbing; user-select: none; }
 @media (max-width: 760px) {
   .lu-help-section { padding: 1rem 1rem 1.1rem; scroll-margin-top: 4.5rem; }
 }
+/* Help index: a card per topic */
+.lu-help-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.lu-help-card {
+  display: flex; gap: 0.8rem; align-items: flex-start;
+  padding: 1rem 1.1rem; border-radius: var(--radius);
+  background: var(--surface); border: 1.5px solid var(--border);
+  color: var(--text); text-decoration: none;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.lu-help-card:hover, .lu-help-card:focus-visible { border-color: var(--text); transform: translateY(-1px); }
+.lu-help-card-icon { flex: none; display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 10px; background: var(--surface-hover); }
+.lu-help-card-text { display: grid; gap: 0.2rem; min-width: 0; }
+.lu-help-card-text strong { font-size: 1rem; }
+.lu-help-card-text span { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+/* A topic on its own page */
+.lu-help-topic { max-width: 46rem; }
+.lu-help-topic h1 { display: flex; align-items: center; gap: 0.5rem; }
+.lu-help-topic h1 .lu-help-icon { width: auto; }
+/* One topic per page: no boxes, just headings and a thin line between groups */
+.lu-help-topic .lu-help-section {
+  background: none; border: none; border-radius: 0;
+  padding: 1.4rem 0 0; margin: 0 0 1.4rem;
+  border-top: 1px solid var(--border);
+}
+.lu-help-topic .lu-help-section:first-of-type { border-top: none; padding-top: 0; }
+.lu-help-topic .lu-help-section h2 { font-size: 1.05rem; margin-bottom: 0.7rem; }
+.lu-help-topic .lu-help-section ul { gap: 0.65rem; }
+.lu-help-topic .lu-help-pager { border-top: 1px solid var(--border); padding-top: 1.4rem; }
+.lu-help-pager { display: flex; justify-content: space-between; gap: 1rem; margin: 1.5rem 0 1rem; }
+.lu-help-pager a { font-weight: 600; color: var(--text); text-decoration: none; padding: 0.6rem 0.9rem; border-radius: var(--radius); border: 1.5px solid var(--border); background: var(--surface); }
+.lu-help-pager a:hover { border-color: var(--text); }
+.lu-help-pager-next { margin-left: auto; text-align: right; }
+.lu-help-asknote { font-size: 0.85rem; color: var(--text-muted); }
 
 /* ---------- VIDEOS (admin only) ---------- */
 .lu-videos { display: flex; flex-direction: column; gap: 0.9rem; }
@@ -1645,6 +1678,31 @@ a.lu-show-line { font-weight: 600; }
 .lu-video-chapters button:hover:not(:disabled) { background: var(--surface-hover); }
 .lu-video-at { font-family: var(--font-main); font-size: 0.85rem; color: var(--text-muted); }
 .lu-video-chapters button:hover .lu-video-at { color: var(--text); }
+/* "?" beside a page title: opens that page's part of Help (PageHelp.tsx) */
+.lu-pagehelp-btn {
+  display: inline-grid; place-items: center; vertical-align: middle;
+  width: 1.75rem; height: 1.75rem; margin-left: 0.4rem; padding: 0;
+  border: none; border-radius: 50%; background: none;
+  color: var(--text-muted); opacity: 0.55; cursor: help;
+  font-size: 1rem; /* the icon, not the big title size */
+  transition: opacity 120ms ease, background 120ms ease;
+}
+.lu-pagehelp-btn svg { width: 1.1rem; height: 1.1rem; }
+.lu-pagehelp-btn:hover, .lu-pagehelp-btn:focus-visible, .lu-pagehelp-btn.is-open { opacity: 1; color: var(--text); background: var(--surface-hover); }
+.lu-pagehelp {
+  position: fixed; z-index: 200; width: min(360px, calc(100vw - 32px));
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 1rem 1.15rem 0.9rem; border-radius: 12px;
+  background: var(--surface, var(--bg)); color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 0.18);
+  font-family: var(--font-main); font-size: 0.88rem; line-height: 1.6; letter-spacing: 0; font-weight: 400;
+  outline: none;
+}
+.lu-pagehelp-title { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.5rem; font-weight: 700; font-size: 0.95rem; }
+.lu-pagehelp ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.45rem; }
+.lu-pagehelp-more { display: inline-block; margin-top: 0.8rem; font-weight: 600; color: var(--text); }
+
 /* 🔒 beside a section title; its note shows on hover, focus or tap */
 .lu-lock { position: relative; display: inline-flex; vertical-align: middle; margin-left: 0.45rem; }
 .lu-lock-btn { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; padding: 0; border: none; border-radius: 50%; background: none; color: var(--text-muted); cursor: help; }
@@ -2363,3 +2421,27 @@ a.lu-icon-btn { text-decoration: none; }
 /* A booking's reading, small after the name (and under it at the door) */
 .lu-resv-kana { margin-left: 0.5rem; font-size: 0.78rem; font-weight: 500; color: var(--text-muted); }
 .lu-door-kana { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+
+/* Help: search, bold lead-ins, results */
+.lu-help-search { margin-bottom: 1.25rem; }
+.lu-help-search .lu-search { width: 100%; max-width: none; }
+.lu-help-lead { font-weight: 700; }
+.lu-help mark { background: color-mix(in srgb, var(--pop, #ffd84d) 55%, transparent); color: inherit; border-radius: 3px; padding: 0 0.1em; }
+.lu-help-results { display: grid; gap: 1.4rem; margin-bottom: 1.5rem; }
+.lu-help-result h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+.lu-help-result h2 a { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text); text-decoration: none; }
+.lu-help-result h2 a:hover { text-decoration: underline; }
+.lu-help-result ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+.lu-help-result li a {
+  display: block; padding: 0.6rem 0.85rem; border-radius: 12px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  color: var(--text); text-decoration: none; line-height: 1.6; font-size: 0.92rem;
+}
+.lu-help-result li a:hover, .lu-help-result li a:focus-visible { border-color: var(--text); }
+/* The tip a search result pointed to */
+.lu-help-topic li { scroll-margin-top: 5rem; border-radius: 6px; }
+.lu-help-topic li.is-flash { animation: lu-help-flash 2.2s ease-out; }
+@keyframes lu-help-flash {
+  0%, 40% { background: color-mix(in srgb, var(--pop, #ffd84d) 45%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--pop, #ffd84d) 45%, transparent); }
+  100% { background: transparent; box-shadow: 0 0 0 6px transparent; }
+}

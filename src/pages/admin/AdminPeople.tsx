@@ -4,6 +4,7 @@ import { usePeople, useAllSongs } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import { personName } from '../../components/admin/PeoplePicker';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
+import PageHelp from '../../components/admin/PageHelp';
 
 type Filter = 'all' | 'unused';
 type Sort = 'songs' | 'az';
@@ -42,7 +43,7 @@ export default function AdminPeople() {
     <>
       <div className="lu-page-head">
         <div>
-          <h1>{s.people} <span className="lu-count">{people.length}</span></h1>
+          <h1>{s.people} <span className="lu-count">{people.length}</span><PageHelp /></h1>
           <p className="lu-hint">{s.peopleHint}</p>
         </div>
         <Link to={`${prefix}/people/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addPerson}</Link>

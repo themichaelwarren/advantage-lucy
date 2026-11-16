@@ -10,6 +10,7 @@ import ShowCard from '../components/ShowCard';
 import { todayInJapan } from '../utils/showDates';
 import { normalize } from '../utils/text';
 import { hira } from '../utils/songTitles';
+import { kanaToRomaji } from '../utils/romaji';
 import PageTitle from '../components/PageTitle';
 import SetlistBadge from '../components/SetlistBadge';
 
@@ -17,7 +18,12 @@ interface Props {
   locale: Locale;
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** Rōmaji spelled loosely, so kana read aloud meets English spellings: long vowels
+ *  (Tōkyō, toukyou → tokyo), m before b/p (Shimbashi = shinbashi). */
+const loose = (x: string) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/ou|oo/g, 'o').replace(/uu/g, 'u').replace(/m(?=[bp])/g, 'n');
+
+const MONTHS =['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -44,7 +50,10 @@ export default function Events({ locale }: Props) {
   // ("aomori 2014", "青森", "下北沢 que")
   const filtered = useMemo(() => {
     const fold = (x: string) => hira(normalize(x));
-    const words = search.trim().split(/\s+/).map(fold).filter(Boolean);
+    // A word typed in kana also matches the English names read aloud: あおもり → aomori → Aomori,
+    // とうきょう → tokyo, しんばし → Shimbashi
+    const words = search.trim().split(/\s+/).map(fold).filter(Boolean)
+      .map(w => ({ w, sound: /^[ぁ-ゖー]+$/.test(w) ? loose(kanaToRomaji(w)) : '' }));
     const text = (e: Event) => fold([
       e.title_en, e.title_ja, e.venue_en, e.venue_ja, e.venue_now_en, e.venue_now_ja,
       e.city_en, e.city_ja, e.prefecture_en, e.prefecture_ja, e.country_en, e.country_ja, e.performers,
@@ -52,7 +61,12 @@ export default function Events({ locale }: Props) {
     ].filter(Boolean).join(' '));
     return [...events]
       .sort((a, b) => b.date.localeCompare(a.date))
-      .filter(e => { if (!words.length) return true; const tx = text(e); return words.every(w => tx.includes(w)); });
+      .filter(e => {
+        if (!words.length) return true;
+        const tx = text(e);
+        const sounds = words.some(x => x.sound) ? loose(tx) : '';
+        return words.every(({ w, sound }) => tx.includes(w) || (sound && sounds.includes(sound)));
+      });
   }, [events, search]);
 
   // Upcoming soonest-first; past grouped by year, newest first

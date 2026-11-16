@@ -4,6 +4,7 @@ import { useVenues, useAreas, useAllEvents } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
 import { venueDupes } from '../../utils/duplicates';
+import PageHelp from '../../components/admin/PageHelp';
 
 type Filter = 'all' | 'unused' | 'dupes';
 type Sort = 'shows' | 'az';
@@ -44,7 +45,7 @@ export default function AdminVenues() {
   return (
     <>
       <div className="lu-page-head">
-        <h1>{s.venuesTitle} <span className="lu-count">{venues.length}</span></h1>
+        <h1>{s.venuesTitle} <span className="lu-count">{venues.length}</span><PageHelp /></h1>
         <Link to={`${prefix}/venues/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addVenue}</Link>
       </div>
       <ListToolbar

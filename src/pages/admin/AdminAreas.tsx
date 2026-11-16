@@ -4,6 +4,7 @@ import { useAreas, useVenues, usePrefectures } from '../../hooks/useSheetData';
 import { useAdminT } from '../../i18n/admin';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
 import { PlacesTabs } from './AdminPlaces';
+import PageHelp from '../../components/admin/PageHelp';
 
 type Filter = 'all' | 'unused';
 type Sort = 'venues' | 'az';
@@ -43,7 +44,7 @@ export default function AdminAreas() {
     <>
       <div className="lu-page-head">
         <div>
-          <h1>{s.areas} <span className="lu-count">{areas.length}</span></h1>
+          <h1>{s.areas} <span className="lu-count">{areas.length}</span><PageHelp /></h1>
           <p className="lu-hint">{s.areasHint}</p>
         </div>
         <Link to={`${prefix}/areas/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addArea}</Link>

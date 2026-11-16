@@ -7,6 +7,7 @@ import { errorText, ConfirmDialog } from '../../components/admin/ui';
 import { messageName, messageWhen, StatusTag, type Message } from '../../components/admin/MessageRow';
 import { useFilters, setFilters } from '../../hooks/useFilters';
 import { saveFilterEmails } from '../../services/adminService';
+import PageHelp from '../../components/admin/PageHelp';
 
 /** Private photos attached to a message: fetched with the admin sign-in. */
 function Attachments({ names }: { names: string[] }) {
@@ -106,7 +107,7 @@ export default function AdminMessage() {
       )}
       <div className="lu-page-head">
         <div>
-          <h1>{messageName(m, s)}</h1>
+          <h1>{messageName(m, s)}<PageHelp /></h1>
           <p className="lu-hint">
             <StatusTag status={m.status} s={s} />
             {' '}{isSetlist && <span className="lu-tag is-ok"><Icon name="setlist" /> {s.setlistInfo}</span>}

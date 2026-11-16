@@ -22,6 +22,7 @@ import BandNotes from '../../components/admin/BandNotes';
 import LinkTextarea from '../../components/admin/LinkTextarea';
 import { linkify } from '../../utils/linkify';
 import AddressDialog, { movedTo } from '../../components/admin/AddressDialog';
+import PageHelp from '../../components/admin/PageHelp';
 
 // Same columns as before; the server rewrites whole rows, so all are always sent
 const SONG_COLUMNS = ['id', 'title', 'lyrics_by', 'music_by', 'lyrics_doc_id', 'original_artist', 'title_en', 'title_kana', 'status', 'lyrics_status', 'about_en', 'about_ja'] as const;
@@ -278,7 +279,7 @@ export default function AdminSongForm() {
         <div className="lu-page-head">
           <div>
             <p className="lu-eyebrow">{s.songsTitle}</p>
-            <h1>{s.newSongItem}</h1>
+            <h1>{s.newSongItem}<PageHelp /></h1>
           </div>
         </div>
         <Section title={s.secDetails}>{detailsFields}</Section>
@@ -332,7 +333,7 @@ export default function AdminSongForm() {
                 {editBtn('details')}
               </span>
             </div>
-            <h1>{saved.title}</h1>
+            <h1>{saved.title}<PageHelp /></h1>
             {(saved.title_en && saved.title_en !== saved.title || saved.title_kana) && (
               <p className="lu-song-alt">
                 {saved.title_en && saved.title_en !== saved.title && <span lang="en">{saved.title_en}</span>}

@@ -8,6 +8,7 @@ import { errorText } from '../../components/admin/ui';
 import ListToolbar, { useListPrefs } from '../../components/admin/ListToolbar';
 import FilterManager from '../../components/admin/FilterManager';
 import { useFilters } from '../../hooks/useFilters';
+import PageHelp from '../../components/admin/PageHelp';
 
 type Filter = 'new' | 'doing' | 'done' | 'all' | 'setlist' | 'filtered';
 type Sort = 'newest' | 'oldest';
@@ -46,7 +47,7 @@ export default function AdminMessages() {
     <>
       <div className="lu-page-head">
         <div>
-          <h1>{s.messagesTitle} {messages && <span className="lu-count">{inbox.length}</span>}</h1>
+          <h1>{s.messagesTitle} {messages && <span className="lu-count">{inbox.length}</span>}<PageHelp /></h1>
           <p className="lu-hint">{s.messagesHint}</p>
         </div>
       </div>

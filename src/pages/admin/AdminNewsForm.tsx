@@ -15,6 +15,7 @@ import { linkify } from '../../utils/linkify';
 import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { nowInJapan, normDateTime } from '../../utils/showDates';
 import { ActivityHistory } from '../../components/admin/Activity';
+import PageHelp from '../../components/admin/PageHelp';
 
 type NewsField = typeof NEWS_COLUMNS[number];
 type Form = Record<NewsField, string>;
@@ -133,7 +134,7 @@ export default function AdminNewsForm() {
     return (
       <form className="lu-form" onSubmit={e => { e.preventDefault(); save(); }} noValidate>
         {leaveGuard}
-        <div className="lu-page-head"><div><p className="lu-eyebrow">{s.newsTitle}</p><h1>{s.newNews}</h1></div></div>
+        <div className="lu-page-head"><div><p className="lu-eyebrow">{s.newsTitle}</p><h1>{s.newNews}<PageHelp /></h1></div></div>
         <Section title={s.secDetails}>{detailsFields}</Section>
         <Section title={s.body}>{bodyFields}</Section>
         <Section title={s.image}>{imageField}</Section>
@@ -170,7 +171,7 @@ export default function AdminNewsForm() {
             </div>
             <p className="lu-show-date"><strong>{saved.date.replace(/-/g, '.')}</strong></p>
             <div>
-              <h1>{main}</h1>
+              <h1>{main}<PageHelp /></h1>
               {other && other !== main && <p className="lu-song-alt lu-rel-alt" lang={locale === 'ja' ? 'en' : 'ja'}>{other}</p>}
             </div>
             {scheduled && <p className="lu-song-draft"><span className="lu-tag is-scheduled"><Icon name="clock" /> {s.scheduledTag.replace('{at}', showDateTime(at))}</span></p>}

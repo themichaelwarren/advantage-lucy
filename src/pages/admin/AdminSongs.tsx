@@ -10,6 +10,7 @@ import { KEYS, parseKey } from '../../../functions/lib/keys';
 import { keysText } from '../../components/admin/KeysEditor';
 import { todayInJapan } from '../../utils/showDates';
 import { songAltTitle, songSortKey, songSearchText, songQuery } from '../../utils/songTitles';
+import PageHelp from '../../components/admin/PageHelp';
 
 /**
  * Songs: one table to read, sort and filter (editing is on each song's
@@ -185,7 +186,7 @@ export default function AdminSongs() {
   return (
     <>
       <div className="lu-page-head">
-        <h1>{s.songsTitle} <span className="lu-count">{songs.length}</span></h1>
+        <h1>{s.songsTitle} <span className="lu-count">{songs.length}</span><PageHelp /></h1>
         <Link to={`${prefix}/songs/new`} className="lu-btn lu-btn-primary lu-btn-lg">+ {s.addSongItem}</Link>
       </div>
 

@@ -196,6 +196,7 @@ export default function App() {
           <Route path="activity" element={<AdminActivity />} />
           <Route path="data" element={<AdminData />} />
           <Route path="help" element={<AdminHelp />} />
+          <Route path="help/:topic" element={<AdminHelp />} />
         </Route>
       </Route>
 

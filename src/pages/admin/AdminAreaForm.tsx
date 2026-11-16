@@ -11,6 +11,7 @@ import { useFitsViewport } from '../../hooks/useFitsViewport';
 import { todayInJapan } from '../../utils/showDates';
 import type { Event } from '../../types';
 import { ActivityHistory } from '../../components/admin/Activity';
+import PageHelp from '../../components/admin/PageHelp';
 
 // The server rewrites whole rows, so every column is always sent
 interface Form { id: string; name_en: string; name_ja: string; prefecture: string }
@@ -133,7 +134,7 @@ export default function AdminAreaForm() {
     return (
       <form className="lu-form" onSubmit={e => { e.preventDefault(); save(); }} noValidate>
         {leaveGuard}
-        <div className="lu-page-head"><div><p className="lu-eyebrow">{s.areas}</p><h1>{s.newAreaTitle}</h1></div></div>
+        <div className="lu-page-head"><div><p className="lu-eyebrow">{s.areas}</p><h1>{s.newAreaTitle}<PageHelp /></h1></div></div>
         <Section title={s.secDetails}>{fields}</Section>
         <SaveBar s={s} saving={saving} savedAt={savedAt} error={error} dirty={dirty} backHref={`${prefix}/areas`} />
       </form>
@@ -170,7 +171,7 @@ export default function AdminAreaForm() {
               <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setEditing(true)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
             </div>
             <div>
-              <h1>{name}</h1>
+              <h1>{name}<PageHelp /></h1>
               {other && other !== name && <p className="lu-song-alt lu-rel-alt" lang={locale === 'ja' ? 'en' : 'ja'}>{other}</p>}
             </div>
             <dl className="lu-song-credits">

@@ -18,6 +18,7 @@ import FormerNames from '../../components/admin/FormerNames';
 import { parseFormerNames, formatFormerNames, formerPeriods } from '../../../functions/lib/venueNames';
 import { eventToRow } from '../../utils/adminRows';
 import AddressDialog, { movedTo } from '../../components/admin/AddressDialog';
+import PageHelp from '../../components/admin/PageHelp';
 
 interface Form { id: string; name_en: string; name_ja: string; area: string; url: string; former_names: string }
 const empty: Form = { id: '', name_en: '', name_ja: '', area: '', url: '', former_names: '' };
@@ -226,7 +227,7 @@ export default function AdminVenueForm() {
         <div className="lu-page-head">
           <div>
             <p className="lu-eyebrow">{s.venuesTitle}</p>
-            <h1>{s.newVenue}</h1>
+            <h1>{s.newVenue}<PageHelp /></h1>
           </div>
         </div>
         <Section title={s.secDetails}>{fields}</Section>
@@ -289,7 +290,7 @@ export default function AdminVenueForm() {
               <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setEditing(true)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
             </div>
             <div>
-              <h1>{name}</h1>
+              <h1>{name}<PageHelp /></h1>
               {other && normalize(other) !== normalize(name) && <p className="lu-song-alt lu-rel-alt" lang={locale === 'ja' ? 'en' : 'ja'}>{other}</p>}
             </div>
             {formerNames.length > 0 && (
