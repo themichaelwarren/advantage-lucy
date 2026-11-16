@@ -362,7 +362,7 @@ export default function AdminEventForm() {
           {fid => <input id={fid} value={form.door_price} placeholder={s.pricePlaceholder} onChange={e => set('door_price', e.target.value)} />}
         </Field>
       </div>
-      <Field label={s.ticketUrl} optional s={s}>
+      <Field label={s.ticketUrl} optional s={s} hint={s.ticketUrlHint}>
         {fid => <input id={fid} type="url" inputMode="url" value={form.ticket_url} placeholder="https://" onChange={e => set('ticket_url', e.target.value)} />}
       </Field>
       <div className="lu-reserve-settings">

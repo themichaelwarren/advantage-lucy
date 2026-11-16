@@ -10,7 +10,7 @@ import NotFound from '../components/NotFound';
 import { setlistIsPublic, todayInJapan } from '../utils/showDates';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import SetlistTip from '../components/SetlistTip';
-import ReserveForm from '../components/ReserveForm';
+import ReserveForm, { type ReserveFormState } from '../components/ReserveForm';
 import { useState } from 'react';
 import PageTitle from '../components/PageTitle';
 import { songTitle } from '../utils/songTitles';
@@ -18,8 +18,6 @@ import BackLink from '../components/BackLink';
 import RelatedLinks from '../components/RelatedLinks';
 import { movedTo } from '../utils/formerIds';
 
-/** The old way of taking bookings: a Google Form (forms.gle/…, docs.google.com/forms/…). */
-const isGoogleForm = (url: string) => /^https?:\/\/(forms\.gle\/|docs\.google\.com\/forms\/)/i.test(url.trim());
 
 interface Props {
   locale: Locale;
@@ -36,7 +34,7 @@ export default function EventDetail({ locale }: Props) {
   // The left panel only sticks when it fits on screen (otherwise its bottom would be unreachable)
   const panel = useFitsViewport<HTMLElement>();
   // Reservations: the form says whether the show is still taking them
-  const [reserveOpen, setReserveOpen] = useState(false);      // still taking reservations
+  const [reserveState, setReserveState] = useState<ReserveFormState>('loading'); // the site's booking form
   const [reserveWindow, setReserveWindow] = useState(false);  // the booking window is open
 
   if (loading) return <PageLoader locale={locale} />;
@@ -103,6 +101,8 @@ export default function EventDetail({ locale }: Props) {
   // Local dev only: ?preview-reserve shows the form on any upcoming show without saving anything
   const previewReserve = import.meta.env.DEV && new URLSearchParams(window.location.search).has('preview-reserve');
   const isPast = (event.end_date || event.date) < todayInJapan();
+  // The booking form is on this page (it then says whether it's open, closed or full)
+  const bookingOnSite = !!(event.reserve || previewReserve) && !isPast;
 
   const shortWeekday = new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { weekday: 'short', timeZone: 'UTC' })
     .format(new Date(`${event.date}T00:00:00Z`));
@@ -183,10 +183,10 @@ export default function EventDetail({ locale }: Props) {
               {event.performers && (<><dt>{s.events.performers}</dt><dd>{event.performers}</dd></>)}
             </dl>
 
-          {/* Booking on the site happens from the banner beside this; while it's open, an old
-              Google Form ticket link is left out so nobody books in two places. A venue's
-              or ticket agency's link still shows. */}
-          {event.ticketUrl && !(reserveOpen && isGoogleForm(event.ticketUrl)) && (
+          {/* While the site takes bookings, the banner beside this is the one way to book:
+              the Tickets button (another seller, or an old Google Form) waits until bookings
+              close or fill up. Other sellers and streams go in the information text. */}
+          {event.ticketUrl && !(bookingOnSite && (reserveState === 'open' || reserveState === 'loading')) && (
             <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer" className="ticket-btn evd-tickets">
               {s.events.tickets} →
             </a>
@@ -209,7 +209,7 @@ export default function EventDetail({ locale }: Props) {
                   ].filter(Boolean).join(' / '),
                 }}
                 open={reserveWindow} onOpenChange={setReserveWindow}
-                onState={st => setReserveOpen(st === 'open')}
+                onState={setReserveState}
               />
             )}
             {setGroups.size === 0 && (
