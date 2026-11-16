@@ -8,15 +8,16 @@ import type { Reservation } from '../services/adminService';
 
 const KEY = 'lu-resv-seen';
 
-/** When 予約 was last opened here (ISO). The very first time: now, so old bookings don't all show as new. */
+/** When 予約 was last opened here (ISO). The very first time: two days ago, so the latest bookings
+ *  count as new (and the badge shows it works) without every old booking doing so. */
 export function lastSeen(): string {
   try {
     const v = localStorage.getItem(KEY);
     if (v) return v;
-    const now = new Date().toISOString();
-    localStorage.setItem(KEY, now);
-    return now;
-  } catch { return new Date().toISOString(); }
+    const start = new Date(Date.now() - 2 * 86400000).toISOString();
+    localStorage.setItem(KEY, start);
+    return start;
+  } catch { return new Date(Date.now() - 2 * 86400000).toISOString(); }
 }
 
 /** 予約 was opened: everything up to now counts as seen (the sidebar badge clears). */

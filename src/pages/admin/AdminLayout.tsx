@@ -62,6 +62,17 @@ export default function AdminLayout() {
     window.addEventListener('lu-admin-saved', recount);
     return () => window.removeEventListener('lu-admin-saved', recount);
   }, []);
+  // Back to this tab (after checking email, say): look again for new messages and bookings
+  useEffect(() => {
+    const onBack = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - lastCount.current < 30_000) return;
+      lastCount.current = Date.now();
+      getMessages().then(withoutFiltered).then(list => setNewMessages(list.filter(m => !m.status).length)).catch(() => {});
+      getReservations().then(setResvList).catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onBack);
+    return () => document.removeEventListener('visibilitychange', onBack);
+  }, []);
   const menuButton = useRef<HTMLButtonElement>(null);
 
   // Computers: the sidebar can fold down to icons (remembered on this device)
