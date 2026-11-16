@@ -225,7 +225,8 @@ function jaDate(iso: string) {
 
 /** Plain-text and HTML bodies for the notification email to the band (in Japanese: the band reads these). */
 export function notificationEmail(m: ContactMessage, ctx: EmailContext = {}) {
-  const name = `${m.name_family} ${m.name_given}`.trim() || '匿名';
+  // Written on the English page: given name first (Michael Warren); Japanese: family first (ウォーレン マイケル)
+  const name = (m.locale === 'en' ? `${m.name_given} ${m.name_family}` : `${m.name_family} ${m.name_given}`).trim() || '匿名';
   const when = new Intl.DateTimeFormat('ja-JP', {
     timeZone: 'Asia/Tokyo', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
   }).format(new Date(m.received_at));

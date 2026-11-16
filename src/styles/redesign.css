@@ -2331,3 +2331,5 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 }
 /* Lyrics: a wrapped line breaks between words, not mid-word (夢を見てた / よ) */
 .lyrics-verse { word-break: auto-phrase; line-break: strict; }
+/* Thanks headings and messages: break between words (ございま / す！ no more) */
+.contact-thanks h2, .contact-thanks p { word-break: auto-phrase; line-break: strict; text-wrap: balance; }

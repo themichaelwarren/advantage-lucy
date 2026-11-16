@@ -41,6 +41,16 @@ export default function AdminLayout() {
     // Filtered senders never count as new
     getMessages().then(withoutFiltered).then(list => setNewMessages(list.filter(m => !m.status).length)).catch(() => {});
   }, [location.pathname]);
+  // A message marked done (or a sender filtered) changes the count straight away, not on the next page
+  useEffect(() => {
+    const recount = () => {
+      if (!window.location.pathname.includes('/admin/messages')) return;
+      lastCount.current = Date.now();
+      getMessages().then(withoutFiltered).then(list => setNewMessages(list.filter(m => !m.status).length)).catch(() => {});
+    };
+    window.addEventListener('lu-admin-saved', recount);
+    return () => window.removeEventListener('lu-admin-saved', recount);
+  }, []);
   const menuButton = useRef<HTMLButtonElement>(null);
 
   // Computers: the sidebar can fold down to icons (remembered on this device)

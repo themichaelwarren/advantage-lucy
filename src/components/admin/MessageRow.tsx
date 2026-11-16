@@ -9,7 +9,10 @@ export type Message = Record<string, string>;
 export const messageWhen = (iso: string, locale: AdminLocale) =>
   iso ? new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Tokyo' }).format(new Date(iso)) : '';
 
-export const messageName = (m: Message, s: AdminStrings) => `${m.name_family || ''} ${m.name_given || ''}`.trim() || s.anonymous;
+/** English-page messages read given name first (Michael Warren), Japanese family name first (ウォーレン マイケル). */
+export const messageName = (m: Message, s: AdminStrings) => (m.locale === 'en'
+  ? `${m.name_given || ''} ${m.name_family || ''}`
+  : `${m.name_family || ''} ${m.name_given || ''}`).trim() || s.anonymous;
 
 /** New / In progress / Done tag. */
 export function StatusTag({ status, s }: { status?: string; s: AdminStrings }) {
