@@ -6,7 +6,7 @@ import { useAdminT, type AdminLocale, type AdminStrings } from '../../i18n/admin
 import {
   getReservations, updateReservation, addReservation, resendReservation, checkReservations, type Reservation,
 } from '../../services/adminService';
-import { errorText } from '../../components/admin/ui';
+import { errorText, ConfirmDialog } from '../../components/admin/ui';
 import { reserveState, todayInJapan } from '../../utils/showDates';
 import type { Event } from '../../types';
 import { useFilters } from '../../hooks/useFilters';
@@ -345,6 +345,8 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
 }) {
   const [draft, setDraft] = useState({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note });
   const [busy, setBusy] = useState(false);
+  // Emailing a fan always asks first: who it goes to, and in which language
+  const [askSend, setAskSend] = useState(false);
   useEffect(() => { if (open) setDraft({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note }); }, [open, r]);
   const cancelled = r.status === 'cancelled';
   const dirty = draft.name !== r.name || draft.kana !== (r.kana || '') || draft.email !== r.email || draft.tickets !== r.tickets || draft.note !== r.note;
@@ -389,12 +391,18 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
                 {isNew ? `✓ ${s.resvCheck}` : s.resvUncheck}
               </button>
             )}
-            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={() => run(onResend)}><Icon name="mail" /> {r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}</button>}
+            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={() => setAskSend(true)}><Icon name="mail" /> {r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}</button>}
             <button type="button" className={`lu-btn ${cancelled ? '' : 'lu-btn-danger-quiet'}`} disabled={busy}
               onClick={() => run(() => onChange({ status: cancelled ? '' : 'cancelled' }))}>
               {cancelled ? s.resvRestore : s.resvCancel}
             </button>
           </div>
+          <ConfirmDialog s={s} open={askSend}
+            title={(r.emailed === 'yes' ? s.resvSendAgainTitle : s.resvSendTitle).replace('{name}', r.name)}
+            body={s.resvSendBody.replace('{email}', r.email).replace('{lang}', r.locale === 'en' ? 'English' : '日本語')}
+            confirmLabel={r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}
+            onCancel={() => setAskSend(false)}
+            onConfirm={() => { setAskSend(false); run(onResend); }} />
         </div>
       )}
     </li>
