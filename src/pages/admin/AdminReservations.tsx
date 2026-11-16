@@ -496,14 +496,14 @@ function BookingPane({ r, s, locale, flag, isNew, showTitle, closeTo, prevTo, ne
         <div className="lu-resv-edit-grid">
           <label className="lu-field"><span>{s.resvName}</span><input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} /></label>
           <label className="lu-field"><span>{s.resvKana}</span><input lang="ja" value={draft.kana} placeholder={s.resvKanaHint} onChange={e => setDraft(d => ({ ...d, kana: e.target.value }))} onBlur={() => setDraft(d => ({ ...d, kana: toKatakana(d.kana) }))} /></label>
-          <label className="lu-field"><span>{s.resvCount}</span><input type="number" min={1} inputMode="numeric" value={draft.tickets} onChange={e => setDraft(d => ({ ...d, tickets: e.target.value }))} /></label>
-          <label className="lu-field"><span>{s.resvEmail}</span><input type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} /></label>
-          <label className="lu-field lu-resv-edit-wide"><span>{s.resvNote}</span><textarea rows={2} value={draft.note} onChange={e => setDraft(d => ({ ...d, note: e.target.value }))} /></label>
+          <label className="lu-field lu-resv-edit-wide"><span>{s.resvEmail}</span><input type="email" value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} /></label>
           <label className="lu-field"><span>{s.resvMailLang}</span>
             <select value={draft.locale} onChange={e => setDraft(d => ({ ...d, locale: e.target.value as 'ja' | 'en' }))}>
               <option value="ja">日本語</option><option value="en">English</option>
             </select>
           </label>
+          <label className="lu-field"><span>{s.resvCount}</span><input type="number" min={1} inputMode="numeric" value={draft.tickets} onChange={e => setDraft(d => ({ ...d, tickets: e.target.value }))} /></label>
+          <label className="lu-field lu-resv-edit-wide"><span>{s.resvNote}</span><textarea rows={2} value={draft.note} onChange={e => setDraft(d => ({ ...d, note: e.target.value }))} /></label>
         </div>
         <p className="lu-hint">{s.resvMailLangHint}</p>
         <div className="lu-resv-edit-actions">
