@@ -2314,3 +2314,20 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 .reserve-tickets.has-error .reserve-count:not(.is-on) { border-color: #c2412d; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .reserve-field-error { color: #ff8a73; } }
 :root[data-theme="dark"] .reserve-field-error { color: #ff8a73; }
+
+/* Japanese titles wrap at word boundaries (Chrome, Edge, Dia), never start a
+   line with ー or a small kana (every browser), and long titles go a size
+   smaller so they need fewer lines (おんぼろバルーン1号, 遊ぼう！フィジー！) */
+.song-detail-title, .album-detail-title, .news-detail-title {
+  word-break: auto-phrase;
+  line-break: strict;
+  text-wrap: balance;
+}
+.song-detail-title.is-long, .album-detail-title.is-long { font-size: clamp(1.9rem, 5.6vw, 3.4rem); }
+.song-detail-title.is-longer, .album-detail-title.is-longer { font-size: clamp(1.7rem, 4.6vw, 2.8rem); }
+@media (min-width: 900px) {
+  .song-aside .song-detail-title.is-long, .album-aside .album-detail-title.is-long { font-size: clamp(1.7rem, 2.35vw, 2.3rem); }
+  .song-aside .song-detail-title.is-longer, .album-aside .album-detail-title.is-longer { font-size: clamp(1.5rem, 2vw, 1.95rem); }
+}
+/* Lyrics: a wrapped line breaks between words, not mid-word (夢を見てた / よ) */
+.lyrics-verse { word-break: auto-phrase; line-break: strict; }

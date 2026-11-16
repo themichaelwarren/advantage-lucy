@@ -28,7 +28,23 @@ export function songAltTitle(s: Titled, locale: Lang): string {
 const collators = { ja: new Intl.Collator('ja', { sensitivity: 'base', numeric: true }), en: new Intl.Collator('en', { sensitivity: 'base', numeric: true }) };
 /** What a song sorts by: 読み on Japanese pages, the English title on English pages. */
 export const songSortKey = (s: Titled, locale: Lang) => (locale === 'ja' ? s.title_kana || s.title : s.title_en || s.title) || '';
-export const compareSongs = (locale: Lang) => (a: Titled, b: Titled) => collators[locale].compare(songSortKey(a, locale), songSortKey(b, locale));
+/** A title written only in kana (ブルーハワイ) is its own reading. */
+const KANA_ONLY = /^(?=.*[ぁ-ヿ])[ぁ-ヿ　-〿！-～\s!?・ー〜~.,'’\-0-9]+$/;
+/** A song that can't be put in 50音 order until it has a reading (leaf, 遊ぼう！フィジー！). */
+export const needsReading = (s: Titled) => !!s.title && !(s.title_kana || '').trim() && !KANA_ONLY.test(s.title);
+/** Japanese pages: 50音順 by reading, with songs that have no reading yet at the end (instead of Latin titles jumping to the top). */
+export const compareSongs = (locale: Lang) => (a: Titled, b: Titled) =>
+  (locale === 'ja' ? Number(needsReading(a)) - Number(needsReading(b)) : 0)
+  || collators[locale].compare(songSortKey(a, locale), songSortKey(b, locale));
+
+/**
+ * How long a title looks: a Japanese character is about twice as wide as a
+ * Latin letter. Used to set long titles a size smaller: " is-long" / " is-longer".
+ */
+export const titleSizeClass = (t: string) => {
+  const w = [...(t || '')].reduce((n, c) => n + (/[\u3000-\u9fff\uff00-\uffef]/.test(c) ? 1 : 0.55), 0);
+  return w > 13 ? ' is-longer' : w > 8 ? ' is-long' : '';
+};
 
 /** Katakana → hiragana, so しとらす finds シトラス */
 export const hira = (t: string) => t.replace(/[\u30a1-\u30f6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));

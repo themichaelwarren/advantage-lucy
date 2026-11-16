@@ -9,7 +9,7 @@ import { getArrangements, getMedia, getLyricsStatus, type ArrangementRow, type M
 import { KEYS, parseKey } from '../../../functions/lib/keys';
 import { keysText } from '../../components/admin/KeysEditor';
 import { todayInJapan } from '../../utils/showDates';
-import { songAltTitle, songSortKey, songSearchText, songQuery } from '../../utils/songTitles';
+import { songAltTitle, songSortKey, songSearchText, songQuery, needsReading } from '../../utils/songTitles';
 import PageHelp from '../../components/admin/PageHelp';
 
 /**
@@ -39,6 +39,8 @@ interface Row {
   lyricsEmpty: boolean;
   hasEn: boolean;
   hasKana: boolean;
+  /** No reading, and the title isn't kana: can't be placed in 50音順 */
+  noReading: boolean;
   ja: boolean;
   plays: number;
   last: string;             // date of the last show that's over
@@ -124,7 +126,7 @@ export default function AdminSongs() {
         videos: (partsBy.get(k) || 0) + media.filter(m => m.owner === `song:${x.id}`).length,
         music: names(x.music_by), words: names(x.lyrics_by),
         draft: x.status === 'private',
-        ja: /[\u3040-\u30ff\u3400-\u9fff]/.test(x.title), hasEn: !!x.title_en, hasKana: !!x.title_kana,
+        ja: /[\u3040-\u30ff\u3400-\u9fff]/.test(x.title), hasEn: !!x.title_en, hasKana: !!x.title_kana, noReading: needsReading(x),
       };
     });
   }, [songs, setlists, events, arr, media, names, locale, lyricsState]);
@@ -143,7 +145,7 @@ export default function AdminSongs() {
       (!has('videos') || r.videos > 0) &&
       (!has('draft') || r.draft) &&
       (!has('noen') || (r.ja && !r.hasEn)) &&
-      (!has('nokana') || (r.ja && !r.hasKana)) &&
+      (!has('nokana') || r.noReading) &&
       (!has('emptylyrics') || r.lyricsEmpty) &&
       (!prefs.key
         || (prefs.key === 'major' ? r.keys.some(k => !k.value.endsWith('m'))
@@ -154,7 +156,8 @@ export default function AdminSongs() {
     const dir = prefs.desc ? -1 : 1;
     // 50音順 by 読み in Japanese, A–Z by the English title in English
     const collator = new Intl.Collator(locale, { sensitivity: 'base', numeric: true });
-    const byTitle = (a: Row, b: Row) => collator.compare(a.sortTitle, b.sortTitle);
+    // Japanese: songs with no reading yet go last (they can't be placed in 50音順 without one)
+    const byTitle = (a: Row, b: Row) => (locale === 'ja' ? Number(a.noReading) - Number(b.noReading) : 0) || collator.compare(a.sortTitle, b.sortTitle);
     out.sort((a, b) => {
       switch (prefs.sort) {
         case 'key': return dir * (a.keySort - b.keySort) || byTitle(a, b);

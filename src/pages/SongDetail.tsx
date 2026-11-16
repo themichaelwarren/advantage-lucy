@@ -10,7 +10,7 @@ import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import NowPlaying from '../components/NowPlaying';
 import PageTitle from '../components/PageTitle';
-import { songTitle, songAltTitle, localTitle } from '../utils/songTitles';
+import { songTitle, songAltTitle, localTitle, titleSizeClass } from '../utils/songTitles';
 import BackLink from '../components/BackLink';
 import RelatedLinks from '../components/RelatedLinks';
 import { linkify } from '../utils/linkify';
@@ -116,7 +116,7 @@ export default function SongDetail({ locale }: Props) {
         <aside ref={panel.ref} className="song-aside is-sticky" style={{ top: panel.top }}>
           <div className="song-head">
             <header className="song-detail-header">
-              <h1 className="song-detail-title">{songTitle(song, locale)}</h1>
+              <h1 className={`song-detail-title${titleSizeClass(songTitle(song, locale))}`}>{songTitle(song, locale)}</h1>
               {songAltTitle(song, locale) && <p className="song-alt-subtitle" lang={locale === 'en' ? 'ja' : 'en'}>{songAltTitle(song, locale)}</p>}
               {song.original_artist && (
                 <p className="song-cover-of">{s.songs.coverOf.replace('{artist}', song.original_artist)}</p>

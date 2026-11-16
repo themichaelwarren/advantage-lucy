@@ -8,7 +8,7 @@ import NotFound from '../components/NotFound';
 import { useFitsViewport } from '../hooks/useFitsViewport';
 import { linkify } from '../utils/linkify';
 import PageTitle from '../components/PageTitle';
-import { songTitle, localTitle, altTitle } from '../utils/songTitles';
+import { songTitle, localTitle, altTitle, titleSizeClass } from '../utils/songTitles';
 import { LISTEN_SERVICES } from '../../functions/lib/listen';
 import BackLink from '../components/BackLink';
 import RelatedLinks from '../components/RelatedLinks';
@@ -56,7 +56,7 @@ export default function AlbumDetail({ locale }: Props) {
       <div className="album-layout">
         <aside ref={panel.ref} className="album-aside is-sticky" style={{ top: panel.top }}>
           <header className="album-detail-header">
-            <h1 className="album-detail-title">{localTitle(album, locale)}</h1>
+            <h1 className={`album-detail-title${titleSizeClass(localTitle(album, locale))}`}>{localTitle(album, locale)}</h1>
             {altTitle(album, locale) && <p className="song-alt-subtitle album-detail-alt" lang={locale === 'en' ? 'ja' : 'en'}>{altTitle(album, locale)}</p>}
             <p className="album-detail-subtitle">
               {[album.date || album.year, typeLabel, album.label].filter(Boolean).join(' · ')}

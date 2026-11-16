@@ -7,6 +7,7 @@ import { showDupes, venueDupes } from '../../utils/duplicates';
 import { getLyricsStatus, getLinkCheck, isDeadLink, getMedia, UNSORTED_VIDEOS, type LinkCheck } from '../../services/adminService';
 import { LISTEN_SERVICES } from '../../../functions/lib/listen';
 import { todayInJapan } from '../../utils/showDates';
+import { needsReading } from '../../utils/songTitles';
 
 /**
  * What's missing in the archive (admin home): one line per kind of gap,
@@ -41,7 +42,7 @@ export default function DataHealth({ s, prefix, events, setlists }: {
     const jaReleases = albums.filter(a => hasJapanese(a.title));
     return [
       { n: jaSongs.filter(x => !x.title_en).length, label: s.dhSongsNoEn, to: `${prefix}/songs?flag=noen` },
-      { n: jaSongs.filter(x => !x.title_kana).length, label: s.dhSongsNoKana, to: `${prefix}/songs?flag=nokana` },
+      { n: songs.filter(x => x.id && needsReading(x)).length, label: s.dhSongsNoKana, to: `${prefix}/songs?flag=nokana` },
       { n: lyrics ? songs.filter(x => x.lyrics_doc_id && lyrics[x.lyrics_doc_id] === 'empty').length : 0, label: s.dhLyricsEmpty, to: `${prefix}/songs?flag=emptylyrics` },
       { n: jaReleases.filter(a => !a.title_en).length, label: s.dhReleasesNoEn, to: `${prefix}/releases?filter=noen` },
       { n: albums.filter(a => !a.coverUrl).length, label: s.dhReleasesNoCover, to: `${prefix}/releases?filter=nocover` },

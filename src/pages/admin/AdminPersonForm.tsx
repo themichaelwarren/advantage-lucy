@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { usePeople, useAllSongs } from '../../hooks/useSheetData';
+import { usePeople, useAllSongs, useAllSetlists, useAllEvents } from '../../hooks/useSheetData';
+import { normalize } from '../../components/admin/SuggestInput';
+import { todayInJapan } from '../../utils/showDates';
+import { songAltTitle } from '../../utils/songTitles';
 import { createRow, updateRow, deleteRow } from '../../services/adminService';
 import { useAdminT } from '../../i18n/admin';
 import { Section, Field, BilingualRow, SaveBar, DeleteButton, EditDialog, useUnsavedWarning, makeId, errorText } from '../../components/admin/ui';
@@ -26,6 +29,12 @@ export default function AdminPersonForm() {
   const navigate = useNavigate();
   const { people, loading } = usePeople();
   const { songs } = useAllSongs();
+  const { setlists } = useAllSetlists();
+  const { events } = useAllEvents();
+  // The credits table: search, a role filter, and sortable columns (like the Songs page)
+  const [query, setQuery] = useState('');
+  const [role, setRole] = useState<'all' | 'music' | 'lyrics' | 'both'>('all');
+  const [sort, setSort] = useState<{ k: 'title' | 'role' | 'plays' | 'last'; desc: boolean }>({ k: 'title', desc: false });
 
   const [form, setForm] = useState<Form>(empty);
   const [baseline, setBaseline] = useState('');
@@ -60,6 +69,40 @@ export default function AdminPersonForm() {
       .map(x => ({ song: x, music: has(x.music_by), lyrics: has(x.lyrics_by) }))
       .sort((a, b) => compareSongs(locale)(a.song, b.song));
   }, [songs, form.id, locale]);
+
+  // How often and how lately each of their songs was played (setlists of past shows)
+  const plays = useMemo(() => {
+    const today = todayInJapan();
+    const dateOf = new Map(events.map(e => [e.id, e.end_date || e.date]));
+    const by = new Map<string, { n: Set<string>; last: string }>();
+    for (const r of setlists) {
+      const d = dateOf.get(r.event) || '';
+      if (!d || d > today) continue;
+      const k = normalize(r.song || '');
+      const cur = by.get(k) || { n: new Set<string>(), last: '' };
+      cur.n.add(r.event); if (d > cur.last) cur.last = d;
+      by.set(k, cur);
+    }
+    return by;
+  }, [setlists, events]);
+
+  const rows = useMemo(() => {
+    const order = new Map(credits.map((c, i) => [c.song.id, i]));
+    const rank = (c: { music: boolean; lyrics: boolean }) => (c.music && c.lyrics ? 0 : c.music ? 1 : 2);
+    const q = normalize(query);
+    const out = credits
+      .map(c => { const p = plays.get(normalize(c.song.title)); return { ...c, plays: p ? p.n.size : 0, last: p?.last || '' }; })
+      .filter(c => (role === 'all' || (role === 'both' ? c.music && c.lyrics : role === 'music' ? c.music : c.lyrics))
+        && (!q || normalize([c.song.title, c.song.title_en, c.song.title_kana].filter(Boolean).join(' ')).includes(q)));
+    const dir = sort.desc ? -1 : 1;
+    const byTitle = (a: typeof out[number], b: typeof out[number]) => (order.get(a.song.id)! - order.get(b.song.id)!);
+    return out.sort((a, b) =>
+      sort.k === 'plays' ? dir * (a.plays - b.plays) || byTitle(a, b)
+      : sort.k === 'last' ? dir * (a.last || '0').localeCompare(b.last || '0') || byTitle(a, b)
+      : sort.k === 'role' ? dir * (rank(a) - rank(b)) || byTitle(a, b)
+      : dir * byTitle(a, b));
+  }, [credits, plays, role, query, sort]);
+  const sortBy = (k: typeof sort.k) => setSort(p => ({ k, desc: p.k === k ? !p.desc : k === 'plays' || k === 'last' }));
 
   async function save(): Promise<boolean> {
     const anyName = [form.name_family_en, form.name_given_en, form.name_family_ja, form.name_given_ja].some(t => t.trim());
@@ -127,59 +170,86 @@ export default function AdminPersonForm() {
   const saved = baseline ? (JSON.parse(baseline) as Form) : form;
   const main = personName(saved, locale);
   const other = personName(saved, locale === 'ja' ? 'en' : 'ja');
-  const groups = [
-    { label: s.creditBoth, list: credits.filter(c => c.music && c.lyrics) },
-    { label: s.creditMusic, list: credits.filter(c => c.music && !c.lyrics) },
-    { label: s.creditLyrics, list: credits.filter(c => !c.music && c.lyrics) },
-  ].filter(g => g.list.length);
+  const head = (k: typeof sort.k, label: string, className = '') => (
+    <th className={className} aria-sort={sort.k === k ? (sort.desc ? 'descending' : 'ascending') : undefined}>
+      <button type="button" className={`lu-sort${sort.k === k ? ' is-on' : ''}`} onClick={() => sortBy(k)}>
+        {label}<span aria-hidden="true">{sort.k === k ? (sort.desc ? ' ↓' : ' ↑') : ''}</span>
+      </button>
+    </th>
+  );
+  const roleLabel = (c: { music: boolean; lyrics: boolean }) => (c.music && c.lyrics ? s.creditBoth : c.music ? s.creditMusic : s.creditLyrics);
+  const roles = [
+    { v: 'all' as const, label: s.filterAll, n: credits.length },
+    { v: 'music' as const, label: s.creditMusic, n: credits.filter(c => c.music).length },
+    { v: 'lyrics' as const, label: s.creditLyrics, n: credits.filter(c => c.lyrics).length },
+    { v: 'both' as const, label: s.creditBoth, n: credits.filter(c => c.music && c.lyrics).length },
+  ].filter(r => r.v === 'all' || r.n > 0);
 
   return (
-    <div className="lu-song-page lu-rel-page">
+    <div className="lu-person-page">
       {leaveGuard}
-      <div className="lu-song-layout">
-        <aside className="lu-song-side">
-          <div className="lu-song-card">
-            <div className="lu-song-card-head">
-              <p className="lu-eyebrow"><Link to={`${prefix}/people`}><Icon name="back" /> {s.people}</Link></p>
-              <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setEditing(true)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
-            </div>
-            <div>
-              <h1>{main}<PageHelp /></h1>
-              {other && other !== main && <p className="lu-song-alt lu-rel-alt" lang={locale === 'ja' ? 'en' : 'ja'}>{other}</p>}
-            </div>
-            <ul className="lu-song-stats" aria-label={s.songStats}>
-              <li><span className="lu-stat"><strong>{credits.length}</strong><span>{s.personStatSongs}</span></span></li>
-              <li><span className="lu-stat"><strong>{credits.filter(c => c.music).length}</strong><span>{s.creditMusic}</span></span></li>
-              <li><span className="lu-stat"><strong>{credits.filter(c => c.lyrics).length}</strong><span>{s.creditLyrics}</span></span></li>
-            </ul>
+      <div className="lu-song-card lu-person-head">
+        <div className="lu-song-card-head">
+          <p className="lu-eyebrow"><Link to={`${prefix}/people`}><Icon name="back" /> {s.people}</Link></p>
+          <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setEditing(true)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
+        </div>
+        <div className="lu-person-head-row">
+          <div>
+            <h1>{main}<PageHelp /></h1>
+            {other && other !== main && <p className="lu-song-alt lu-rel-alt" lang={locale === 'ja' ? 'en' : 'ja'}>{other}</p>}
           </div>
-        </aside>
-
-        <div className="lu-song-main">
-          <Section title={`${s.credits} · ${credits.length}`}>
-            {credits.length === 0 ? <p className="lu-hint">{s.noCredits}</p> : (
-              <div className="lu-song-history">
-                {groups.map(g => (
-                  <div key={g.label} className="lu-song-year">
-                    <h3>{g.label}</h3>
-                    <ul className="lu-list lu-usage lu-compact">
-                      {g.list.map(({ song }) => (
-                        <li key={song.id}>
-                          <Link to={`${prefix}/songs/${song.id}`} className="lu-list-row">
-                            <span className="lu-list-main"><strong>{songTitle(song, locale)}</strong></span>
-                            {song.status === 'private' && <span className="lu-list-tags"><span className="lu-tag is-muted"><Icon name="lock" /> {s.songDraft}</span></span>}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
-          <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`People:${id}`]} /></div>
+          <ul className="lu-song-stats" aria-label={s.songStats}>
+            <li><span className="lu-stat"><strong>{credits.length}</strong><span>{s.personStatSongs}</span></span></li>
+            <li><span className="lu-stat"><strong>{credits.filter(c => c.music).length}</strong><span>{s.creditMusic}</span></span></li>
+            <li><span className="lu-stat"><strong>{credits.filter(c => c.lyrics).length}</strong><span>{s.creditLyrics}</span></span></li>
+          </ul>
         </div>
       </div>
+
+      <h2 className="lu-person-title">{s.credits} <span className="lu-count">{credits.length}</span></h2>
+      {credits.length === 0 ? <p className="lu-hint">{s.noCredits}</p> : (
+        <>
+          <div className="lu-songs-tools">
+            <input className="lu-search" type="search" placeholder={s.search} value={query} onChange={e => setQuery(e.target.value)} aria-label={s.search} />
+            <div className="lu-chips" role="group" aria-label={s.filterLabel}>
+              {roles.map(r => (
+                <button key={r.v} type="button" aria-pressed={role === r.v} className={`lu-pill${role === r.v ? ' is-on' : ''}`} onClick={() => setRole(r.v)}>
+                  {r.label} <span className="lu-pill-n">{r.n}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          {rows.length === 0 ? <p className="lu-empty">{s.noResults}</p> : (
+            <div className="lu-table-wrap">
+              <table className="lu-table lu-person-grid">
+                <thead>
+                  <tr>
+                    {head('title', s.colTitle)}
+                    {head('role', s.credits)}
+                    {head('plays', s.songStatLive, 'lu-td-num')}
+                    {head('last', s.songStatLast)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(c => (
+                    <tr key={c.song.id} onClick={e => { if (!(e.target as HTMLElement).closest('a')) navigate(`${prefix}/songs/${c.song.id}`); }}>
+                      <td className="lu-sg-title">
+                        <Link to={`${prefix}/songs/${c.song.id}`}>{songTitle(c.song, locale)}</Link>
+                        {songAltTitle(c.song, locale) && <span className="lu-sg-alt">{songAltTitle(c.song, locale)}</span>}
+                        {c.song.status === 'private' && <span className="lu-tag is-muted lu-sg-draft"><Icon name="lock" /> {s.songDraft}</span>}
+                      </td>
+                      <td className="lu-pg-role">{roleLabel(c)}</td>
+                      <td className="lu-td-num">{c.plays || <span className="lu-sg-none">0</span>}<span className="lu-pg-unit">{locale === 'ja' ? '回' : c.plays === 1 ? ' show' : ' shows'}</span></td>
+                      <td className="lu-sg-date">{c.last || <span className="lu-sg-none">—</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+      <div className="lu-history-wrap"><ActivityHistory s={s} locale={locale} refs={[`People:${id}`]} /></div>
 
       <EditDialog s={s} title={s.secDetails} open={editing} saving={saving} error={error} dirty={dirty}
         onSave={() => { save().then(ok => { if (ok) setEditing(false); }); }}
