@@ -18,6 +18,8 @@ import BackLink from '../components/BackLink';
 import RelatedLinks from '../components/RelatedLinks';
 import { movedTo } from '../utils/formerIds';
 
+/** The old way of taking bookings: a Google Form (forms.gle/…, docs.google.com/forms/…). */
+const isGoogleForm = (url: string) => /^https?:\/\/(forms\.gle\/|docs\.google\.com\/forms\/)/i.test(url.trim());
 
 interface Props {
   locale: Locale;
@@ -181,15 +183,13 @@ export default function EventDetail({ locale }: Props) {
               {event.performers && (<><dt>{s.events.performers}</dt><dd>{event.performers}</dd></>)}
             </dl>
 
-          {event.ticketUrl && (
+          {/* Booking on the site happens from the banner beside this; while it's open, an old
+              Google Form ticket link is left out so nobody books in two places. A venue's
+              or ticket agency's link still shows. */}
+          {event.ticketUrl && !(reserveOpen && isGoogleForm(event.ticketUrl)) && (
             <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer" className="ticket-btn evd-tickets">
               {s.events.tickets} →
             </a>
-          )}
-          {reserveOpen && (
-            <button type="button" className="ticket-btn evd-tickets evd-reserve-btn" onClick={() => setReserveWindow(true)}>
-              🎫 {s.reserve.title} →
-            </button>
           )}
         </div>
         </aside>
