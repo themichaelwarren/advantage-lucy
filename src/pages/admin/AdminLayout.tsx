@@ -6,7 +6,8 @@ import { useAdminT } from '../../i18n/admin';
 import ThemeToggle from '../../components/ThemeToggle';
 import PageTitle from '../../components/PageTitle';
 import CommandPalette from '../../components/admin/CommandPalette';
-import { getMessages } from '../../services/adminService';
+import { getMessages, getReservations, type Reservation } from '../../services/adminService';
+import { lastSeen, isNewSince } from '../../utils/resvSeen';
 import { withoutFiltered } from '../../hooks/useFilters';
 
 /**
@@ -30,6 +31,15 @@ export default function AdminLayout() {
   const [navOpen, setNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [newMessages, setNewMessages] = useState(0);
+  // Fans' bookings since 予約 was last opened on this device (utils/resvSeen.ts)
+  const [resvList, setResvList] = useState<Reservation[]>([]);
+  const [seen, setSeen] = useState(lastSeen);
+  const newResv = resvList.filter(r => isNewSince(r, seen)).length;
+  useEffect(() => {
+    const onSeen = () => setSeen(lastSeen());
+    window.addEventListener('lu-resv-seen', onSeen);
+    return () => window.removeEventListener('lu-resv-seen', onSeen);
+  }, []);
   const lastCount = useRef(0);
 
   // Count of new messages for the sidebar. Rechecked when you move between
@@ -40,6 +50,7 @@ export default function AdminLayout() {
     lastCount.current = Date.now();
     // Filtered senders never count as new
     getMessages().then(withoutFiltered).then(list => setNewMessages(list.filter(m => !m.status).length)).catch(() => {});
+    getReservations().then(setResvList).catch(() => {});
   }, [location.pathname]);
   // A message marked done (or a sender filtered) changes the count straight away, not on the next page
   useEffect(() => {
@@ -131,7 +142,7 @@ export default function AdminLayout() {
     { links: [
       { to: prefix, label: s.home, icon: 'home', end: true },
       { to: `${prefix}/messages`, label: s.messages, icon: 'messages', badge: newMessages },
-      { to: `${prefix}/reservations`, label: s.reservations, icon: 'reservations' },
+      { to: `${prefix}/reservations`, label: s.reservations, icon: 'reservations', badge: newResv },
     ] },
     { title: s.groupContent, links: [
       { to: `${prefix}/events`, label: s.shows, icon: 'shows' },

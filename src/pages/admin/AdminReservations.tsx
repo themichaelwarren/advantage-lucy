@@ -13,7 +13,16 @@ import { useFilters } from '../../hooks/useFilters';
 import type { SenderMatch } from '../../../functions/lib/filters';
 import { toKatakana, sortKey } from '../../../functions/lib/kana';
 import PageHelp from '../../components/admin/PageHelp';
+import { lastSeen, markSeen, isNewSince, isFanBooking } from '../../utils/resvSeen';
 
+/** Opening 予約 marks everything seen (the sidebar badge clears), but this page still shows NEW on what came in since last time. */
+function useSeenSnapshot() {
+  const [seenAt] = useState(lastSeen);
+  useEffect(() => { markSeen(); }, []);
+  return seenAt;
+}
+
+const RESV_PREFS = 'admin-resv-list';
 const ticketsOf = (r: Reservation) => Math.max(0, parseInt(r.tickets, 10) || 0);
 /** By reading where there is one (フリガナ), else by name: kanji names sort right only with their reading */
 const byReading = (a: Reservation, b: Reservation) => sortKey(a).localeCompare(sortKey(b), 'ja');
@@ -52,6 +61,12 @@ export default function AdminReservations() {
   const { events, loading } = useAllEvents();
   const { list, error } = useReservations();
   const today = todayInJapan();
+  const seenAt = useSeenSnapshot();
+
+  // Latest bookings from fans, across every show: the newest first
+  const latest = useMemo(() => (list || []).filter(isFanBooking)
+    .sort((a, b) => b.received_at.localeCompare(a.received_at)).slice(0, 8), [list]);
+  const eventById = useMemo(() => new Map(events.map(e => [e.id, e])), [events]);
 
   const byShow = useMemo(() => {
     const m = new Map<string, Reservation[]>();
@@ -95,6 +110,32 @@ export default function AdminReservations() {
       {error && <div className="lu-alert">{error}</div>}
       {(loading || (!list && !error)) && <p className="lu-loading">{s.loading}</p>}
       {!loading && list && shows.length === 0 && <p className="lu-empty">{s.reservationsEmpty}</p>}
+      {!loading && list && latest.length > 0 && (
+        <section className="lu-list-group lu-resv-latest">
+          <h2>{s.resvLatest}{latest.some(r => isNewSince(r, seenAt)) && <span className="lu-badge">{latest.filter(r => isNewSince(r, seenAt)).length}</span>}</h2>
+          <ul className="lu-list">
+            {latest.map(r => {
+              const e = eventById.get(r.event);
+              const fresh = isNewSince(r, seenAt);
+              return (
+                <li key={r.id} className={fresh ? 'is-fresh' : ''}>
+                  <Link to={`${prefix}/reservations/${r.event}`} className="lu-list-row">
+                    <span className="lu-resv-count">{ticketsOf(r)}</span>
+                    <span className="lu-list-main">
+                      <strong>{r.name}{r.kana && <small className="lu-resv-kana">{r.kana}</small>}</strong>
+                      <span className="lu-snippet">{e ? `${e.date} · ${showName(e, locale)}` : r.event}</span>
+                    </span>
+                    <span className="lu-list-tags">
+                      {fresh && <span className="lu-tag is-new">{s.resvNew}</span>}
+                      <time dateTime={r.received_at} className="lu-resv-when">{when(r.received_at, locale)}</time>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       {!loading && list && upcoming.length > 0 && (
         <section className="lu-list-group">
           <h2>{s.upcomingShows}</h2>
@@ -117,13 +158,20 @@ export function AdminShowReservations() {
   const { s, locale, prefix } = useAdminT();
   const { events, loading } = useAllEvents();
   const { list, setList, error, setError } = useReservations();
+  const seenAt = useSeenSnapshot();
   const [door, setDoor] = useState(false);
   const { match } = useFilters();
   const [query, setQuery] = useState('');
-  // Which bookings: those still on (the default), only the cancelled ones, or all
-  const [view, setView] = useState<'active' | 'cancelled' | 'all'>('active');
-  // Order: when they booked (oldest first, as they came in), newest first, or by name
-  const [order, setOrder] = useState<'oldest' | 'newest' | 'name'>('oldest');
+  // Which bookings (still on, cancelled, all) and in what order (newest first by default, oldest, by name).
+  // Remembered on this device for every show, so coming back from elsewhere keeps them.
+  const [prefs, setPrefs] = useState<{ view: 'active' | 'cancelled' | 'all'; order: 'oldest' | 'newest' | 'name' }>(() => {
+    try { return { view: 'active', order: 'newest', ...JSON.parse(localStorage.getItem(RESV_PREFS) || '{}') }; }
+    catch { return { view: 'active', order: 'newest' }; }
+  });
+  useEffect(() => { try { localStorage.setItem(RESV_PREFS, JSON.stringify(prefs)); } catch { /* private mode */ } }, [prefs]);
+  const { view, order } = prefs;
+  const setView = (v: typeof view) => setPrefs(p => ({ ...p, view: v }));
+  const setOrder = (o: typeof order) => setPrefs(p => ({ ...p, order: o }));
   const [openRow, setOpenRow] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -235,8 +283,8 @@ export function AdminShowReservations() {
             <label className="lu-sort">
               <span className="lu-visually-hidden">{s.sortBy}</span>
               <select value={order} onChange={e => setOrder(e.target.value as typeof order)} aria-label={s.sortBy}>
-                <option value="oldest">↕ {s.resvSortOldest}</option>
                 <option value="newest">↕ {s.resvSortNewest}</option>
+                <option value="oldest">↕ {s.resvSortOldest}</option>
                 <option value="name">↕ {s.resvSortName}</option>
               </select>
             </label>
@@ -258,7 +306,7 @@ export function AdminShowReservations() {
             </button>
           </li>
         ) : (
-          <ReservationRow key={r.id} r={r} s={s} locale={locale} open={openRow === r.id} flag={match(r.email)}
+          <ReservationRow key={r.id} r={r} s={s} locale={locale} open={openRow === r.id} flag={match(r.email)} isNew={isNewSince(r, seenAt)}
             onToggle={() => setOpenRow(o => (o === r.id ? null : r.id))}
             onChange={fields => change(r, fields)}
             onResend={async () => {
@@ -271,8 +319,8 @@ export function AdminShowReservations() {
   );
 }
 
-function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag }: {
-  r: Reservation; s: AdminStrings; locale: AdminLocale; open: boolean; flag?: SenderMatch;
+function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag, isNew }: {
+  r: Reservation; s: AdminStrings; locale: AdminLocale; open: boolean; flag?: SenderMatch; isNew?: boolean;
   onToggle: () => void; onChange: (f: Partial<Reservation>) => Promise<void>; onResend: () => Promise<void>;
 }) {
   const [draft, setDraft] = useState({ name: r.name, kana: r.kana || '', email: r.email, tickets: r.tickets, note: r.note });
@@ -291,6 +339,7 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
           <span className="lu-snippet">{[r.email, r.note].filter(Boolean).join(' · ')}</span>
         </span>
         <span className="lu-list-tags">
+          {isNew && <span className="lu-tag is-new">{s.resvNew}</span>}
           {flag && <span className="lu-tag is-warn" title={s.resvFlagTip}><Icon name="warn" /> {flag.kind === 'filtered' ? s.resvFlagFiltered : s.filterLookalike}</span>}
           {cancelled && <span className="lu-tag is-muted">{s.resvCancelled}</span>}
           {r.arrived === 'TRUE' && <span className="lu-tag is-ok">✓ {s.resvArrived}</span>}

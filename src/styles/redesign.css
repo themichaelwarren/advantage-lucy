@@ -2333,3 +2333,5 @@ button.evd-reserve-btn { border: 0; font: inherit; font-weight: 600; cursor: poi
 .lyrics-verse { word-break: auto-phrase; line-break: strict; }
 /* Thanks headings and messages: break between words (ございま / す！ no more) */
 .contact-thanks h2, .contact-thanks p { word-break: auto-phrase; line-break: strict; text-wrap: balance; }
+/* Booking again with the same email: said before they confirm */
+.reserve-same-email { font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); padding: 0.6rem 0.9rem; border: 1px dashed var(--rule, #d8d4c8); border-radius: var(--radius-sm); margin: 0; word-break: auto-phrase; line-break: strict; }

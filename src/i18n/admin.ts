@@ -807,6 +807,8 @@ const en = {
   resvListTitle: 'reservation list',
   resvTotalLine: 'Total {tickets} tickets ({n} bookings)',
   resvPast: 'Past shows',
+  resvLatest: 'Latest bookings',
+  resvNew: 'New',
 
   // Messages
   // Videos (admin only)
@@ -1719,6 +1721,8 @@ const ja: AdminStrings = {
   resvListTitle: '取り置きリスト',
   resvTotalLine: '合計 {tickets}枚（{n}件）',
   resvPast: '過去のライブ',
+  resvLatest: '新しい予約',
+  resvNew: '新着',
 
   // 動画（管理画面のみ）
   secVideos: '動画',

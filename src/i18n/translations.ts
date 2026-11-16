@@ -191,7 +191,7 @@ export const translations = {
       emailLater: 'We have your reservation. If no confirmation email arrives, don’t worry: you’re on the list.',
       full: 'Reservations are full.',
       closed: 'Reservations for this show are closed.',
-      sameEmail: 'Same email again replaces your earlier reservation for this show.',
+      sameEmail: 'Already reserved with this email? This replaces that reservation. For more tickets, choose the new total. Booking for friends? They can reserve with their own email.',
     },
     about: {
       title: 'About',
@@ -438,7 +438,7 @@ export const translations = {
       emailLater: 'ご予約は承りました。確認メールが届かなくても、予約は完了しています。',
       full: '予約枚数に達したため、受付を終了しました。',
       closed: 'このライブの予約受付は終了しました。',
-      sameEmail: '同じメールアドレスで再度予約すると、前回の予約が置き換わります。',
+      sameEmail: 'このメールアドレスで予約済みの場合は、今回の内容に置き換わります。枚数を増やすときは合計の枚数を選んでください。ご友人の分は、それぞれのメールアドレスでご予約いただけます。',
     },
     about: {
       title: 'プロフィール',

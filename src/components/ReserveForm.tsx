@@ -332,6 +332,8 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
                   {form.note.trim() && (<><dt>{s.note}</dt><dd>{form.note.trim()}</dd></>)}
                 </dl>
                 <p className="reserve-pay">{s.payNote}</p>
+                {/* Said before they confirm: a second booking with the same email replaces the first */}
+                <p className="reserve-same-email">{s.sameEmail}</p>
                 <Turnstile ref={turnstile} locale={locale} />
                 {error && <p className="contact-error" role="alert">{error}</p>}
                 <div className="reserve-actions">
@@ -340,7 +342,6 @@ export default function ReserveForm({ locale, eventId, show, open, onOpenChange,
                   </button>
                   <button type="button" className="contact-secondary" onClick={() => { setError(''); setStep('form'); }} disabled={sending}>← {s.back}</button>
                 </div>
-                <p className="reserve-fineprint">{s.sameEmail}</p>
               </div>
             )}
 

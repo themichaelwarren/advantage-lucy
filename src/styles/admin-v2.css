@@ -2496,3 +2496,7 @@ a.lu-icon-btn { text-decoration: none; }
   .lu-person-grid td.lu-td-num { text-align: left; width: auto; font-size: 0.8rem; color: var(--text-muted); }
   .lu-person-grid .lu-sg-date { justify-self: end; font-size: 0.78rem; color: var(--text-muted); }
 }
+
+/* 予約: the latest fans' bookings across every show, new ones marked */
+.lu-resv-latest h2 { display: flex; align-items: center; gap: 0.5rem; }
+.lu-resv-latest li.is-fresh .lu-list-row { background: color-mix(in srgb, var(--pop, #f5d547) 12%, var(--surface)); }
