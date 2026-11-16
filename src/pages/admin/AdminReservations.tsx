@@ -475,9 +475,13 @@ function BookingPane({ r, s, locale, flag, isNew, showTitle, closeTo, prevTo, ne
       <header className="lu-resv-pane-head">
         <span className="lu-resv-count is-big">{ticketsOf(r)}</span>
         <div>
-          <h2>{r.name}{r.kana && <small className="lu-resv-kana">{r.kana}</small>}</h2>
+          <div className="lu-resv-pane-name">
+            <h2>{r.name}</h2>
+            {/* Where it stands, right by the name */}
+            <span className="lu-list-tags"><BookingTags r={r} s={s} flag={flag} isNew={isNew} /></span>
+          </div>
+          {r.kana && <p className="lu-resv-kana">{r.kana}</p>}
           <p className="lu-hint">{[r.email, when(r.received_at, locale)].filter(Boolean).join(' · ')}</p>
-          <p className="lu-list-tags"><BookingTags r={r} s={s} flag={flag} isNew={isNew} /></p>
         </div>
       </header>
 

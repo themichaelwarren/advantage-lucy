@@ -2585,3 +2585,14 @@ a.lu-icon-btn { text-decoration: none; }
 
 .lu-resv-edit-actions .lu-resv-cancel { margin-left: auto; }
 @media (min-width: 1180px) { .lu-resv-pane-show { visibility: hidden; } }
+
+/* Name with its tags beside it (新着, キャンセル…), wrapping under it when long */
+.lu-resv-pane-name { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.6rem; }
+.lu-resv-pane-head .lu-resv-pane-name .lu-list-tags { margin: 0; }
+.lu-resv-pane-head p.lu-resv-kana { margin: 0.1rem 0 0; font-size: 0.8rem; }
+/* Wide: ↑ ↓ ✕ sit in the corner instead of a row of their own */
+@media (min-width: 1180px) {
+  .lu-resv-split.has-pane .lu-resv-pane-nav { position: absolute; top: 0.8rem; right: 0.9rem; }
+  .lu-resv-split.has-pane .lu-resv-pane-show { display: none; }
+  .lu-resv-split.has-pane .lu-resv-pane-head { padding-right: 7.5rem; padding-top: 0.3rem; }
+}
