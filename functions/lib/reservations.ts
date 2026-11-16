@@ -33,6 +33,7 @@ export const RESERVATION_COLUMNS = [
   'arrived',  // 'TRUE' once checked in at the door
   'source',   // 'web', 'admin' or 'form' (imported from the old Google Form)
   'kana',     // フリガナ of a Japanese name (katakana), for sorting and the door list
+  'checked',  // 'TRUE' once someone in the band has seen it (a fan's new or changed booking starts unchecked)
 ] as const;
 export type Reservation = Record<typeof RESERVATION_COLUMNS[number], string>;
 
@@ -413,6 +414,7 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
       emailed: '',
       arrived: '',
       source: 'web',
+      checked: '',   // new or changed: the band hasn't seen it yet
     };
     // Save first: a fan must never get a confirmation for a booking that isn't in the sheet
     if (earlier) await updateReservation(ctx.sheetId, ctx.saEmail, ctx.saKey, earlier.id, { ...r, arrived: earlier.arrived });
@@ -443,24 +445,34 @@ export async function handleReservePost(request: Request, ctx: ReserveContext, i
  *   GET                         every booking
  *   POST  {fields, send_email}  add one by hand (e.g. a booking by DM)
  *   POST  {resend: id}          send the confirmation email again
- *   PATCH {id, fields}          change name, email, tickets, note, status or arrived
+ *   PATCH {id, fields}          change name, email, tickets, note, status, arrived or checked
+ *   PATCH {ids, fields}         the same change to several (e.g. "mark all checked")
  */
 export async function handleAdminReservations(request: Request, ctx: ReserveContext): Promise<Response> {
   const { sheetId, saEmail, saKey } = ctx;
   try {
     if (request.method === 'GET') return json({ reservations: await listReservations(sheetId, saEmail, saKey) });
-    const body = await request.json() as { id?: string; resend?: string; fields?: Partial<Reservation>; send_email?: boolean };
+    const body = await request.json() as { id?: string; ids?: string[]; resend?: string; fields?: Partial<Reservation>; send_email?: boolean };
     const allowed = (f: Partial<Reservation> = {}) => {
       const out: Partial<Reservation> = {};
-      for (const c of ['name', 'kana', 'email', 'tickets', 'note', 'status', 'arrived', 'locale'] as const) {
+      for (const c of ['name', 'kana', 'email', 'tickets', 'note', 'status', 'arrived', 'locale', 'checked'] as const) {
         if (f[c] !== undefined) out[c] = String(f[c]).slice(0, c === 'note' ? 1000 : 254);
       }
       if (out.kana !== undefined) { out.kana = toKatakana(out.kana); if (out.kana && !isKatakana(out.kana)) throw new Error('フリガナ should be in katakana (カタカナ)'); }
       if (out.status !== undefined && !['', 'cancelled'].includes(out.status)) throw new Error(`Unknown status "${out.status}"`);
+      if (out.checked !== undefined && !['', 'TRUE'].includes(out.checked)) throw new Error('checked is TRUE or empty');
       if (out.tickets !== undefined && !(parseInt(out.tickets, 10) >= 1)) throw new Error('Tickets must be 1 or more');
       if (out.email && !EMAIL_RE.test(out.email)) throw new Error('That email address doesn’t look right');
       return out;
     };
+
+    if (request.method === 'PATCH' && Array.isArray(body.ids)) {
+      const fields = allowed(body.fields);
+      const out: Reservation[] = [];
+      for (const id of body.ids.slice(0, 200)) out.push(await updateReservation(sheetId, saEmail, saKey, String(id), fields));
+      for (const ev of new Set(out.map(r => r.event))) await forgetState(ev);
+      return json({ ok: true, reservations: out });
+    }
 
     if (request.method === 'PATCH') {
       if (!body.id) return json({ error: 'Missing id' }, 400);
@@ -494,7 +506,7 @@ export async function handleAdminReservations(request: Request, ctx: ReserveCont
         id: newId(), event, received_at: new Date().toISOString(),
         locale: f.locale === 'en' ? 'en' : 'ja',
         name: f.name.trim(), kana: f.kana || '', email: f.email || '', tickets: f.tickets || '1', note: f.note || '',
-        status: '', emailed: '', arrived: '', source: 'admin',
+        status: '', emailed: '', arrived: '', source: 'admin', checked: 'TRUE',
       };
       await appendReservation(sheetId, saEmail, saKey, r);
       await forgetState(event);

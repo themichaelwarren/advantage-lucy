@@ -160,6 +160,8 @@ export type Reservation = {
   tickets: string; note: string; status: string; emailed: string; arrived: string; source: string;
   /** フリガナ (katakana) of a Japanese name, for sorting and the door list */
   kana?: string;
+  /** 'TRUE' once someone in the band has seen it (fans' new or changed bookings start unchecked) */
+  checked?: string;
 };
 
 /** Every ticket reservation, oldest first (admin only). */
@@ -186,6 +188,16 @@ export async function addReservation(fields: Partial<Reservation>, sendEmail: bo
     body: JSON.stringify({ fields, send_email: sendEmail }),
   });
   return data.reservation;
+}
+
+/** Mark bookings seen (確認済み), or not, in one go. */
+export async function checkReservations(ids: string[], checked = true): Promise<Reservation[]> {
+  const data = await adminFetch('/api/admin/reservations', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids, fields: { checked: checked ? 'TRUE' : '' } }),
+  });
+  return data.reservations || [];
 }
 
 /** Send the confirmation email again. */

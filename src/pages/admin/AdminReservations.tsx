@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useAllEvents } from '../../hooks/useSheetData';
 import { useAdminT, type AdminLocale, type AdminStrings } from '../../i18n/admin';
 import {
-  getReservations, updateReservation, addReservation, resendReservation, type Reservation,
+  getReservations, updateReservation, addReservation, resendReservation, checkReservations, type Reservation,
 } from '../../services/adminService';
 import { errorText } from '../../components/admin/ui';
 import { reserveState, todayInJapan } from '../../utils/showDates';
@@ -13,14 +13,7 @@ import { useFilters } from '../../hooks/useFilters';
 import type { SenderMatch } from '../../../functions/lib/filters';
 import { toKatakana, sortKey } from '../../../functions/lib/kana';
 import PageHelp from '../../components/admin/PageHelp';
-import { lastSeen, markSeen, isNewSince, isFanBooking } from '../../utils/resvSeen';
-
-/** Opening 予約 marks everything seen (the sidebar badge clears), but this page still shows NEW on what came in since last time. */
-function useSeenSnapshot() {
-  const [seenAt] = useState(lastSeen);
-  useEffect(() => { markSeen(); }, []);
-  return seenAt;
-}
+import { isFanBooking, needsCheck } from '../../utils/resvSeen';
 
 const RESV_PREFS = 'admin-resv-list';
 const ticketsOf = (r: Reservation) => Math.max(0, parseInt(r.tickets, 10) || 0);
@@ -59,13 +52,24 @@ function useReservations() {
 export default function AdminReservations() {
   const { s, locale, prefix } = useAdminT();
   const { events, loading } = useAllEvents();
-  const { list, error } = useReservations();
+  const { list, setList, error, setError } = useReservations();
   const today = todayInJapan();
-  const seenAt = useSeenSnapshot();
+  const [checking, setChecking] = useState(false);
 
-  // Latest bookings from fans, across every show: the newest first
-  const latest = useMemo(() => (list || []).filter(isFanBooking)
-    .sort((a, b) => b.received_at.localeCompare(a.received_at)).slice(0, 8), [list]);
+  // Fans' bookings across every show, newest first: every one nobody has checked yet, then recent ones
+  const unchecked = useMemo(() => (list || []).filter(needsCheck).sort((a, b) => b.received_at.localeCompare(a.received_at)), [list]);
+  const latest = useMemo(() => {
+    const seen = (list || []).filter(r => isFanBooking(r) && !needsCheck(r)).sort((a, b) => b.received_at.localeCompare(a.received_at));
+    return [...unchecked, ...seen.slice(0, Math.max(0, 6 - unchecked.length))];
+  }, [list, unchecked]);
+  async function markChecked(ids: string[]) {
+    if (!ids.length) return;
+    setChecking(true); setError('');
+    setList(l => (l || []).map(r => (ids.includes(r.id) ? { ...r, checked: 'TRUE' } : r)));
+    try { await checkReservations(ids); }
+    catch (err) { setError(errorText(err)); getReservations().then(setList).catch(() => {}); }
+    finally { setChecking(false); }
+  }
   const eventById = useMemo(() => new Map(events.map(e => [e.id, e])), [events]);
 
   const byShow = useMemo(() => {
@@ -112,13 +116,16 @@ export default function AdminReservations() {
       {!loading && list && shows.length === 0 && <p className="lu-empty">{s.reservationsEmpty}</p>}
       {!loading && list && latest.length > 0 && (
         <section className="lu-list-group lu-resv-latest">
-          <h2>{s.resvLatest}{latest.some(r => isNewSince(r, seenAt)) && <span className="lu-badge">{latest.filter(r => isNewSince(r, seenAt)).length}</span>}</h2>
+          <h2>
+            {s.resvLatest}{unchecked.length > 0 && <span className="lu-badge">{unchecked.length}</span>}
+            {unchecked.length > 1 && <button type="button" className="lu-btn lu-btn-sm lu-section-link" disabled={checking} onClick={() => markChecked(unchecked.map(r => r.id))}>✓ {s.resvCheckAll}</button>}
+          </h2>
           <ul className="lu-list">
             {latest.map(r => {
               const e = eventById.get(r.event);
-              const fresh = isNewSince(r, seenAt);
+              const fresh = needsCheck(r);
               return (
-                <li key={r.id} className={fresh ? 'is-fresh' : ''}>
+                <li key={r.id} className={`lu-resv-latest-item${fresh ? ' is-fresh' : ''}`}>
                   <Link to={`${prefix}/reservations/${r.event}`} className="lu-list-row">
                     <span className="lu-resv-count">{ticketsOf(r)}</span>
                     <span className="lu-list-main">
@@ -130,6 +137,7 @@ export default function AdminReservations() {
                       <time dateTime={r.received_at} className="lu-resv-when">{when(r.received_at, locale)}</time>
                     </span>
                   </Link>
+                  {fresh && <button type="button" className="lu-resv-checkbtn" disabled={checking} onClick={() => markChecked([r.id])} aria-label={s.resvCheck} title={s.resvCheck}>✓</button>}
                 </li>
               );
             })}
@@ -158,7 +166,6 @@ export function AdminShowReservations() {
   const { s, locale, prefix } = useAdminT();
   const { events, loading } = useAllEvents();
   const { list, setList, error, setError } = useReservations();
-  const seenAt = useSeenSnapshot();
   const [door, setDoor] = useState(false);
   const { match } = useFilters();
   const [query, setQuery] = useState('');
@@ -231,6 +238,12 @@ export function AdminShowReservations() {
     .sort((a, b) => door || order === 'name' ? byReading(a, b) || a.received_at.localeCompare(b.received_at)
       : order === 'newest' ? b.received_at.localeCompare(a.received_at) : a.received_at.localeCompare(b.received_at));
   const cancelledCount = mine.length - booked.length;
+  const toCheck = mine.filter(needsCheck);
+  async function checkAll() {
+    const ids = toCheck.map(r => r.id);
+    setList(l => (l || []).map(r => (ids.includes(r.id) ? { ...r, checked: 'TRUE' } : r)));
+    try { await checkReservations(ids); } catch (err) { setError(errorText(err)); }
+  }
 
   return (
     <div className={door ? 'lu-door' : ''}>
@@ -292,6 +305,13 @@ export function AdminShowReservations() {
         </div>
       )}
 
+      {!door && toCheck.length > 0 && (
+        <p className="lu-resv-tocheck">
+          <span className="lu-tag is-new">{s.resvNew} · {toCheck.length}</span>
+          <span className="lu-hint">{s.resvCheckHint}</span>
+          {toCheck.length > 1 && <button type="button" className="lu-btn lu-btn-sm" onClick={checkAll}>✓ {s.resvCheckAll}</button>}
+        </p>
+      )}
       {mine.length === 0 && <p className="lu-empty">{s.resvNone}</p>}
 
       <ul className={`lu-list lu-resv-list${door ? ' is-door' : ''}`}>
@@ -306,7 +326,7 @@ export function AdminShowReservations() {
             </button>
           </li>
         ) : (
-          <ReservationRow key={r.id} r={r} s={s} locale={locale} open={openRow === r.id} flag={match(r.email)} isNew={isNewSince(r, seenAt)}
+          <ReservationRow key={r.id} r={r} s={s} locale={locale} open={openRow === r.id} flag={match(r.email)} isNew={needsCheck(r)}
             onToggle={() => setOpenRow(o => (o === r.id ? null : r.id))}
             onChange={fields => change(r, fields)}
             onResend={async () => {
@@ -331,7 +351,7 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
   const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); } finally { setBusy(false); } };
 
   return (
-    <li className={cancelled ? 'is-done' : ''}>
+    <li className={[cancelled ? 'is-done' : '', isNew ? 'is-fresh' : ''].filter(Boolean).join(' ') || undefined}>
       <button type="button" className="lu-list-row lu-resv-row" aria-expanded={open} onClick={onToggle}>
         <span className="lu-resv-count">{ticketsOf(r)}</span>
         <span className="lu-list-main">
@@ -364,7 +384,12 @@ function ReservationRow({ r, s, locale, open, onToggle, onChange, onResend, flag
           </p>
           <div className="lu-resv-edit-actions">
             <button type="button" className="lu-btn lu-btn-primary" disabled={!dirty || busy} onClick={() => run(() => onChange(draft))}>{s.save}</button>
-            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={() => run(onResend)}><Icon name="mail" /> {s.resvResend}</button>}
+            {r.source === 'web' && !cancelled && (
+              <button type="button" className={`lu-btn${isNew ? ' lu-btn-ok' : ''}`} disabled={busy} onClick={() => run(() => onChange({ checked: isNew ? 'TRUE' : '' }))}>
+                {isNew ? `✓ ${s.resvCheck}` : s.resvUncheck}
+              </button>
+            )}
+            {r.email && flag?.kind !== 'filtered' && <button type="button" className="lu-btn" disabled={busy} onClick={() => run(onResend)}><Icon name="mail" /> {r.emailed === 'yes' ? s.resvResend : s.resvSendConfirm}</button>}
             <button type="button" className={`lu-btn ${cancelled ? '' : 'lu-btn-danger-quiet'}`} disabled={busy}
               onClick={() => run(() => onChange({ status: cancelled ? '' : 'cancelled' }))}>
               {cancelled ? s.resvRestore : s.resvCancel}

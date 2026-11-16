@@ -7,7 +7,7 @@ import ThemeToggle from '../../components/ThemeToggle';
 import PageTitle from '../../components/PageTitle';
 import CommandPalette from '../../components/admin/CommandPalette';
 import { getMessages, getReservations, type Reservation } from '../../services/adminService';
-import { lastSeen, isNewSince } from '../../utils/resvSeen';
+import { needsCheck } from '../../utils/resvSeen';
 import { withoutFiltered } from '../../hooks/useFilters';
 
 /**
@@ -31,15 +31,9 @@ export default function AdminLayout() {
   const [navOpen, setNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [newMessages, setNewMessages] = useState(0);
-  // Fans' bookings since 予約 was last opened on this device (utils/resvSeen.ts)
+  // Fans' bookings nobody has marked 確認済み yet (utils/resvSeen.ts)
   const [resvList, setResvList] = useState<Reservation[]>([]);
-  const [seen, setSeen] = useState(lastSeen);
-  const newResv = resvList.filter(r => isNewSince(r, seen)).length;
-  useEffect(() => {
-    const onSeen = () => setSeen(lastSeen());
-    window.addEventListener('lu-resv-seen', onSeen);
-    return () => window.removeEventListener('lu-resv-seen', onSeen);
-  }, []);
+  const newResv = resvList.filter(needsCheck).length;
   const lastCount = useRef(0);
 
   // Count of new messages for the sidebar. Rechecked when you move between
@@ -55,7 +49,9 @@ export default function AdminLayout() {
   // A message marked done (or a sender filtered) changes the count straight away, not on the next page
   useEffect(() => {
     const recount = () => {
-      if (!window.location.pathname.includes('/admin/messages')) return;
+      const path = window.location.pathname;
+      if (path.includes('/admin/reservations')) { getReservations().then(setResvList).catch(() => {}); return; }
+      if (!path.includes('/admin/messages')) return;
       lastCount.current = Date.now();
       getMessages().then(withoutFiltered).then(list => setNewMessages(list.filter(m => !m.status).length)).catch(() => {});
     };

@@ -809,6 +809,11 @@ const en = {
   resvPast: 'Past shows',
   resvLatest: 'Latest bookings',
   resvNew: 'New',
+  resvCheck: 'Mark checked',
+  resvUncheck: 'Mark as new again',
+  resvCheckAll: 'Mark all checked',
+  resvCheckHint: 'Fans’ bookings nobody has checked yet. Open one to check it.',
+  resvSendConfirm: 'Send confirmation email',
 
   // Messages
   // Videos (admin only)
@@ -1723,6 +1728,11 @@ const ja: AdminStrings = {
   resvPast: '過去のライブ',
   resvLatest: '新しい予約',
   resvNew: '新着',
+  resvCheck: '確認済みにする',
+  resvUncheck: '新着に戻す',
+  resvCheckAll: 'すべて確認済みにする',
+  resvCheckHint: 'まだ誰も確認していない予約です。開いて確認済みにできます。',
+  resvSendConfirm: '確認メールを送る',
 
   // 動画（管理画面のみ）
   secVideos: '動画',

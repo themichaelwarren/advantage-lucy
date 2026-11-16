@@ -2500,3 +2500,17 @@ a.lu-icon-btn { text-decoration: none; }
 /* 予約: the latest fans' bookings across every show, new ones marked */
 .lu-resv-latest h2 { display: flex; align-items: center; gap: 0.5rem; }
 .lu-resv-latest li.is-fresh .lu-list-row { background: color-mix(in srgb, var(--pop, #f5d547) 12%, var(--surface)); }
+.lu-btn-sm { padding: 0.3em 0.8em; font-size: 0.82rem; min-height: 0; }
+.lu-btn-ok { background: #1f9d63; border-color: #1f9d63; color: #fff; }
+.lu-btn-ok:hover:not(:disabled) { background: #188452; }
+.lu-resv-latest h2 .lu-btn-sm { text-decoration: none; }
+/* Latest bookings: the row is a link; a ✓ beside new ones marks them checked */
+.lu-resv-latest-item { display: flex; align-items: stretch; }
+.lu-resv-latest-item > .lu-list-row { flex: 1; min-width: 0; }
+.lu-resv-checkbtn {
+  flex: none; width: 3rem; border: none; border-left: 1px solid var(--rule); cursor: pointer;
+  background: color-mix(in srgb, #1f9d63 12%, var(--surface)); color: #1f9d63; font-size: 1.15rem; font-weight: 700;
+}
+.lu-resv-checkbtn:hover:not(:disabled) { background: #1f9d63; color: #fff; }
+.lu-resv-tocheck { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin: 0 0 0.8rem; }
+.lu-resv-list li.is-fresh > .lu-resv-row { background: color-mix(in srgb, var(--pop, #f5d547) 10%, var(--surface)); }
