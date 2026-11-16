@@ -2599,3 +2599,21 @@ a.lu-icon-btn { text-decoration: none; }
 
 .lu-resv-showlinks { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.8rem 0 0; }
 .lu-resv-showlinks .lu-btn svg { width: 0.95rem; height: 0.95rem; }
+
+/* Show page, Tickets card: booking on this site at a glance */
+.lu-tickets-resv {
+  display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.9rem; padding: 0.85rem 0.95rem;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); text-decoration: none;
+}
+.lu-tickets-resv:hover { border-color: var(--text); }
+.lu-tickets-resv:hover .lu-tickets-resv-open { background: var(--pop); }
+.lu-tickets-resv-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.lu-tickets-resv-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
+.lu-tickets-resv-label svg { width: 0.95rem; height: 0.95rem; }
+.lu-tickets-resv-count { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.6rem; }
+.lu-tickets-resv-count strong { font-family: var(--font-display); font-size: 1.35rem; }
+.lu-tickets-resv .lu-resv-meter { display: block; max-width: none; margin: 0; }
+.lu-tickets-resv > .lu-hint { font-size: 0.82rem; }
+.lu-tickets-resv-open { align-self: flex-start; margin-top: 0.15rem; }
+.lu-tickets-resv-off { display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: baseline; margin: 0.6rem 0 0; }
+.lu-nowrap { white-space: nowrap; }

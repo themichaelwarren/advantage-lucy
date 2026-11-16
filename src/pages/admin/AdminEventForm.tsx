@@ -2,7 +2,9 @@ import Icon from '../../components/admin/Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link, useSearchParams, Navigate } from 'react-router-dom';
 import { useAllEvents, useVenues, useAreas, useAllSetlists, useAllSongs } from '../../hooks/useSheetData';
-import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, getReservations, type MediaRow, getVideoTitle } from '../../services/adminService';
+import { createRow, updateRow, deleteRow, replaceRows, getMedia, saveMedia, getReservations, type MediaRow, type Reservation, getVideoTitle } from '../../services/adminService';
+import { StateTag, closesText } from './AdminReservations';
+import { needsCheck } from '../../utils/resvSeen';
 import ShowVideos, { toShowVideos, fromShowVideos, videosSnapshot, songSlots, newVideo, type ShowVideo } from '../../components/admin/ShowVideos';
 import { useAdminT } from '../../i18n/admin';
 import {
@@ -13,7 +15,7 @@ import { formatPrice } from '../../utils/format';
 import { linkify } from '../../utils/linkify';
 import VenuePicker from '../../components/admin/VenuePicker';
 import LinkTextarea from '../../components/admin/LinkTextarea';
-import { setlistIsPublic, todayInJapan, normDateTime } from '../../utils/showDates';
+import { setlistIsPublic, todayInJapan, normDateTime, reserveState } from '../../utils/showDates';
 import { showDateTime } from '../../components/admin/PublishControl';
 
 /** "2026-11-29" → "2026-11-30" */
@@ -269,14 +271,15 @@ export default function AdminEventForm() {
     setSetlistEditing(false);
   };
 
-  // Reservations so far (when the show takes them)
-  const [booked, setBooked] = useState<number | null>(null);
+  // This show's bookings (still on), when it takes them: for the Tickets card
+  const [resvs, setResvs] = useState<Reservation[] | null>(null);
   useEffect(() => {
-    if (isNew || form.reserve !== 'TRUE' || !id) { setBooked(null); return; }
+    if (isNew || form.reserve !== 'TRUE' || !id) { setResvs(null); return; }
     getReservations()
-      .then(list => setBooked(list.filter(r => r.event === id && r.status !== 'cancelled').reduce((n, r) => n + (parseInt(String(r.tickets), 10) || 0), 0)))
-      .catch(() => setBooked(null));
+      .then(list => setResvs(list.filter(r => r.event === id && r.status !== 'cancelled')))
+      .catch(() => setResvs(null));
   }, [isNew, id, form.reserve]);
+  const booked = resvs ? resvs.reduce((n, r) => n + (parseInt(String(r.tickets), 10) || 0), 0) : null;
 
   // An old address (before the id changed) forwards to the new one
   const moved = movedTo(events, isNew ? undefined : id);
@@ -505,6 +508,7 @@ export default function AdminEventForm() {
     saved.door_price && `${s.doorPrice} ${formatPrice(saved.door_price, locale)}`,
   ].filter(Boolean);
   const notes = pick(saved.body_en, saved.body_ja);
+  const hostOf = (url: string) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; } };
   const editBtn = (which: 'details' | 'tickets' | 'notes' | 'poster') => (
     <button type="button" className="lu-icon-btn lu-edit-btn" onClick={() => setDialog(which)} aria-label={s.songEdit} title={s.songEdit}><Icon name="edit" /></button>
   );
@@ -562,13 +566,38 @@ export default function AdminEventForm() {
               {editBtn('tickets')}
             </div>
             {prices.length === 0 && !saved.ticket_url && saved.reserve !== 'TRUE' && <p className="lu-hint">{s.ticketsNone}</p>}
-            {prices.length > 0 && <p className="lu-show-line">{prices.join(' / ')}</p>}
-            {saved.ticket_url && <a className="lu-show-line" href={saved.ticket_url} target="_blank" rel="noopener noreferrer">{s.ticketUrl} ↗</a>}
-            {saved.reserve === 'TRUE' && (
-              <Link to={`${prefix}/reservations/${saved.id}`} className="lu-show-resv">
-                <Icon name="ticket" /> <strong>{booked ?? '…'}{saved.reserve_cap ? ` / ${saved.reserve_cap}` : ''}</strong> {s.resvTicketsShort}
-                <span className="lu-hint"> · {s.openReservations} →</span>
-              </Link>
+            {(prices.length > 0 || saved.ticket_url) && (
+              <dl className="lu-song-credits">
+                {prices.length > 0 && (<><dt>{s.ticketPrice}</dt><dd>{prices.map((p, i) => <span key={i} className="lu-nowrap">{i > 0 && ' / '}{p}</span>)}</dd></>)}
+                {saved.ticket_url && (<><dt>{s.ticketUrl}</dt><dd><a href={saved.ticket_url} target="_blank" rel="noopener noreferrer">{hostOf(saved.ticket_url)} ↗</a></dd></>)}
+              </dl>
+            )}
+            {saved.reserve === 'TRUE' ? (() => {
+              // Booking on this site: where it stands, at a glance, and the way into the bookings
+              const cap = parseInt(saved.reserve_cap || '', 10);
+              const st = reserveState(saved, booked || 0);
+              const fresh = (resvs || []).filter(needsCheck).length;
+              return (
+                <Link to={`${prefix}/reservations/${saved.id}`} className="lu-tickets-resv">
+                  <span className="lu-tickets-resv-head">
+                    <span className="lu-tickets-resv-label"><Icon name="ticket" /> {s.reserveOnShort}</span>
+                    <StateTag e={saved} taken={booked || 0} s={s} locale={locale} />
+                  </span>
+                  <span className="lu-tickets-resv-count">
+                    <strong>{cap > 0 ? s.resvTicketsOf.replace('{n}', String(booked ?? '…')).replace('{cap}', String(cap)) : s.resvTickets.replace('{n}', String(booked ?? '…'))}</strong>
+                    {resvs && <span className="lu-hint">{s.resvBookings.replace('{n}', String(resvs.length))}</span>}
+                    {fresh > 0 && <span className="lu-tag is-new">{s.resvNew} · {fresh}</span>}
+                  </span>
+                  {cap > 0 && <span className="lu-resv-meter" aria-hidden="true"><span style={{ width: `${Math.min(100, ((booked || 0) / cap) * 100)}%` }} /></span>}
+                  <span className="lu-hint">{s.reserveRules.replace('{max}', String(parseInt(saved.reserve_max || '', 10) || 4)).replace('{at}', closesText(st.closes, locale))}</span>
+                  <span className="lu-btn lu-btn-sm lu-tickets-resv-open">{s.openReservations} →</span>
+                </Link>
+              );
+            })() : (
+              <p className="lu-tickets-resv-off">
+                <span className="lu-hint">{s.reserveOff}</span>
+                <button type="button" className="lu-link-btn" onClick={() => setDialog('tickets')}>{s.reserveTurnOn}</button>
+              </p>
             )}
           </div>
 

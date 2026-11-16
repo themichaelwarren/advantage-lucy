@@ -63,11 +63,11 @@ const when = (iso: string, locale: AdminLocale) =>
   iso ? new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { month: 'short', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' }).format(new Date(iso)) : '';
 
 /** "2026-11-28T23:59" (Japan time) → "11月28日(土) 23:59" */
-const closesText = (at: string, locale: AdminLocale) =>
+export const closesText = (at: string, locale: AdminLocale) =>
   new Intl.DateTimeFormat(locale === 'ja' ? 'ja-JP' : 'en-GB', { month: 'short', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
     .format(new Date(`${at}:00Z`));
 
-function StateTag({ e, taken, s, locale }: { e: Event; taken: number; s: AdminStrings; locale: AdminLocale }) {
+export function StateTag({ e, taken, s, locale }: { e: Parameters<typeof reserveState>[0]; taken: number; s: AdminStrings; locale: AdminLocale }) {
   const st = reserveState(e, taken);
   if (st.state === 'open') return <span className="lu-tag is-ok" title={s.resvClosesAt.replace('{at}', closesText(st.closes, locale))}>● {s.resvOpen}</span>;
   if (st.state === 'full') return <span className="lu-tag is-new">{s.resvFull}</span>;
