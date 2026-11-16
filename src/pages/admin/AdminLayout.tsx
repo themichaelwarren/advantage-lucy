@@ -35,6 +35,8 @@ export default function AdminLayout() {
   const [resvList, setResvList] = useState<Reservation[]>([]);
   const newResv = resvList.filter(needsCheck).length;
   const lastCount = useRef(0);
+  // Remember this device's admin language, so plain /admin opens in it next time
+  useEffect(() => { try { localStorage.setItem('admin-lang', locale); } catch { /* private mode */ } }, [locale]);
 
   // Count of new messages for the sidebar. Rechecked when you move between
   // pages, at most once a minute (each check reads the sheet).

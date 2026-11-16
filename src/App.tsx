@@ -94,6 +94,12 @@ function applyBg(current?: string) {
 // Set initial color before first paint
 applyBg();
 
+/** The admin's language: the one last used on this device (AdminLayout remembers it), else the device's own. */
+function adminLang(): 'ja' | 'en' {
+  try { const saved = localStorage.getItem('admin-lang'); if (saved === 'ja' || saved === 'en') return saved; } catch { /* private mode */ }
+  return navigator.language.startsWith('ja') ? 'ja' : 'en';
+}
+
 function WithLanguage() {
   const { pathname, search } = useLocation();
   const lang = navigator.language.startsWith('ja') ? 'ja' : 'en';
@@ -122,7 +128,7 @@ export default function App() {
     <Routes>
       {/* Root: straight into the site in the browser's language */}
       <Route path="/" element={<Navigate to={navigator.language.startsWith('ja') ? '/ja' : '/en'} replace />} />
-      <Route path="/admin/*" element={<Navigate to={navigator.language.startsWith('ja') ? '/ja/admin' : '/en/admin'} replace />} />
+      <Route path="/admin/*" element={<Navigate to={`/${adminLang()}/admin`} replace />} />
 
       {/* English routes */}
       <Route path="/en" element={<Layout locale="en" />}>
